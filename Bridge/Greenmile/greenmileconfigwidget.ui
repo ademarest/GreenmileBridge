@@ -85,6 +85,12 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>serverAddressLineEdit</tabstop>
+  <tabstop>usernameLineEdit</tabstop>
+  <tabstop>passwordLineEdit</tabstop>
+  <tabstop>saveSettingsButton</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

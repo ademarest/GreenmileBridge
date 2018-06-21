@@ -8,8 +8,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     ui->greenmileConfigGrid->addWidget(gmConfig_);
     ui->bridgeProgressGridLayout->addWidget(bridgeProgress_);
-    connect(gmConfig_, &GreenmileConfigWidget::downloadProgess, bridgeProgress_, &BridgeProgressWidget::updateProgressBarStatus);
-    connect(gmConfig_, &GreenmileConfigWidget::statusMessage, bridgeProgress_, &BridgeProgressWidget::writeMessageTextWidget);
 }
 
 MainWindow::~MainWindow()

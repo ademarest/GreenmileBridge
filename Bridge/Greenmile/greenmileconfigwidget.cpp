@@ -14,9 +14,6 @@ GreenmileConfigWidget::GreenmileConfigWidget(QWidget *parent) :
         jsonSettings_ = settings;
         applySettingsToUI(jsonSettings_);
     }
-
-    connect(gmConn, &GMConnection::downloadProgess, this, &GreenmileConfigWidget::downloadProgess);
-    connect(gmConn, &GMConnection::routeKeysForDate, this, &GreenmileConfigWidget::handleRouteKeysForDate);
 }
 
 GreenmileConfigWidget::~GreenmileConfigWidget()
@@ -55,11 +52,6 @@ void GreenmileConfigWidget::saveUItoSettings()
     jsonSettings_["username"] = QJsonValue(ui->usernameLineEdit->text());
     jsonSettings_["password"] = QJsonValue(ui->passwordLineEdit->text());
     settings_->saveSettings(QFile(dbPath_), jsonSettings_);
-
-    gmConn->getRouteKeysForDate(QDate::currentDate());
 }
 
-void GreenmileConfigWidget::handleRouteKeysForDate(QJsonArray routeArray)
-{
-    emit statusMessage(QString("Today's route list recieved. " + QJsonDocument(routeArray).toJson(QJsonDocument::Compact)));
-}
+

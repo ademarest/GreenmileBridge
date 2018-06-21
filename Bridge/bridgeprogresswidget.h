@@ -1,9 +1,9 @@
 #ifndef BRIDGEPROGRESSWIDGET_H
 #define BRIDGEPROGRESSWIDGET_H
 
-#include <QObject>
 #include <QtCore>
 #include <QWidget>
+#include "bridge.h"
 
 namespace Ui {
 class BridgeProgressWidget;
@@ -23,6 +23,7 @@ public slots:
 
 private:
     Ui::BridgeProgressWidget *ui;
+    Bridge *bridge_ = new Bridge(this);
 };
 
 #endif // BRIDGEPROGRESSWIDGET_H

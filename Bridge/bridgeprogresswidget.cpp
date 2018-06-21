@@ -6,6 +6,9 @@ BridgeProgressWidget::BridgeProgressWidget(QWidget *parent) :
     ui(new Ui::BridgeProgressWidget)
 {
     ui->setupUi(this);
+    connect(ui->bridgeButton, &QPushButton::pressed, bridge_, &Bridge::startBridge);
+    connect(bridge_, &Bridge::statusMessage, this, &BridgeProgressWidget::writeMessageTextWidget);
+    connect(bridge_, &Bridge::downloadProgess, this, &BridgeProgressWidget::updateProgressBarStatus);
 }
 
 BridgeProgressWidget::~BridgeProgressWidget()
@@ -22,5 +25,5 @@ void BridgeProgressWidget::writeMessageTextWidget(const QString &message)
 
 void BridgeProgressWidget::updateProgressBarStatus(qint64 bytesReceived, qint64 bytesTotal)
 {
-    ui->currentOperationProgressBar->setValue(int((bytesReceived/bytesTotal)*100));
+    ui->currentOperationProgressBar->setValue(double((bytesReceived/bytesTotal)*100));
 }

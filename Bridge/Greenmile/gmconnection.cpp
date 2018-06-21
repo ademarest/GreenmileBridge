@@ -40,12 +40,8 @@ void GMConnection::getRouteKeysForDate(const QDate &date)
 
 void GMConnection::handleRouteKeyForDateReply(QNetworkReply *reply)
 {
-    QByteArray replyArray = reply->readAll();
-    qDebug() << replyArray;
-    QJsonArray json = QJsonDocument::fromJson(replyArray).array();
+    QJsonArray json = QJsonDocument::fromJson(reply->readAll()).array();
     emit routeKeysForDate(json);
-    emit downloadProgess(1, 1);
-
     disconnect(reply, &QNetworkReply::downloadProgress, this, &GMConnection::downloadProgess);
     disconnect(qnam_, &QNetworkAccessManager::finished, this, &GMConnection::handleRouteKeyForDateReply);
     reply->deleteLater();
