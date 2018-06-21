@@ -22,7 +22,7 @@ public:
     QString getServerAddress() const;
     QString getUsername() const;
 
-    QJsonArray getRouteKeysForDate(const QDate &date);
+    void getRouteKeysForDate(const QDate &date);
 
 signals:
     void debugMessage(const QString &debug);
@@ -30,7 +30,12 @@ signals:
     void statusMessage(const QString &status);
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
 
+    void routeKeysForDate(QJsonArray array);
+
 public slots:
+
+private slots:
+    void handleRouteKeyForDateReply(QNetworkReply *reply);
 
 private:
     QString dbPath_                 = qApp->applicationDirPath() + "/gmconnection.db";

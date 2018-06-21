@@ -17,8 +17,15 @@ public:
     explicit GreenmileConfigWidget(QWidget *parent = 0);
     ~GreenmileConfigWidget();
 
+signals:
+    void debugMessage(const QString &debug);
+    void errorMessage(const QString &error);
+    void statusMessage(const QString &status);
+    void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
+
 private slots:
     void saveUItoSettings();
+    void handleRouteKeysForDate(QJsonArray routeArray);
 
 private:
     Ui::GreenmileConfigWidget *ui;

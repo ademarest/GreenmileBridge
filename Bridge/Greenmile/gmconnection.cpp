@@ -13,10 +13,10 @@ GMConnection::GMConnection(const QString &serverAddress, const QString &username
     settings_->saveSettings(QFile(dbPath_), jsonSettings_);
 }
 
-QJsonArray GMConnection::getRouteKeysForDate(const QDate &date)
+void GMConnection::getRouteKeysForDate(const QDate &date)
 {
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 
-    qDebug() << "0";
     QString serverAddress = jsonSettings_["serverAddress"].toString()
             + "/Route/restrictions?criteria"
               "={\"filters\":[\"id\","
@@ -32,11 +32,21 @@ QJsonArray GMConnection::getRouteKeysForDate(const QDate &date)
     request.setUrl(QUrl(serverAddress));
     request.setRawHeader("Authorization", headerData.toLocal8Bit());
     request.setRawHeader("Content-Type", "application/json");
-    QNetworkReply *networkReply = qnam_->post(request, postData);
 
-    //connect(networkReply, &QNetworkReply::downloadProgress, this, &GMConnection::downloadProgess);
-    while(!networkReply->isFinished())
-        qApp->processEvents();
-    qDebug() << networkReply->readAll();
-    delete networkReply;
+    QNetworkReply *networkReply = qnam_->post(request, postData);
+    connect(networkReply, &QNetworkReply::downloadProgress, this, &GMConnection::downloadProgess);
+    connect(qnam_, &QNetworkAccessManager::finished, this, &GMConnection::handleRouteKeyForDateReply);
+}
+
+void GMConnection::handleRouteKeyForDateReply(QNetworkReply *reply)
+{
+    QByteArray replyArray = reply->readAll();
+    qDebug() << replyArray;
+    QJsonArray json = QJsonDocument::fromJson(replyArray).array();
+    emit routeKeysForDate(json);
+    emit downloadProgess(1, 1);
+
+    disconnect(reply, &QNetworkReply::downloadProgress, this, &GMConnection::downloadProgess);
+    disconnect(qnam_, &QNetworkAccessManager::finished, this, &GMConnection::handleRouteKeyForDateReply);
+    reply->deleteLater();
 }
