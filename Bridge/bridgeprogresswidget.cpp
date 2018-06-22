@@ -19,7 +19,7 @@ BridgeProgressWidget::~BridgeProgressWidget()
 void BridgeProgressWidget::writeMessageTextWidget(const QString &message)
 {
     QString contents = ui->operationHistoryTextBrowser->toPlainText();
-    contents.append(QString(QDateTime::currentDateTime().toString(Qt::ISODate) + "  " + message + "\n\n\n"));
+    contents.append(QString(QDateTime::currentDateTime().toString(Qt::ISODate) + "  " + message + "\n\n"));
     ui->operationHistoryTextBrowser->setText(contents);
 }
 

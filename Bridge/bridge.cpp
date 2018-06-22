@@ -10,6 +10,11 @@ void Bridge::startBridge()
     getRouteKeysFromGMForDate(QDate::currentDate());
 }
 
+void Bridge::stopBridge()
+{
+
+}
+
 bool Bridge::uploadRoutes()
 {
     return false;
@@ -32,4 +37,9 @@ void Bridge::handleRouteKeysForDate(QJsonArray routeArray)
                        + " routes uploaded for "
                        + QDate::currentDate().toString(Qt::ISODate)
                        + ".");
+}
+
+void Bridge::bridgeLoop()
+{
+
 }

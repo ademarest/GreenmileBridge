@@ -17,14 +17,16 @@ signals:
     void errorMessage(const QString &error);
     void statusMessage(const QString &status);
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
-    void routeKeysForDate(QJsonArray array);
 
 public slots:
     void startBridge();
+    void stopBridge();
     void handleRouteKeysForDate(QJsonArray routeArray);
 
 private:
     GMConnection *gmConn = new GMConnection();
+    bool bridgeRunStatus_ = false;
+    void bridgeLoop();
 };
 
 #endif // BRIDGE_H
