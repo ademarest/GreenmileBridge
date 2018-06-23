@@ -17,21 +17,12 @@ void GMConnection::getRouteKeysForDate(const QDate &date)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 
-    QString serverAddress = jsonSettings_["serverAddress"].toString()
-            + "/Route/restrictions?criteria"
-              "={\"filters\":[\"id\","
-              " \"key\"]}";
+    QString serverAddrTail =    "/Route/restrictions?criteria"
+                                "={\"filters\":[\"id\","
+                                " \"key\"]}";
 
     QByteArray postData = QString("{\"attr\":\"date\", \"eq\":\"" + date.toString(Qt::ISODate) + "\"}").toLocal8Bit();
-
-    QNetworkRequest request;
-
-    QString concatenated = jsonSettings_["username"].toString() + ":" + jsonSettings_["password"].toString();
-    QByteArray data = concatenated.toLocal8Bit().toBase64();
-    QString headerData = "Basic " + data;
-    request.setUrl(QUrl(serverAddress));
-    request.setRawHeader("Authorization", headerData.toLocal8Bit());
-    request.setRawHeader("Content-Type", "application/json");
+    QNetworkRequest request = makeGMNetworkRequest(serverAddrTail);
 
     QNetworkReply *networkReply = qnam_->post(request, postData);
     connect(networkReply, &QNetworkReply::downloadProgress, this, &GMConnection::downloadProgess);
@@ -45,4 +36,18 @@ void GMConnection::handleRouteKeyForDateReply(QNetworkReply *reply)
     disconnect(reply, &QNetworkReply::downloadProgress, this, &GMConnection::downloadProgess);
     disconnect(qnam_, &QNetworkAccessManager::finished, this, &GMConnection::handleRouteKeyForDateReply);
     reply->deleteLater();
+}
+
+QNetworkRequest GMConnection::makeGMNetworkRequest(const QString &serverAddrTail)
+{
+    QString serverAddress = jsonSettings_["serverAddress"].toString() + serverAddrTail;
+    QString concatenated = jsonSettings_["username"].toString() + ":" + jsonSettings_["password"].toString();
+    QByteArray data = concatenated.toLocal8Bit().toBase64();
+    QString headerData = "Basic " + data;
+
+    QNetworkRequest request;
+    request.setUrl(QUrl(serverAddress));
+    request.setRawHeader("Authorization", headerData.toLocal8Bit());
+    request.setRawHeader("Content-Type", "application/json");
+    return request;
 }

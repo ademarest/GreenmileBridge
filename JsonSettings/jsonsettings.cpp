@@ -129,52 +129,65 @@ bool JsonSettings::insertSettingsIntoDB(QSqlDatabase &db, const QJsonObject &jso
 {
     bool success =false;
     QSqlQuery query(db);
-    QString queryString = makeInsertString(jsonSettings);
-    success = query.exec(queryString);
+    makeSQLQuery(query, jsonSettings);
+
+    db.transaction();
+    success = query.execBatch();
+    db.commit();
 
     if(!success)
+    {
         emit debugMessage("Could not save json object to database. Query error = " + query.lastError().text());
+        qDebug() << query.lastError().text();
+    }
 
     return success;
 }
 
 
-QString JsonSettings::makeInsertString(const QJsonObject &jsonSettings)
+void JsonSettings::makeSQLQuery(QSqlQuery &query, const QJsonObject &jsonSettings)
 {
-    QString queryString = "INSERT or REPLACE into settings VALUES ";
-    QStringList values;
-    QStringList valueTuples;
+    query.prepare("INSERT OR REPLACE INTO settings VALUES (?,?,?)");
+
+    QVariantList jsonKeys;
+    QVariantList jsonValues;
+    QVariantList jsonTypes;
+
     for(auto key: jsonSettings.keys())
     {
-        values.clear();
         switch(jsonSettings[key].type())
         {
         case QJsonValue::Null:
-            values << QString("\"" + key + "\"") << QString("\"null\"")  << QString::number(QJsonValue::Null);
-            valueTuples.append("(" + values.join(", ") + ")");
+            jsonKeys.append(key);
+            jsonValues.append("null");
+            jsonTypes.append(QJsonValue::Null);
             break;
 
         case QJsonValue::Bool:
-            values << QString("\"" + key + "\"") << QString("\"" + jsonSettings[key].toString() + "\"")  << QString::number(QJsonValue::Bool);
-            valueTuples.append("(" + values.join(", ") + ")");
+            jsonKeys.append(key);
+            jsonValues.append(QString::number(jsonSettings[key].toInt()));
+            jsonTypes.append(QJsonValue::Bool);
             break;
 
         case QJsonValue::Double:
-            values << QString("\"" + key + "\"") << QString("\"" + jsonSettings[key].toString() + "\"")  << QString::number(QJsonValue::Double);
-            valueTuples.append("(" + values.join(", ") + ")");
+            jsonKeys.append(key);
+            jsonValues.append(QString::number(jsonSettings[key].toDouble()));
+            jsonTypes.append(QJsonValue::Double);
             break;
 
         case QJsonValue::String:
-            values << QString("\"" + key + "\"") << QString("\"" + jsonSettings[key].toString() + "\"")  << QString::number(QJsonValue::String);
-            valueTuples.append("(" + values.join(", ") + ")");
+            jsonKeys.append(key);
+            jsonValues.append(jsonSettings[key].toString());
+            jsonTypes.append(QJsonValue::String);
             break;
 
         case QJsonValue::Array:
         {
             QJsonDocument arrayToString;
             arrayToString.setArray(jsonSettings[key].toArray());
-            values << QString("\"" + key + "\"") << QString("\"" + QString(arrayToString.toJson()) + "\"") << QString::number(QJsonValue::Array);
-            valueTuples.append("(" + values.join(", ") + ")");
+            jsonKeys.append(key);
+            jsonValues.append(QString(arrayToString.toJson()));
+            jsonTypes.append(QJsonValue::Array);
         }
             break;
 
@@ -182,19 +195,24 @@ QString JsonSettings::makeInsertString(const QJsonObject &jsonSettings)
         {
             QJsonDocument objToString;
             objToString.setObject(jsonSettings[key].toObject());
-            values << QString("\"" + key + "\"") << QString("\"" + QString(objToString.toJson()) + "\"")  << QString::number(QJsonValue::Object);
-            valueTuples.append("(" + values.join(", ") + ")");
+            jsonKeys.append(key);
+            jsonValues.append(QString(objToString.toJson()));
+            jsonTypes.append(QJsonValue::Object);
         }
             break;
 
         case QJsonValue::Undefined:
-            values << QString("\"" + key + "\"") << QString("\"error\"")  << QString::number(QJsonValue::Undefined);
-            valueTuples.append("(" + values.join(", ") + ")");
+            jsonKeys.append(key);
+            jsonValues.append("Error, undefined");
+            jsonTypes.append(QJsonValue::Undefined);
             break;
         }
     }
-    queryString.append(valueTuples.join(", "));
-    return queryString;
+
+    qDebug() << jsonKeys;
+    query.addBindValue(jsonKeys);
+    query.addBindValue(jsonValues);
+    query.addBindValue(jsonTypes);
 }
 
 

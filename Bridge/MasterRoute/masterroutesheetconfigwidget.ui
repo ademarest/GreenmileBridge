@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MasterRouteSheetConfigWidget</class>
+ <widget class="QWidget" name="MasterRouteSheetConfigWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>609</width>
+    <height>458</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="9" column="0" colspan="2">
+    <widget class="QLineEdit" name="clientSecretLineEdit">
+     <property name="text">
+      <string>Client Secret</string>
+     </property>
+     <property name="echoMode">
+      <enum>QLineEdit::Password</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="10" column="0">
+    <widget class="QLabel" name="redirectURILabel">
+     <property name="text">
+      <string>Redirect URIs</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0" colspan="2">
+    <widget class="QLineEdit" name="projectIDLineEdit">
+     <property name="text">
+      <string>Project ID</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="projectIDLabel">
+     <property name="text">
+      <string>Project ID</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QLineEdit" name="authURILineEdit">
+     <property name="text">
+      <string>Auth URI</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <widget class="QLineEdit" name="clientIDLineEdit">
+     <property name="text">
+      <string>Client ID</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="authURILabel">
+     <property name="text">
+      <string>Auth URI</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="1">
+    <widget class="QPushButton" name="addRedirectURIPushButton">
+     <property name="text">
+      <string>Add URI</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0">
+    <widget class="QLabel" name="clientSecretLabel">
+     <property name="text">
+      <string>Client Secret</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="clientIDLabel">
+     <property name="text">
+      <string>Client ID</string>
+     </property>
+    </widget>
+   </item>
+   <item row="13" column="0">
+    <widget class="QLabel" name="googleSheetsBaseAddrLabel">
+     <property name="text">
+      <string>Google Sheets Base Address</string>
+     </property>
+    </widget>
+   </item>
+   <item row="19" column="0" colspan="2">
+    <widget class="QPushButton" name="saveSettingsPushButton">
+     <property name="text">
+      <string>Save Settings</string>
+     </property>
+    </widget>
+   </item>
+   <item row="14" column="0" colspan="2">
+    <widget class="QLineEdit" name="googleSheetsBaseAddrLineEdit">
+     <property name="text">
+      <string>e.g. https://sheets.googleapis.com/v4/spreadsheets/&lt;someString&gt;/values/</string>
+     </property>
+    </widget>
+   </item>
+   <item row="18" column="0" colspan="2">
+    <widget class="QPushButton" name="loadFromFilePushButton">
+     <property name="text">
+      <string>Load Settings From File</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="0" rowspan="2">
+    <widget class="QListWidget" name="redirectURIListWidget"/>
+   </item>
+   <item row="16" column="0" colspan="2">
+    <widget class="QLineEdit" name="googleSheetsScopeLineEdit">
+     <property name="text">
+      <string>https://www.googleapis.com/auth/spreadsheets.readonly</string>
+     </property>
+    </widget>
+   </item>
+   <item row="12" column="1">
+    <widget class="QPushButton" name="removeSelectedRedirectURIPushButton">
+     <property name="text">
+      <string>Remove Selected URI</string>
+     </property>
+    </widget>
+   </item>
+   <item row="17" column="0">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="15" column="0">
+    <widget class="QLabel" name="googleSheetsScopeLabel">
+     <property name="text">
+      <string>Google Sheets API Scope</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="x509Label">
+     <property name="text">
+      <string>Auth Provider x509 Cert URL</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLineEdit" name="x509LineEdit">
+     <property name="text">
+      <string>x509 Provider</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>clientIDLineEdit</tabstop>
+  <tabstop>authURILineEdit</tabstop>
+  <tabstop>x509LineEdit</tabstop>
+  <tabstop>projectIDLineEdit</tabstop>
+  <tabstop>clientSecretLineEdit</tabstop>
+  <tabstop>redirectURIListWidget</tabstop>
+  <tabstop>addRedirectURIPushButton</tabstop>
+  <tabstop>removeSelectedRedirectURIPushButton</tabstop>
+  <tabstop>googleSheetsBaseAddrLineEdit</tabstop>
+  <tabstop>googleSheetsScopeLineEdit</tabstop>
+  <tabstop>loadFromFilePushButton</tabstop>
+  <tabstop>saveSettingsPushButton</tabstop>
+ </tabstops>
+ <resources/>
+ <connections/>
+</ui>

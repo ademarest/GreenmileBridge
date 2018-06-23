@@ -26,7 +26,7 @@ private:
     QJsonObject selectSettingsFromDB(QSqlDatabase &db, QJsonObject jsonSettings);
 
     bool insertSettingsIntoDB(QSqlDatabase &db, const QJsonObject &jsonSettings);
-    QString makeInsertString(const QJsonObject &jsonSettings);
+    void makeSQLQuery(QSqlQuery &query, const QJsonObject &jsonSettings);
 };
 
 #endif // JSONSETTINGS_H

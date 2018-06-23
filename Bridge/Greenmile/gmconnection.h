@@ -44,8 +44,8 @@ private:
                                {"username",      QJsonValue("username")},
                                {"password",      QJsonValue("password")}};
     QNetworkAccessManager *qnam_    = new QNetworkAccessManager(this);
-
-
+    QTimer *routeKeyResponseTimer_  = new QTimer(this);
+    QNetworkRequest makeGMNetworkRequest(const QString &serverAddrTail);
 };
 
 #endif // GMCONNECTION_H

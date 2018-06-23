@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>657</width>
+    <height>438</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -40,6 +40,16 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="mrsConfigTab">
+       <attribute name="title">
+        <string>Master Route Config</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="mrsConfigGrid"/>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -49,7 +59,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>400</width>
+     <width>657</width>
      <height>20</height>
     </rect>
    </property>

@@ -8,6 +8,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     ui->greenmileConfigGrid->addWidget(gmConfig_);
     ui->bridgeProgressGridLayout->addWidget(bridgeProgress_);
+    ui->mrsConfigGrid->addWidget(mrsConfig_);
 }
 
 MainWindow::~MainWindow()

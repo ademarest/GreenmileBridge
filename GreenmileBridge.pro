@@ -30,7 +30,9 @@ SOURCES += \
     Bridge/Greenmile/gmconnection.cpp \
     JsonSettings/jsonsettings.cpp \
     Bridge/Greenmile/greenmileconfigwidget.cpp \
-    Bridge/bridgeprogresswidget.cpp
+    Bridge/bridgeprogresswidget.cpp \
+    Bridge/MasterRoute/masterroutesheetconfigwidget.cpp \
+    Bridge/MasterRoute/mrsconnection.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -38,9 +40,12 @@ HEADERS += \
     Bridge/Greenmile/gmconnection.h \
     JsonSettings/jsonsettings.h \
     Bridge/Greenmile/greenmileconfigwidget.h \
-    Bridge/bridgeprogresswidget.h
+    Bridge/bridgeprogresswidget.h \
+    Bridge/MasterRoute/masterroutesheetconfigwidget.h \
+    Bridge/MasterRoute/mrsconnection.h
 
 FORMS += \
         mainwindow.ui \
     Bridge/Greenmile/greenmileconfigwidget.ui \
-    Bridge/bridgeprogresswidget.ui
+    Bridge/bridgeprogresswidget.ui \
+    Bridge/MasterRoute/masterroutesheetconfigwidget.ui
