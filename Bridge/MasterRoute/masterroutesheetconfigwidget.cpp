@@ -36,6 +36,7 @@ MasterRouteSheetConfigWidget::~MasterRouteSheetConfigWidget()
 void MasterRouteSheetConfigWidget::saveUItoSettings()
 {
     QJsonArray redirectURIs;
+    jsonSettings_["auth_uri"] = QJsonValue(ui->authURILineEdit->text());
     jsonSettings_["client_id"] = QJsonValue(ui->clientIDLineEdit->text());
     jsonSettings_["client_secret"] = QJsonValue(ui->clientSecretLineEdit->text());
     jsonSettings_["base_url"] = QJsonValue(ui->googleSheetsBaseAddrLineEdit->text());

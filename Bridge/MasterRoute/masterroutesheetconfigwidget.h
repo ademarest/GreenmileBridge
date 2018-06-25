@@ -30,7 +30,7 @@ private:
     JsonSettings *settings_ = new JsonSettings(this);
     QString dbPath_ = qApp->applicationDirPath() + "/mrsconnection.db";
     QJsonObject jsonSettings_  {{"client_id", QJsonValue("Client ID")},
-                                {"auth_uri", QJsonValue("Authention URI")},
+                                {"auth_uri", QJsonValue("Authentication URI")},
                                 {"token_uri", QJsonValue("Token URI")},
                                 {"auth_provider_x509_cert_url", QJsonValue("x509 Certificate URL")},
                                 {"project_id", QJsonValue("Project ID")},
