@@ -209,7 +209,6 @@ void JsonSettings::makeSQLQuery(QSqlQuery &query, const QJsonObject &jsonSetting
         }
     }
 
-    qDebug() << jsonKeys;
     query.addBindValue(jsonKeys);
     query.addBindValue(jsonValues);
     query.addBindValue(jsonTypes);

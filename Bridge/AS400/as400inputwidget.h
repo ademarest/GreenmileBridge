@@ -1,7 +1,7 @@
 #ifndef AS400INPUTWIDGET_H
 #define AS400INPUTWIDGET_H
 
-#include "json_settings/jsonsettings.h"
+#include "JsonSettings/jsonsettings.h"
 #include <QWidget>
 
 namespace Ui {
@@ -24,10 +24,10 @@ private:
     Ui::AS400InputWidget *ui;
     QString dbPath_ = qApp->applicationDirPath() + "/as400settings.db";
     JsonSettings settings_;
-    QJsonObject AS400Settings_ =    {{"username",       QJsonValue()},
-                                     {"password",       QJsonValue()},
-                                     {"system",         QJsonValue()},
-                                     {"driver",         QJsonValue()}};
+    QJsonObject AS400Settings_ =    {{"username",       QJsonValue("username")},
+                                     {"password",       QJsonValue("password")},
+                                     {"system",         QJsonValue("0.0.0.0")},
+                                     {"driver",         QJsonValue("iSeries Access ODBC Driver")}};
 };
 
 #endif // AS400INPUTWIDGET_H

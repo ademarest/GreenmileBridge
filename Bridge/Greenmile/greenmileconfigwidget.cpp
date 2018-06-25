@@ -8,12 +8,8 @@ GreenmileConfigWidget::GreenmileConfigWidget(QWidget *parent) :
     ui->setupUi(this);
     connect(ui->saveSettingsButton, &QPushButton::pressed, this, &GreenmileConfigWidget::saveUItoSettings);
 
-    QJsonObject settings = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    if(noSettingsNullOrUndefined(settings))
-    {
-        jsonSettings_ = settings;
-        applySettingsToUI(jsonSettings_);
-    }
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    applySettingsToUI(jsonSettings_);
 }
 
 GreenmileConfigWidget::~GreenmileConfigWidget()

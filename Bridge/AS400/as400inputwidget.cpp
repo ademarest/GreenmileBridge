@@ -8,7 +8,8 @@ AS400InputWidget::AS400InputWidget(QWidget *parent) :
     ui->setupUi(this);
 
     connect(ui->as400CommitSettings, &QPushButton::pressed, this, &AS400InputWidget::saveSettings);
-    connect(ui->as400LoadSettingsButton, &QPushButton::pressed, this, &AS400InputWidget::loadSettings);
+    AS400Settings_ = settings_.loadSettings(QFile(dbPath_), AS400Settings_);
+    loadSettings();
 }
 
 AS400InputWidget::~AS400InputWidget()
