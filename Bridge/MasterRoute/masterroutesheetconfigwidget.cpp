@@ -25,7 +25,7 @@ MasterRouteSheetConfigWidget::MasterRouteSheetConfigWidget(QWidget *parent) :
             this,
             &MasterRouteSheetConfigWidget::removeRedirectURI);
 
-    applySettingsToUI(settings_->loadSettings(QFile(dbPath_), jsonSettings_));
+    applySettingsToUI();
 }
 
 MasterRouteSheetConfigWidget::~MasterRouteSheetConfigWidget()
@@ -69,7 +69,7 @@ void MasterRouteSheetConfigWidget::loadSettingsFromFile()
         settings_->saveSettings(QFile(dbPath_), jsonCredentials);
     }
 
-    applySettingsToUI(settings_->loadSettings(QFile(dbPath_), jsonSettings_));
+    applySettingsToUI();
 }
 
 void MasterRouteSheetConfigWidget::addRedirectURI()
@@ -102,18 +102,19 @@ bool MasterRouteSheetConfigWidget::noSettingsNullOrUndefined(const QJsonObject &
         return false;
 }
 
-void MasterRouteSheetConfigWidget::applySettingsToUI(const QJsonObject &settings)
+void MasterRouteSheetConfigWidget::applySettingsToUI()
 {
-    ui->clientIDLineEdit->setText(settings["client_id"].toString());
-    ui->clientSecretLineEdit->setText(settings["client_secret"].toString());
-    ui->googleSheetsBaseAddrLineEdit->setText(settings["base_url"].toString());
-    ui->googleSheetsScopeLineEdit->setText(settings["api_scope"].toString());
-    ui->projectIDLineEdit->setText(settings["project_id"].toString());
-    ui->authURILineEdit->setText(settings["auth_uri"].toString());
-    ui->x509LineEdit->setText(settings["auth_provider_x509_cert_url"].toString());
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    ui->clientIDLineEdit->setText(jsonSettings_["client_id"].toString());
+    ui->clientSecretLineEdit->setText(jsonSettings_["client_secret"].toString());
+    ui->googleSheetsBaseAddrLineEdit->setText(jsonSettings_["base_url"].toString());
+    ui->googleSheetsScopeLineEdit->setText(jsonSettings_["api_scope"].toString());
+    ui->projectIDLineEdit->setText(jsonSettings_["project_id"].toString());
+    ui->authURILineEdit->setText(jsonSettings_["auth_uri"].toString());
+    ui->x509LineEdit->setText(jsonSettings_["auth_provider_x509_cert_url"].toString());
 
     ui->redirectURIListWidget->clear();
-    for(auto json:settings["redirect_uris"].toArray())
+    for(auto json:jsonSettings_["redirect_uris"].toArray())
         ui->redirectURIListWidget->addItem(json.toString());
 }
 
@@ -128,7 +129,6 @@ QJsonObject MasterRouteSheetConfigWidget::makeJsonFromFile(const QString &jsonCr
                     MasterRouteSheetConfigWidget::setOAuth2CredWithJson";
                     return QJsonObject();
     }
-
     while(!jsonCredentialFile.atEnd())
     {
         credentials.append(jsonCredentialFile.readLine());

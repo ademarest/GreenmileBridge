@@ -40,7 +40,7 @@ private:
                                 {"redirect_uris", QJsonArray()}};
 
     bool noSettingsNullOrUndefined(const QJsonObject &settings);
-    void applySettingsToUI(const QJsonObject &settings);
+    void applySettingsToUI();
     QJsonObject makeJsonFromFile(const QString &jsonCredentialPath);
 
 };

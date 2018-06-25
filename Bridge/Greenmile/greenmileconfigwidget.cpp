@@ -7,9 +7,7 @@ GreenmileConfigWidget::GreenmileConfigWidget(QWidget *parent) :
 {
     ui->setupUi(this);
     connect(ui->saveSettingsButton, &QPushButton::pressed, this, &GreenmileConfigWidget::saveUItoSettings);
-
-    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    applySettingsToUI(jsonSettings_);
+    applySettingsToUI();
 }
 
 GreenmileConfigWidget::~GreenmileConfigWidget()
@@ -35,12 +33,13 @@ bool GreenmileConfigWidget::noSettingsNullOrUndefined(const QJsonObject &setting
     }
 }
 
-void GreenmileConfigWidget::applySettingsToUI(const QJsonObject &settings)
+void GreenmileConfigWidget::applySettingsToUI()
 {
-    ui->serverAddressLineEdit->setText(settings["serverAddress"].toString());
-    ui->usernameLineEdit->setText(settings["username"].toString());
-    ui->passwordLineEdit->setText(settings["password"].toString());
-    ui->requestTimeoutSpinbox->setValue(settings["requestTimeoutSec"].toInt());
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    ui->serverAddressLineEdit->setText(jsonSettings_["serverAddress"].toString());
+    ui->usernameLineEdit->setText(jsonSettings_["username"].toString());
+    ui->passwordLineEdit->setText(jsonSettings_["password"].toString());
+    ui->requestTimeoutSpinbox->setValue(jsonSettings_["requestTimeoutSec"].toInt());
 }
 
 void GreenmileConfigWidget::saveUItoSettings()

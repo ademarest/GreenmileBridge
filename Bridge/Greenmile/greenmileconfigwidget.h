@@ -35,7 +35,7 @@ private:
                                {"requestTimeoutSec",    QJsonValue(40)}};
 
     bool noSettingsNullOrUndefined(const QJsonObject &settings);
-    void applySettingsToUI(const QJsonObject &settings);
+    void applySettingsToUI();
 };
 
 #endif // GREENMILECONFIGWIDGET_H
