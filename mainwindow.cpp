@@ -9,6 +9,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->greenmileConfigGrid->addWidget(gmConfig_);
     ui->bridgeProgressGridLayout->addWidget(bridgeProgress_);
     ui->mrsConfigGrid->addWidget(mrsConfig_);
+    ui->as400ConfigGrid->addWidget(as400Config_);
 }
 
 MainWindow::~MainWindow()

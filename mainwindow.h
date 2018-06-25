@@ -5,6 +5,7 @@
 #include "Bridge/Greenmile/greenmileconfigwidget.h"
 #include "Bridge/bridgeprogresswidget.h"
 #include "Bridge/MasterRoute/masterroutesheetconfigwidget.h"
+#include "Bridge/AS400/as400inputwidget.h"
 
 namespace Ui {
 class MainWindow;
@@ -23,6 +24,8 @@ private:
     GreenmileConfigWidget *gmConfig_ = new GreenmileConfigWidget(this);
     BridgeProgressWidget *bridgeProgress_ = new BridgeProgressWidget(this);
     MasterRouteSheetConfigWidget *mrsConfig_ = new MasterRouteSheetConfigWidget(this);
+    AS400InputWidget *as400Config_ = new AS400InputWidget(this);
+
 };
 
 #endif // MAINWINDOW_H

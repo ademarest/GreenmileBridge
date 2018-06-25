@@ -10,7 +10,6 @@ class Bridge : public QObject
 public:
     explicit Bridge(QObject *parent = nullptr);
     bool uploadRoutes();
-    void getRouteKeysFromGMForDate(const QDate &date);
 
 signals:
     void debugMessage(const QString &debug);
@@ -22,6 +21,7 @@ public slots:
     void startBridge();
     void stopBridge();
     void handleRouteKeysForDate(QJsonArray routeArray);
+    void handleLocationKeys(QJsonArray locationArray);
 
 private:
     GMConnection *gmConn = new GMConnection();

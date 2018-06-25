@@ -13,29 +13,126 @@ GMConnection::GMConnection(const QString &serverAddress, const QString &username
     settings_->saveSettings(QFile(dbPath_), jsonSettings_);
 }
 
-void GMConnection::getRouteKeysForDate(const QDate &date)
+void GMConnection::requestRouteKeysForDate(const QDate &date)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-
+    QString key = "routeKey";
     QString serverAddrTail =    "/Route/restrictions?criteria"
                                 "={\"filters\":[\"id\","
                                 " \"key\"]}";
 
     QByteArray postData = QString("{\"attr\":\"date\", \"eq\":\"" + date.toString(Qt::ISODate) + "\"}").toLocal8Bit();
-    QNetworkRequest request = makeGMNetworkRequest(serverAddrTail);
 
-    QNetworkReply *networkReply = qnam_->post(request, postData);
-    connect(networkReply, &QNetworkReply::downloadProgress, this, &GMConnection::downloadProgess);
-    connect(qnam_, &QNetworkAccessManager::finished, this, &GMConnection::handleRouteKeyForDateReply);
+    makeGMPostRequest(key, serverAddrTail, postData);
 }
 
-void GMConnection::handleRouteKeyForDateReply(QNetworkReply *reply)
+void GMConnection::requestLocationKeys()
 {
-    QJsonArray json = QJsonDocument::fromJson(reply->readAll()).array();
-    emit routeKeysForDate(json);
-    disconnect(reply, &QNetworkReply::downloadProgress, this, &GMConnection::downloadProgess);
-    disconnect(qnam_, &QNetworkAccessManager::finished, this, &GMConnection::handleRouteKeyForDateReply);
-    reply->deleteLater();
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString key = "locationKey";
+    QString serverAddrTail =    "/Location/restrictions?criteria"
+                                "={\"filters\":[\"id\","
+                                " \"key\"]}";
+
+    QByteArray postData = QString("{}").toLocal8Bit();
+
+    makeGMPostRequest(key, serverAddrTail, postData);
+}
+
+void GMConnection::makeGMPostRequest(const QString &requestKey,
+                                     const QString &serverAddrTail,
+                                     const QByteArray &postData)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+
+    if(networkRequestsInProgress_.contains(requestKey))
+    {
+        emit statusMessage("Net request "
+                           + requestKey
+                           + " already in progress."
+                             " Try again when the current request has completed.");
+        return;
+    }
+
+    QNetworkRequest request = makeGMNetworkRequest(serverAddrTail);
+
+    networkTimers_[requestKey] = new QTimer(this);
+    networkTimers_[requestKey]->setObjectName(requestKey);
+
+    networkManagers_[requestKey] = new QNetworkAccessManager(this);
+    networkManagers_[requestKey]->setObjectName(requestKey);
+
+    networkReplies_[requestKey] = networkManagers_[requestKey]->post(request,postData);
+    networkReplies_[requestKey]->setObjectName(requestKey);
+
+    connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::downloadProgess);
+    connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::startNetworkTimer);
+    connect(networkManagers_[requestKey],   &QNetworkAccessManager::finished,   this, &GMConnection::handleNetworkReply);
+    connect(networkTimers_  [requestKey],   &QTimer::timeout,                   this, &GMConnection::requestTimedOut);
+
+    networkRequestsInProgress_.insert(requestKey);
+
+    networkTimers_[requestKey]->stop();
+    networkTimers_[requestKey]->start(jsonSettings_["requestTimeoutSec"].toInt() * 1000);
+}
+
+void GMConnection::handleNetworkReply(QNetworkReply *reply)
+{
+    QString key = reply->objectName();
+
+    if(reply->isOpen())
+    {
+        QJsonArray json = QJsonDocument::fromJson(reply->readAll()).array();
+
+        if(key == "routeKey")
+            emit routeKeysForDate(json);
+        if(key == "locationKey")
+            emit locationKeys(json);
+    }
+
+    networkRequestsInProgress_.remove(key);
+    networkTimers_[key]->stop();
+    networkTimers_[key]->deleteLater();
+    networkManagers_[key]->deleteLater();
+    networkReplies_[key]->deleteLater();
+}
+
+void GMConnection::startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal)
+{
+    //bytesTotal == 0 means the request was aborted.
+
+    bool goodToCast = false;
+    QString senderName = sender()->objectName();
+    QObject *obj = sender();
+    QTimer* timer;
+
+    if(obj == networkTimers_[senderName])
+        goodToCast = true;
+
+    if(goodToCast)
+        timer = qobject_cast<QTimer*>(sender());
+    else
+        return;
+
+    if(bytesTotal == 0)
+    {
+        qDebug() << "No bytes";
+        timer->stop();
+        return;
+    }
+
+    timer->stop();
+    timer->start(jsonSettings_["requestTimeoutSec"].toInt() * 1000);
+}
+
+void GMConnection::requestTimedOut()
+{
+    QString key = sender()->objectName();
+    emit statusMessage("Network request for " + key + " has timed out.");
+    emit statusMessage("Aborting network call for " + key + ".");
+
+    //Calling abort also emits finished.
+    networkReplies_[key]->abort();
 }
 
 QNetworkRequest GMConnection::makeGMNetworkRequest(const QString &serverAddrTail)

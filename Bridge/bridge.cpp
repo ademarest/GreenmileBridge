@@ -2,12 +2,16 @@
 
 Bridge::Bridge(QObject *parent) : QObject(parent)
 {
-
+    connect(gmConn, &GMConnection::downloadProgess, this, &Bridge::downloadProgess);
+    connect(gmConn, &GMConnection::routeKeysForDate, this, &Bridge::handleRouteKeysForDate);
+    connect(gmConn, &GMConnection::locationKeys, this, &Bridge::handleLocationKeys);
+    connect(gmConn, &GMConnection::statusMessage, this, &Bridge::statusMessage);
 }
 
 void Bridge::startBridge()
 {
-    getRouteKeysFromGMForDate(QDate::currentDate());
+    gmConn->requestRouteKeysForDate(QDate::currentDate());
+    gmConn->requestLocationKeys();
 }
 
 void Bridge::stopBridge()
@@ -20,23 +24,21 @@ bool Bridge::uploadRoutes()
     return false;
 }
 
-void Bridge::getRouteKeysFromGMForDate(const QDate &date)
-{
-    connect(gmConn, &GMConnection::downloadProgess, this, &Bridge::downloadProgess);
-    connect(gmConn, &GMConnection::routeKeysForDate, this, &Bridge::handleRouteKeysForDate);
-    gmConn->getRouteKeysForDate(date);
-}
-
 
 void Bridge::handleRouteKeysForDate(QJsonArray routeArray)
 {
-    disconnect(gmConn, &GMConnection::downloadProgess, this, &Bridge::downloadProgess);
-    disconnect(gmConn, &GMConnection::routeKeysForDate, this, &Bridge::handleRouteKeysForDate);
     emit statusMessage("Today's route list recieved from Greenmile. There are "
                        + QString::number(routeArray.size())
                        + " routes uploaded for "
                        + QDate::currentDate().toString(Qt::ISODate)
                        + ".");
+}
+
+void Bridge::handleLocationKeys(QJsonArray locationArray)
+{
+    emit statusMessage("Locations retrieved from Greenmile. There are "
+                       + QString::number(locationArray.size())
+                       + " locations.");
 }
 
 void Bridge::bridgeLoop()

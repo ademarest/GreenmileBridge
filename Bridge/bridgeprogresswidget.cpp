@@ -19,11 +19,19 @@ BridgeProgressWidget::~BridgeProgressWidget()
 void BridgeProgressWidget::writeMessageTextWidget(const QString &message)
 {
     QString contents = ui->operationHistoryTextBrowser->toPlainText();
-    contents.append(QString(QDateTime::currentDateTime().toString(Qt::ISODate) + "  " + message + "\n\n"));
+    contents.prepend(QString(QDateTime::currentDateTime().toString(Qt::ISODate) + "  " + message + "\n\n"));
     ui->operationHistoryTextBrowser->setText(contents);
 }
 
 void BridgeProgressWidget::updateProgressBarStatus(qint64 bytesReceived, qint64 bytesTotal)
 {
-    ui->currentOperationProgressBar->setValue(double((bytesReceived/bytesTotal)*100));
+    if(bytesTotal <= 0)
+        bytesTotal = 1;
+
+    double netStatus = (bytesReceived/bytesTotal)*100;
+
+    if(netStatus < 0)
+        netStatus = 0;
+
+    ui->currentOperationProgressBar->setValue(netStatus);
 }

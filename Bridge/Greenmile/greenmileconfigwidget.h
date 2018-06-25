@@ -29,9 +29,10 @@ private:
     Ui::GreenmileConfigWidget *ui;
     QString dbPath_                 = qApp->applicationDirPath() + "/gmconnection.db";
     JsonSettings *settings_         = new JsonSettings(this);
-    QJsonObject jsonSettings_ {{"serverAddress", QJsonValue("https://charliesproduce.greenmile.com")},
-                               {"username",      QJsonValue("username")},
-                               {"password",      QJsonValue("password")}};
+    QJsonObject jsonSettings_ {{"serverAddress",        QJsonValue("https://charliesproduce.greenmile.com")},
+                               {"username",             QJsonValue("username")},
+                               {"password",             QJsonValue("password")},
+                               {"requestTimeoutSec",    QJsonValue(40)}};
 
     bool noSettingsNullOrUndefined(const QJsonObject &settings);
     void applySettingsToUI(const QJsonObject &settings);

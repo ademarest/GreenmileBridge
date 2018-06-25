@@ -32,7 +32,8 @@ SOURCES += \
     Bridge/Greenmile/greenmileconfigwidget.cpp \
     Bridge/bridgeprogresswidget.cpp \
     Bridge/MasterRoute/masterroutesheetconfigwidget.cpp \
-    Bridge/MasterRoute/mrsconnection.cpp
+    Bridge/MasterRoute/mrsconnection.cpp \
+    Bridge/AS400/as400inputwidget.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -42,10 +43,12 @@ HEADERS += \
     Bridge/Greenmile/greenmileconfigwidget.h \
     Bridge/bridgeprogresswidget.h \
     Bridge/MasterRoute/masterroutesheetconfigwidget.h \
-    Bridge/MasterRoute/mrsconnection.h
+    Bridge/MasterRoute/mrsconnection.h \
+    Bridge/AS400/as400inputwidget.h
 
 FORMS += \
         mainwindow.ui \
     Bridge/Greenmile/greenmileconfigwidget.ui \
     Bridge/bridgeprogresswidget.ui \
-    Bridge/MasterRoute/masterroutesheetconfigwidget.ui
+    Bridge/MasterRoute/masterroutesheetconfigwidget.ui \
+    Bridge/AS400/as400inputwidget.ui
