@@ -31,8 +31,8 @@ void MRSConnection::handleNetworkReply(QNetworkReply *reply)
         }
         else
         {
-            emit statusMessage("Google sheets retrieved, there's "
-                               + QString::number(json["values"].toArray().size()) + " rows in the sheet.");
+            emit statusMessage("Google sheets retrieved, there's " + QString::number(json["values"].toArray().size()) + " rows in the sheet.");
+            emit routeSheetData(json);
         }
     }
     networkOAuth2Flows_[key]->deleteLater();
@@ -41,8 +41,8 @@ void MRSConnection::handleNetworkReply(QNetworkReply *reply)
     networkTimers_[key]->deleteLater();
     networkReplies_[key]->deleteLater();
 
-    networkRequestsInProgress_.remove(key);
     networkRequestInfo_.remove(key);
+    networkRequestsInProgress_.remove(key);
 }
 
 void MRSConnection::oauth2RequestTimedOut()

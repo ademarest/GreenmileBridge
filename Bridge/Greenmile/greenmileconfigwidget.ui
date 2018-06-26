@@ -36,7 +36,7 @@
      <item row="9" column="0">
       <widget class="QPushButton" name="saveSettingsButton">
        <property name="text">
-        <string>Save</string>
+        <string>Save Settins</string>
        </property>
       </widget>
      </item>

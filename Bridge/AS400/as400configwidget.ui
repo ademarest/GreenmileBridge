@@ -89,7 +89,7 @@
    <item row="9" column="0">
     <widget class="QPushButton" name="commitSettings">
      <property name="text">
-      <string>Commit Settings</string>
+      <string>Save Settings</string>
      </property>
     </widget>
    </item>

@@ -20,6 +20,7 @@ signals:
     void statusMessage(const QString &status);
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
     void oauth2AlreadyGranted();
+    void routeSheetData(const QJsonObject &data);
 
 public slots:
 
