@@ -43,6 +43,7 @@ void MasterRouteSheetConfigWidget::saveUItoSettings()
     jsonSettings_["api_scope"] = QJsonValue(ui->googleSheetsScopeLineEdit->text());
     jsonSettings_["project_id"] = QJsonValue(ui->projectIDLineEdit->text());
     jsonSettings_["auth_provider_x509_cert_url"] = QJsonValue(ui->x509LineEdit->text());
+    jsonSettings_["request_timeout"] = QJsonValue(ui->requestTimeoutSpinBox->value());
 
     for(int i = 0; i < ui->redirectURIListWidget->count(); ++i)
         redirectURIs.append(ui->redirectURIListWidget->item(i)->text());
@@ -112,6 +113,7 @@ void MasterRouteSheetConfigWidget::applySettingsToUI()
     ui->projectIDLineEdit->setText(jsonSettings_["project_id"].toString());
     ui->authURILineEdit->setText(jsonSettings_["auth_uri"].toString());
     ui->x509LineEdit->setText(jsonSettings_["auth_provider_x509_cert_url"].toString());
+    ui->requestTimeoutSpinBox->setValue(jsonSettings_["request_timeout"].toInt());
 
     ui->redirectURIListWidget->clear();
     for(auto json:jsonSettings_["redirect_uris"].toArray())

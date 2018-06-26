@@ -6,12 +6,14 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
     connect(gmConn, &GMConnection::routeKeysForDate, this, &Bridge::handleRouteKeysForDate);
     connect(gmConn, &GMConnection::locationKeys, this, &Bridge::handleLocationKeys);
     connect(gmConn, &GMConnection::statusMessage, this, &Bridge::statusMessage);
+    connect(mrsConn, &MRSConnection::statusMessage, this, &Bridge::statusMessage);
 }
 
 void Bridge::startBridge()
 {
     gmConn->requestRouteKeysForDate(QDate::currentDate());
     gmConn->requestLocationKeys();
+    mrsConn->requestRouteKeysForDate(QDate::currentDate());
 }
 
 void Bridge::stopBridge()

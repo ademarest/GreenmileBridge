@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include "Greenmile/gmconnection.h"
+#include "MasterRoute/mrsconnection.h"
 
 class Bridge : public QObject
 {
@@ -24,7 +25,8 @@ public slots:
     void handleLocationKeys(QJsonArray locationArray);
 
 private:
-    GMConnection *gmConn = new GMConnection();
+    GMConnection *gmConn = new GMConnection(this);
+    MRSConnection *mrsConn = new MRSConnection(this);
     bool bridgeRunStatus_ = false;
     void bridgeLoop();
 };
