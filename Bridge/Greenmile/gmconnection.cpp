@@ -84,10 +84,19 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
     {
         QJsonArray json = QJsonDocument::fromJson(reply->readAll()).array();
 
-        if(key == "routeKey")
-            emit routeKeysForDate(json);
-        if(key == "locationKey")
-            emit locationKeys(json);
+        if(json.isEmpty())
+        {
+            emit statusMessage("Empty result set for " + key + ". Check network connections.");
+            emit statusMessage(reply->errorString());
+
+        }
+        else
+        {
+            if(key == "routeKey")
+                emit routeKeysForDate(json);
+            if(key == "locationKey")
+                emit locationKeys(json);
+        }
     }
 
     networkRequestsInProgress_.remove(key);
@@ -116,7 +125,7 @@ void GMConnection::startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal)
 
     if(bytesTotal == 0)
     {
-        qDebug() << "No bytes";
+        emit statusMessage("OAuth2 authentication request was null or stopped for " + senderName);
         timer->stop();
         return;
     }

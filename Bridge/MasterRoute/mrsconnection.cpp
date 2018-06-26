@@ -9,8 +9,11 @@ void MRSConnection::requestRouteKeysForDate(const QDate &date)
 {
     QString key = "routeKeys";
     QUrl address = jsonSettings_["base_url"].toString() + date.toString("dddd");
+    networkRequestInfo_[key]["address"] = address;
+    networkRequestInfo_[key]["request_type"] = "get";
+
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    oauth2GetRequest(key, address);
+    startOAuth2Request(key);
 }
 
 void MRSConnection::handleNetworkReply(QNetworkReply *reply)
@@ -19,50 +22,69 @@ void MRSConnection::handleNetworkReply(QNetworkReply *reply)
 
     if(reply->isOpen())
     {
-        qDebug() << reply->readAll();
-//        QJsonArray json = QJsonDocument::fromJson(reply->readAll()).array();
+        QJsonObject json = QJsonDocument::fromJson(reply->readAll()).object();
 
-//        if(key == "routeKey")
-//            emit routeKeysForDate(json);
-//        if(key == "locationKey")
-//            emit locationKeys(json);
+        if(json.isEmpty())
+        {
+            emit statusMessage("Empty result set for " + key + ". Check network connections.");
+            emit statusMessage(reply->errorString());
+        }
+        else
+        {
+            emit statusMessage("Google sheets retrieved, there's "
+                               + QString::number(json["values"].toArray().size()) + " rows in the sheet.");
+        }
     }
-
-    qDebug() << "ping";
-    networkRequestsInProgress_.remove(key);
-    networkTimers_[key]->stop();
+    networkOAuth2Flows_[key]->deleteLater();
+    networkOAuth2ReplyHandlers_[key]->deleteLater();
+    networkOAuth2Timers_[key]->deleteLater();
     networkTimers_[key]->deleteLater();
     networkReplies_[key]->deleteLater();
-    networkOAuth2ReplyHandlers_[key]->deleteLater();
+
+    networkRequestsInProgress_.remove(key);
+    networkRequestInfo_.remove(key);
+}
+
+void MRSConnection::oauth2RequestTimedOut()
+{
+    QString key = sender()->objectName();
+    emit statusMessage("OAuth2 authentication request for " + key + " has timed out.");
+
     networkOAuth2Flows_[key]->deleteLater();
+    networkOAuth2ReplyHandlers_[key]->deleteLater();
+    networkOAuth2Timers_[key]->deleteLater();
+    networkTimers_[key]->deleteLater();
+
+    networkRequestInfo_.remove(key);
+    networkRequestsInProgress_.remove(key);
 }
 
 void MRSConnection::startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal)
 {
     //bytesTotal == 0 means the request was aborted.
+    //Handle compiler warning;
+    qint64 br = bytesReceived;
+    br += br;
 
-    bool goodToCast = false;
-    QString senderName = sender()->objectName();
-    QObject *obj = sender();
-    QTimer* timer;
-
-    if(obj == networkTimers_[senderName])
-        goodToCast = true;
-
-    if(goodToCast)
-        timer = qobject_cast<QTimer*>(sender());
-    else
-        return;
+    QString key = sender()->objectName();
+    QTimer* timer = networkTimers_[key];
 
     if(bytesTotal == 0)
     {
-        qDebug() << "No bytes";
         timer->stop();
         return;
     }
 
     timer->stop();
     timer->start(jsonSettings_["request_timeout"].toInt() * 1000);
+}
+
+void MRSConnection::startOAuth2GrantTimer(const QString &key)
+{
+    //bytesTotal == 0 means the request was aborted.
+    QTimer* timer = networkOAuth2Timers_[key];
+    timer->stop();
+    timer->start(jsonSettings_["oauth2_user_timeout"].toInt() * 1000);
 }
 
 void MRSConnection::requestTimedOut()
@@ -77,13 +99,19 @@ void MRSConnection::requestTimedOut()
 
 void MRSConnection::buildOAuth2(const QString &key)
 {
-    networkOAuth2Flows_[key] = new QOAuth2AuthorizationCodeFlow(this);
-    networkOAuth2Flows_[key]->setObjectName(key);
-    connect(networkOAuth2Flows_[key], &QOAuth2AuthorizationCodeFlow::granted,this, &MRSConnection::saveOAuth2TokensToDB);
-    connect(networkOAuth2Flows_[key], &QOAuth2AuthorizationCodeFlow::authorizeWithBrowser,&QDesktopServices::openUrl);
+    networkOAuth2Timers_[key] = new QTimer(this);
+    networkOAuth2Timers_[key]->setObjectName(key);
+    connect(networkOAuth2Timers_[key], &QTimer::timeout, this, &MRSConnection::oauth2RequestTimedOut);
 
     networkTimers_[key] = new QTimer(this);
     networkTimers_[key]->setObjectName(key);
+    connect(networkTimers_[key], &QTimer::timeout, this, &MRSConnection::requestTimedOut);
+
+    networkOAuth2Flows_[key] = new QOAuth2AuthorizationCodeFlow(this);
+    networkOAuth2Flows_[key]->setObjectName(key);
+    connect(networkOAuth2Flows_[key], &QOAuth2AuthorizationCodeFlow::granted, this, &MRSConnection::sendNetworkRequest);
+    connect(networkOAuth2Flows_[key], &QOAuth2AuthorizationCodeFlow::finished, this, &MRSConnection::handleNetworkReply);
+    connect(networkOAuth2Flows_[key], &QOAuth2AuthorizationCodeFlow::authorizeWithBrowser,&QDesktopServices::openUrl);
 
     networkOAuth2Flows_[key]->setScope(jsonSettings_["api_scope"].toString());
 
@@ -122,23 +150,26 @@ void MRSConnection::buildOAuth2(const QString &key)
 
     if(jsonSettings_["refresh_token"].toString().isEmpty())
     {
-        waitingOnOAuth2Grant_ = true;
         networkOAuth2Flows_[key]->grant();
+        startOAuth2GrantTimer(key);
     }
     else if(QDateTime::fromString(jsonSettings_["expiration_at"].toString(), Qt::ISODateWithMs) < QDateTime::currentDateTime())
     {
         networkOAuth2Flows_[key]->setRefreshToken(jsonSettings_["refresh_token"].toString());
         networkOAuth2Flows_[key]->setToken(jsonSettings_["token"].toString());
+        //When refreshAccessToken completed, emits granted.
         networkOAuth2Flows_[key]->refreshAccessToken();
+        startOAuth2GrantTimer(key);
     }
     else
     {
         networkOAuth2Flows_[key]->setRefreshToken(jsonSettings_["refresh_token"].toString());
         networkOAuth2Flows_[key]->setToken(jsonSettings_["token"].toString());
+        emit networkOAuth2Flows_[key]->granted();
     }
 }
 
-void MRSConnection::oauth2GetRequest(const QString &key, const QUrl &address)
+void MRSConnection::startOAuth2Request(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 
@@ -150,27 +181,12 @@ void MRSConnection::oauth2GetRequest(const QString &key, const QUrl &address)
                              " Try again when the current request has completed.");
         return;
     }
-
+    networkRequestsInProgress_.insert(key);
     buildOAuth2(key);
-
-    while(waitingOnOAuth2Grant_)
-        qApp->processEvents();
-
-    networkReplies_[key] = networkOAuth2Flows_[key]->get(address);
-    networkReplies_[key]->setObjectName(key);
-
-    connect(networkReplies_ [key],   &QNetworkReply::downloadProgress,          this, &MRSConnection::downloadProgess);
-    connect(networkReplies_ [key],   &QNetworkReply::downloadProgress,          this, &MRSConnection::startNetworkTimer);
-    connect(networkOAuth2Flows_[key],&QOAuth2AuthorizationCodeFlow::finished,   this, &MRSConnection::handleNetworkReply);
-    connect(networkTimers_  [key],   &QTimer::timeout,                          this, &MRSConnection::requestTimedOut);
-
-    networkTimers_[key]->stop();
-    networkTimers_[key]->start(jsonSettings_["request_timeout"].toInt() * 1000);
 }
 
-void MRSConnection::saveOAuth2TokensToDB()
+void MRSConnection::saveOAuth2TokensToDB(const QString &key)
 {
-    QString key = sender()->objectName();
     jsonSettings_["token"] = networkOAuth2Flows_[key]->token();
     jsonSettings_["expiration_at"] = networkOAuth2Flows_[key]->expirationAt().toString(Qt::ISODateWithMs);
 
@@ -179,7 +195,29 @@ void MRSConnection::saveOAuth2TokensToDB()
         jsonSettings_["refresh_token"] = networkOAuth2Flows_[key]->refreshToken();
         networkOAuth2Flows_[key]->setRefreshToken(jsonSettings_["refresh_token"].toString());
     }
-
     settings_->saveSettings(QFile(dbPath_), jsonSettings_);
-    waitingOnOAuth2Grant_ = false;
+}
+
+void MRSConnection::sendNetworkRequest()
+{
+    QString key         = sender()->objectName();
+    QString requestType = networkRequestInfo_[key]["request_type"].toString();
+    QUrl    address     = networkRequestInfo_[key]["address"].toUrl();
+
+    if(!networkOAuth2Flows_[key]->expirationAt().isNull())
+    {
+        saveOAuth2TokensToDB(key);
+    }
+
+    if(requestType == "get")
+    {
+        networkReplies_[key] = networkOAuth2Flows_[key]->get(address);
+        networkReplies_[key]->setObjectName(key);
+    }
+
+    connect(networkReplies_ [key],  &QNetworkReply::downloadProgress,  this, &MRSConnection::downloadProgess);
+    connect(networkReplies_ [key],  &QNetworkReply::downloadProgress,  this, &MRSConnection::startNetworkTimer);
+
+    networkTimers_[key]->stop();
+    networkTimers_[key]->start(jsonSettings_["request_timeout"].toInt() * 1000);
 }

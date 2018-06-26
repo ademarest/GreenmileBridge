@@ -38,7 +38,8 @@ private:
                                 {"api_scope", QJsonValue("https://www.googleapis.com/auth/spreadsheets.readonly")},
                                 {"base_url", QJsonValue("e.g. https://sheets.googleapis.com/v4/spreadsheets/<someString>/values/")},
                                 {"redirect_uris", QJsonArray()},
-                                {"request_timeout", QJsonValue(40)}};
+                                {"request_timeout", QJsonValue(40)},
+                                {"oauth2_user_timeout", QJsonValue(180)}};
 
     bool noSettingsNullOrUndefined(const QJsonObject &settings);
     void applySettingsToUI();

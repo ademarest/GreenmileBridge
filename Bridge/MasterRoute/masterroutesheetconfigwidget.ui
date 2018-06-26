@@ -7,90 +7,17 @@
     <x>0</x>
     <y>0</y>
     <width>609</width>
-    <height>496</height>
+    <height>544</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="8" column="0">
-    <widget class="QLabel" name="clientSecretLabel">
+   <item row="20" column="0" colspan="2">
+    <widget class="QPushButton" name="loadFromFilePushButton">
      <property name="text">
-      <string>Client Secret</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0" colspan="2">
-    <widget class="QLineEdit" name="authURILineEdit">
-     <property name="text">
-      <string>Auth URI</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0" colspan="2">
-    <widget class="QLineEdit" name="clientIDLineEdit">
-     <property name="text">
-      <string>Client ID</string>
-     </property>
-    </widget>
-   </item>
-   <item row="6" column="0">
-    <widget class="QLabel" name="projectIDLabel">
-     <property name="text">
-      <string>Project ID</string>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="0" colspan="2">
-    <widget class="QLineEdit" name="projectIDLineEdit">
-     <property name="text">
-      <string>Project ID</string>
-     </property>
-    </widget>
-   </item>
-   <item row="11" column="1">
-    <widget class="QPushButton" name="addRedirectURIPushButton">
-     <property name="text">
-      <string>Add URI</string>
-     </property>
-    </widget>
-   </item>
-   <item row="10" column="0">
-    <widget class="QLabel" name="redirectURILabel">
-     <property name="text">
-      <string>Redirect URIs</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="authURILabel">
-     <property name="text">
-      <string>Auth URI</string>
-     </property>
-    </widget>
-   </item>
-   <item row="9" column="0" colspan="2">
-    <widget class="QLineEdit" name="clientSecretLineEdit">
-     <property name="text">
-      <string>Client Secret</string>
-     </property>
-     <property name="echoMode">
-      <enum>QLineEdit::Password</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="clientIDLabel">
-     <property name="text">
-      <string>Client ID</string>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="0">
-    <widget class="QLineEdit" name="x509LineEdit">
-     <property name="text">
-      <string>x509 Provider</string>
+      <string>Load Settings From File</string>
      </property>
     </widget>
    </item>
@@ -107,10 +34,83 @@
      </property>
     </spacer>
    </item>
-   <item row="20" column="0" colspan="2">
-    <widget class="QPushButton" name="loadFromFilePushButton">
+   <item row="5" column="0">
+    <widget class="QLineEdit" name="x509LineEdit">
      <property name="text">
-      <string>Load Settings From File</string>
+      <string>x509 Provider</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="clientIDLabel">
+     <property name="text">
+      <string>Client ID</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="0" colspan="2">
+    <widget class="QLineEdit" name="clientSecretLineEdit">
+     <property name="text">
+      <string>Client Secret</string>
+     </property>
+     <property name="echoMode">
+      <enum>QLineEdit::Password</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="authURILabel">
+     <property name="text">
+      <string>Auth URI</string>
+     </property>
+    </widget>
+   </item>
+   <item row="10" column="0">
+    <widget class="QLabel" name="redirectURILabel">
+     <property name="text">
+      <string>Redirect URIs</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="1">
+    <widget class="QPushButton" name="addRedirectURIPushButton">
+     <property name="text">
+      <string>Add URI</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0" colspan="2">
+    <widget class="QLineEdit" name="projectIDLineEdit">
+     <property name="text">
+      <string>Project ID</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="projectIDLabel">
+     <property name="text">
+      <string>Project ID</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <widget class="QLineEdit" name="clientIDLineEdit">
+     <property name="text">
+      <string>Client ID</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QLineEdit" name="authURILineEdit">
+     <property name="text">
+      <string>Auth URI</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0">
+    <widget class="QLabel" name="clientSecretLabel">
+     <property name="text">
+      <string>Client Secret</string>
      </property>
     </widget>
    </item>
@@ -124,7 +124,7 @@
      </property>
     </widget>
    </item>
-   <item row="21" column="0" colspan="2">
+   <item row="23" column="0" colspan="2">
     <widget class="QPushButton" name="saveSettingsPushButton">
      <property name="text">
       <string>Save Settings</string>
@@ -186,6 +186,26 @@
      </property>
     </widget>
    </item>
+   <item row="22" column="0" colspan="2">
+    <widget class="QSpinBox" name="oauth2UserTimeoutSpinBox">
+     <property name="minimum">
+      <number>40</number>
+     </property>
+     <property name="maximum">
+      <number>9001</number>
+     </property>
+     <property name="value">
+      <number>180</number>
+     </property>
+    </widget>
+   </item>
+   <item row="21" column="0" colspan="2">
+    <widget class="QLabel" name="oauth2UserTimerout">
+     <property name="text">
+      <string>OAuth2 User Authentication Timeout (sec)</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <tabstops>
@@ -201,6 +221,7 @@
   <tabstop>googleSheetsScopeLineEdit</tabstop>
   <tabstop>requestTimeoutSpinBox</tabstop>
   <tabstop>loadFromFilePushButton</tabstop>
+  <tabstop>oauth2UserTimeoutSpinBox</tabstop>
   <tabstop>saveSettingsPushButton</tabstop>
  </tabstops>
  <resources/>
