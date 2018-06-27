@@ -33,7 +33,8 @@ SOURCES += \
     Bridge/bridgeprogresswidget.cpp \
     Bridge/MasterRoute/masterroutesheetconfigwidget.cpp \
     Bridge/MasterRoute/mrsconnection.cpp \
-    Bridge/AS400/as400configwidget.cpp
+    Bridge/AS400/as400configwidget.cpp \
+    Bridge/AS400/as400connection.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -44,7 +45,8 @@ HEADERS += \
     Bridge/bridgeprogresswidget.h \
     Bridge/MasterRoute/masterroutesheetconfigwidget.h \
     Bridge/MasterRoute/mrsconnection.h \
-    Bridge/AS400/as400configwidget.h
+    Bridge/AS400/as400configwidget.h \
+    Bridge/AS400/as400connection.h
 
 FORMS += \
         mainwindow.ui \
