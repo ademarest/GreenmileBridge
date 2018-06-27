@@ -90,8 +90,8 @@ void MRSConnection::startOAuth2GrantTimer(const QString &key)
 void MRSConnection::requestTimedOut()
 {
     QString key = sender()->objectName();
-    emit statusMessage("Network request for " + key + " has timed out.");
-    emit statusMessage("Aborting network call for " + key + ".");
+    emit statusMessage("Network request for Google Sheets " + key + " has timed out.");
+    emit statusMessage("Aborting network call for Google Sheets " + key + ".");
 
     //Calling abort also emits finished.
     networkReplies_[key]->abort();

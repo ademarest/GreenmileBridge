@@ -108,24 +108,17 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
 
 void GMConnection::startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal)
 {
+    //handle compiler warning
+    qint64 br = bytesReceived;
+    br += br;
+
+    QString key = sender()->objectName();
+    QTimer* timer = networkTimers_[key];
+
     //bytesTotal == 0 means the request was aborted.
-
-    bool goodToCast = false;
-    QString senderName = sender()->objectName();
-    QObject *obj = sender();
-    QTimer* timer;
-
-    if(obj == networkTimers_[senderName])
-        goodToCast = true;
-
-    if(goodToCast)
-        timer = qobject_cast<QTimer*>(sender());
-    else
-        return;
-
     if(bytesTotal == 0)
     {
-        emit statusMessage("OAuth2 authentication request was null or stopped for " + senderName);
+        emit statusMessage("Network request was null or stopped for Greenmile " + senderName);
         timer->stop();
         return;
     }
@@ -137,8 +130,8 @@ void GMConnection::startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal)
 void GMConnection::requestTimedOut()
 {
     QString key = sender()->objectName();
-    emit statusMessage("Network request for " + key + " has timed out.");
-    emit statusMessage("Aborting network call for " + key + ".");
+    emit statusMessage("Network request for Greenmile " + key + " has timed out.");
+    emit statusMessage("Aborting network call for Greenmile " + key + ".");
 
     //Calling abort also emits finished.
     networkReplies_[key]->abort();
