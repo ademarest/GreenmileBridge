@@ -5,7 +5,7 @@
 #include <QObject>
 #include <QtSql>
 
-enum AS400QueryType {Invoice, CustomerChain, OpenOrderHeader, OpenOrderDetail};
+enum AS400QueryType {GreenmileRouteInfo, Invoice, CustomerChain, OpenOrderHeader, OpenOrderDetail};
 
 class AS400 : public QObject
 {
@@ -32,7 +32,7 @@ public:
 
     bool getCustomerData();
 
-    bool getRouteAssignmentData();
+    bool getRouteDataForGreenmile(const QDate &date, const int chunkSize);
 
 
 signals:
@@ -42,6 +42,7 @@ signals:
     void openOrderDetailResults(bool needToTruncate, QMap<QString,QVariantList> sqlResults);
     void customerDataResults(QMap<QString,QVariantList> sqlResults);
     void routeAssignmentResults(QMap<QString,QVariantList> sqlResults);
+    void greenmileRouteInfoResults(QMap<QString,QVariantList> sqlResults);
     void debugMessage(QString dbg);
 
 private:

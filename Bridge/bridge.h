@@ -4,6 +4,7 @@
 #include <QObject>
 #include "Greenmile/gmconnection.h"
 #include "MasterRoute/mrsconnection.h"
+#include "AS400/as400connection.h"
 
 class Bridge : public QObject
 {
@@ -23,10 +24,13 @@ public slots:
     void stopBridge();
     void handleRouteKeysForDate(QJsonArray routeArray);
     void handleLocationKeys(QJsonArray locationArray);
+    void handleRouteQueryResults(QMap<QString,QVariantList> sqlResults);
 
 private:
     GMConnection *gmConn = new GMConnection(this);
     MRSConnection *mrsConn = new MRSConnection(this);
+    AS400 *as400Conn = new AS400(this);
+
     bool bridgeRunStatus_ = false;
     void bridgeLoop();
 };

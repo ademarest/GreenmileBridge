@@ -116,10 +116,55 @@ bool AS400::getCustomerData()
     return success;
 }
 
-bool AS400::getRouteAssignmentData()
+bool AS400::getRouteDataForGreenmile(const QDate &date, const int chunkSize)
 {
-    bool success = false;
-    return success;
+    QString queryString =
+              "SELECT orderHeaders.HHHRTEN AS \"route:key\", "
+              "orderHeaders.HHHDTEI AS \"route:date\", "
+              "orderHeaders.HHHCUSN AS \"location:key\", "
+              "orderHeaders.HHHCNMB AS \"location:description\", "
+              "orderHeaders.HHHCA1B AS \"location:addressLine1\", "
+              "orderHeaders.HHHCA2B AS \"location:addressLine2\", "
+              "orderHeaders.HHHCTYB AS \"location:city\", "
+              "orderHeaders.HHHSTEB AS \"location:state\", "
+              "orderHeaders.HHHZPCB AS \"location:zipCode\", "
+              "orderHeaders.HHHSTPN AS \"stop:plannedSequenceNum\", "
+              "companyInfo.L1NAME AS \"organization:key\", "
+              "sizeInfo.\"stop:pieces\" AS \"stop:pieces\", "
+              "sizeInfo.\"stop:weight\" AS \"stop:weight\", "
+              "sizeInfo.\"stop:cube\" AS \"stop:cube\", "
+              "assignmentInfo.EERDRVN AS \"driver:key\", "
+              "assignmentInfo.EERTKNB AS \"equipment:key\" "
+              "FROM PWRDTA.HHHORDHL6 AS orderHeaders "
+              "INNER JOIN PWRUSER.CMPNLIST1 AS companyInfo "
+              "ON companyInfo.L1LOC = TRIM(orderHeaders.HHHCMPN) || TRIM(orderHeaders.HHHDIVN) || TRIM(orderHeaders.HHHDPTN) "
+              "INNER JOIN(SELECT HHHCUSF AS \"as400:masterStopNumber\", SUM(HHHQYSA) AS \"stop:pieces\", SUM(HHHEXSH) AS \"stop:weight\", SUM(HHHEXCB) AS \"stop:cube\" FROM PWRDTA.HHHORDHL6 WHERE HHHDTEI = " + date.toString("yyyyMMdd") +" GROUP BY HHHCUSF) AS sizeInfo "
+              "ON sizeInfo.\"as400:masterStopNumber\" = orderHeaders.HHHCUSF "
+              "INNER JOIN PWRDTA.EERRTMAL0 AS assignmentInfo "
+              "ON assignmentInfo.EERRTEN = orderHeaders.HHHRTEN "
+              "WHERE orderHeaders.HHHDTEI = " + date.toString("yyyyMMdd") + " "
+              "AND orderHeaders.HHHCUSF = orderHeaders.HHHCUSN "
+              "AND TRIM(assignmentInfo.EERCMPN) || TRIM(assignmentInfo.EERDIVN) || TRIM(assignmentInfo.EERDPTN) = TRIM(orderHeaders.HHHCMPN) || TRIM(orderHeaders.HHHDIVN) || TRIM(orderHeaders.HHHDPTN) "
+              "AND orderHeaders.HHHCRIN<>'Y' "
+              "GROUP BY orderHeaders.HHHRTEN, "
+              "orderHeaders.HHHDTEI, "
+              "orderHeaders.HHHCUSF, "
+              "orderHeaders.HHHCUSN, "
+              "orderHeaders.HHHCNMB, "
+              "orderHeaders.HHHCA1B, "
+              "orderHeaders.HHHCA2B, "
+              "orderHeaders.HHHCTYB, "
+              "orderHeaders.HHHSTEB, "
+              "orderHeaders.HHHZPCB, "
+              "orderHeaders.HHHSTPN, "
+              "companyInfo.L1NAME, "
+              "sizeInfo.\"stop:pieces\", "
+              "sizeInfo.\"stop:weight\", "
+              "sizeInfo.\"stop:cube\", "
+              "assignmentInfo.EERDRVN, "
+              "assignmentInfo.EERTKNB";
+
+    return queryAS400(AS400QueryType::GreenmileRouteInfo, queryString, chunkSize);
 }
 
 bool AS400::queryAS400(const AS400QueryType queryType, const QString &queryString, const int chunkSize)
@@ -229,6 +274,10 @@ void AS400::dispatchSqlResults(const bool isFirstRun,
 {
     switch (queryType)
     {
+    case AS400QueryType::GreenmileRouteInfo :
+        emit greenmileRouteInfoResults(sqlResults);
+        break;
+
     case AS400QueryType::Invoice :
         emit invoiceDataResults(sqlResults);
         break;
