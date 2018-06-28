@@ -118,7 +118,7 @@ void GMConnection::startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal)
     //bytesTotal == 0 means the request was aborted.
     if(bytesTotal == 0)
     {
-        emit statusMessage("Network request was null or stopped for Greenmile " + senderName);
+        emit statusMessage("Network request was null or stopped for Greenmile " + key);
         timer->stop();
         return;
     }

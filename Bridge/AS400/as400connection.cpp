@@ -180,7 +180,7 @@ void AS400::processQuery(const AS400QueryType queryType, QSqlQuery &query,const 
         {
             if(sqlData.isEmpty())
             {
-                emit debugMessage("AS400 query returned an empty result set - not emitting to MySQL");
+                emit debugMessage("AS400 query returned an empty result set - not emitting result set.");
                 return;
             }
 
@@ -210,7 +210,7 @@ void AS400::processQuery(const AS400QueryType queryType, QSqlQuery &query,const 
 
     if(sqlData.isEmpty())
     {
-        emit debugMessage("AS400 query returned an empty result set - not emitting to MySQL");
+        emit debugMessage("AS400 query returned an empty result set - not emitting result set.");
         return;
     }
 
