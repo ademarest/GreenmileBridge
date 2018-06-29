@@ -2,6 +2,7 @@
 #define BRIDGE_H
 
 #include <QObject>
+#include <QtConcurrent/QtConcurrent>
 #include "Greenmile/gmconnection.h"
 #include "MasterRoute/mrsconnection.h"
 #include "AS400/as400connection.h"
@@ -33,6 +34,11 @@ private:
 
     bool bridgeRunStatus_ = false;
     void bridgeLoop();
+
+    void as400RouteResultToGMJson(const QMap<QString,QVariantList> &sqlResults);
+    QMap<QString,QMap<QDate,QMap<QString,QJsonObject>>> gmRoute_;
+    QMap<QString,QMap<QDate,QMap<QString,QJsonObject>>> gmDriver_;
+    QMap<QString,QMap<QDate,QMap<QString,QJsonObject>>> gmEquipment_;
 };
 
 #endif // BRIDGE_H
