@@ -37,8 +37,11 @@ private:
 
     void as400RouteResultToGMJson(const QMap<QString,QVariantList> &sqlResults);
     QMap<QString,QMap<QDate,QMap<QString,QJsonObject>>> gmRoute_;
+    QMap<QString,QMap<QDate,QMap<QString,QMap<int,QJsonObject>>>> gmStops_;
     QMap<QString,QMap<QDate,QMap<QString,QJsonObject>>> gmDriver_;
     QMap<QString,QMap<QDate,QMap<QString,QJsonObject>>> gmEquipment_;
+    QMap<QString,QMap<QString,QJsonObject>> gmLocations_;
+    QMap<QString,QMap<QString,QJsonObject>> gmLocationTimeWindowOverrides_;
 };
 
 #endif // BRIDGE_H

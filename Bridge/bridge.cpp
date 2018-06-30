@@ -62,11 +62,15 @@ void Bridge::bridgeLoop()
 
 void Bridge::as400RouteResultToGMJson(const QMap<QString, QVariantList> &sqlResults)
 {
+
+
     qDebug() << "0";
 
     QDate routeDate;
     QString routeKey;
     QString organizationKey;
+    QString locationKey;
+    int stopSequence;
 
     if(sqlResults.isEmpty())
     {
@@ -86,48 +90,107 @@ void Bridge::as400RouteResultToGMJson(const QMap<QString, QVariantList> &sqlResu
     qDebug() << "1";
     for(int i = 0; i < sqlResults.first().size(); ++i)
     {
-        QJsonObject organization;
-        QJsonObject stop;
-        QJsonObject location;
-        QJsonObject order;
-        QJsonObject driver;
-        QJsonObject equipment;
+        /*
+         * driver:key,
+         * equipment:key,
+         * location:addressLine1,
+         * location:addressLine2,
+         * location:city,
+         * location:deliveryDays,
+         * location:description,
+         * location:key,
+         * location:state,
+         * location:zipCode,
+         * locationOverrideTimeWindowsTW1:closetime,
+         * locationOverrideTimeWindowsTW1:openTime,
+         * locationOverrideTimeWindowsTW1:tw1Close,
+         * locationOverrideTimeWindowsTW1:tw1Open,
+         * locationOverrideTimeWindowsTW1:tw2Close,
+         * locationOverrideTimeWindowsTW1:tw2Open,
+         * order:cube,
+         * order:number,
+         * order:pieces,
+         * order:weight,
+         * organization:key,
+         * route:date,
+         * route:key,
+         * stop:baseLinePlannedSequence
+        */
+        qDebug() << "init";
+        organizationKey = sqlResults["organization:key"][i].toString();
+        routeKey        = sqlResults["route:key"][i].toString();
+        routeDate       = sqlResults["route:date"][i].toDate();
+        locationKey     = sqlResults["location:key"][i].toString();
+        stopSequence    = sqlResults["stop:baseLineSequenceNum"][i].toInt();
 
+        //Make Organization
+        qDebug() << "org";
+        QJsonObject organization;
         organization["key"] = QJsonValue(sqlResults["organization:key"][i].toString());
-        stop["key"]  = QJsonValue(QUuid::createUuid().toString());
-        stop["baseLineSequenceNumber"] = QJsonValue(sqlResults["stop:baseLineSequenceNumber"][i].toString());
-        location["key"] = QJsonValue(sqlResults["location:key"][i].toString());
-        location["organization"] = organization;
-        location["description"] = QJsonValue(sqlResults["location:description"][i].toString());
+
+        //Make Driver
+        qDebug() << "drv";
+        QJsonObject driver = gmDriver_[organizationKey][routeDate][routeKey];
+        driver["key"] = QJsonValue(sqlResults["driver:key"][i].toString());
+        driver["organization"] = organization;
+        gmDriver_[organizationKey][routeDate][routeKey] = driver;
+
+        //Make Equipment
+        qDebug() << "eqp";
+        QJsonObject equipment = gmEquipment_[organizationKey][routeDate][routeKey];
+        equipment["key"] = QJsonValue(sqlResults["equipment:key"][i].toString());
+        equipment["organization"] = organization;
+        gmEquipment_[organizationKey][routeDate][routeKey] = equipment;
+
+        //Make Location
+        qDebug() << "loc";
+        QJsonObject location;
         location["addressLine1"] = QJsonValue(sqlResults["location:addressLine1"][i].toString());
         location["addressLine2"] = QJsonValue(sqlResults["location:addressLine2"][i].toString());
         location["city"] = QJsonValue(sqlResults["location:city"][i].toString());
+        location["deliveryDays"] = QJsonValue(sqlResults["location:deliveryDays"][i].toString());
+        location["description"] = QJsonValue(sqlResults["location:description"][i].toString());
+        location["key"] = QJsonValue(sqlResults["location:key"][i].toString());
         location["state"] = QJsonValue(sqlResults["location:state"][i].toString());
         location["zipCode"] = QJsonValue(sqlResults["location:zipCode"][i].toString());
-        order["number"] = QJsonValue(sqlResults["order:number"][i].toInt());
-        order["baselineSize1"] = QJsonValue(sqlResults["order:pieces"][i].toInt());
-        order["baselineSize2"] = QJsonValue(sqlResults["order:weight"][i].toInt());
-        order["baselineSize3"] = QJsonValue(sqlResults["order:cube"][i].toInt());
-        driver["key"] = QJsonValue(sqlResults["driver:key"][i].toString());
-        driver["organization"] = organization;
-        equipment["key"] = QJsonValue(sqlResults["equipment:key"][i].toString());
-        equipment["organization"] = organization;
+        location["organization"] = organization;
+        gmLocations_[organizationKey][locationKey] = location;
 
-        routeDate   = sqlResults["route:date"][i].toDate();
-        routeKey    = sqlResults["route:key"][i].toString();
-        organizationKey = sqlResults["organization:key"][i].toString();
-
-        gmRoute_[organizationKey][routeDate][routeKey]["date"] = QJsonValue(routeDate.toString(Qt::ISODate));
-        gmRoute_[organizationKey][routeDate][routeKey]["key"]  = QJsonValue(routeKey);
-        gmRoute_[organizationKey][routeDate][routeKey]["organization"]  = organization;
-
+        //Make Stop
+        qDebug() << "stop";
+        QJsonObject stop = gmStops_[organizationKey][routeDate][routeKey][stopSequence];
+        stop["key"]  = QJsonValue(QUuid::createUuid().toString());
+        stop["baseLineSequenceNum"] = QJsonValue(sqlResults["stop:baseLineSequenceNum"][i].toInt());
         stop["location"] = location;
-        stop["orders"] = QJsonArray{order};
-        QJsonArray stopArray = gmRoute_[organizationKey][routeDate][routeKey]["stops"].toArray();
-        stopArray.append(stop);
-        gmRoute_[organizationKey][routeDate][routeKey]["stops"] = QJsonValue(stopArray);
-        gmDriver_[organizationKey][routeDate][routeKey] = driver;
-        gmEquipment_[organizationKey][routeDate][routeKey] = equipment;
+        QJsonArray stopOrders = stop["orders"].toArray();
+
+        //Make Order
+        qDebug() << "order";
+        QJsonObject order;
+        order["number"]        = QJsonValue(sqlResults["order:number"][i].toString());
+        order["baselineSize1"] = QJsonValue(sqlResults["order:pieces"][i].toDouble());
+        order["baselineSize2"] = QJsonValue(sqlResults["order:cube"][i].toDouble());
+        order["baselineSize3"] = QJsonValue(sqlResults["order:weight"][i].toDouble());
+        stopOrders.append(order);
+        stop["orders"] = stopOrders;
+        gmStops_[organizationKey][routeDate][routeKey][stopSequence] = stop;
+
+        //Make twOveride
+        qDebug() << "two";
+        QJsonObject locationTimeWindowOverride;
+
+        //Make Route
+        qDebug() << "route";
+        QJsonObject route;
+        route = gmRoute_[organizationKey][routeDate][routeKey];
+        route["date"] = QJsonValue(routeDate.toString(Qt::ISODate));
+        route["key"]  = QJsonValue(routeKey);
+        route["organization"]  = organization;
+        QJsonArray stops;
+        for(auto stop:gmStops_[organizationKey][routeDate][routeKey])
+            stops.append(stop);
+        route["stops"] = stops;
+        gmRoute_[organizationKey][routeDate][routeKey] = route;
         qDebug() << "dingo";
         qDebug() << QJsonDocument(gmRoute_[organizationKey][routeDate][routeKey]).toJson();
     }
