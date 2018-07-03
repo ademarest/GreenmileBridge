@@ -39,6 +39,34 @@ void GMConnection::requestLocationKeys()
     makeGMPostRequest(key, serverAddrTail, postData);
 }
 
+void GMConnection::requestAllOrganizationInfo()
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString key = "allOrganizationInfo";
+    QString serverAddrTail =    "/Organization/restrictions?criteria"
+                                "={\"filters\":[\"*\"]}";
+
+    QByteArray postData = QString("{}").toLocal8Bit();
+
+    makeGMPostRequest(key, serverAddrTail, postData);
+}
+
+void GMConnection::requestRouteComparisonInfo(const QDate &date)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString key = "routeComparisonInfo";
+    QString serverAddrTail = "/Route/restrictions?criteria={\"filters\":[\"id\","
+                             " \"key\",\"organization.key\","
+                             " \"equipmentAssignments.equipment.*\","
+                             " \"driverAssignments.driver.*\","
+                             " \"stops.location.*\","
+                             " \"stops.location.locationOverrideTimeWindows.*\"]}";
+
+    QByteArray postData = QString("{\"attr\":\"date\", \"eq\":\"" + date.toString(Qt::ISODate) + "\"}").toLocal8Bit();
+
+    makeGMPostRequest(key, serverAddrTail, postData);
+}
+
 void GMConnection::makeGMPostRequest(const QString &requestKey,
                                      const QString &serverAddrTail,
                                      const QByteArray &postData)
@@ -96,6 +124,10 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
                 emit routeKeysForDate(json);
             if(key == "locationKey")
                 emit locationKeys(json);
+            if(key == "allOrganizationInfo")
+                emit allOrganizationInfo(json);
+            if(key == "routeComparisonInfo")
+                emit routeComparisonInfo(json);
         }
     }
 
@@ -118,7 +150,7 @@ void GMConnection::startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal)
     //bytesTotal == 0 means the request was aborted.
     if(bytesTotal == 0)
     {
-        emit statusMessage("Network request was null or stopped for Greenmile " + key);
+        emit statusMessage("Greenmile network request was null or stopped for " + key);
         timer->stop();
         return;
     }

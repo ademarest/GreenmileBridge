@@ -141,7 +141,7 @@ bool AS400::getRouteDataForGreenmile(const QDate &date, const int chunkSize)
               "CASE WHEN customerWindows.JJCTSR2 = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCTSR2),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindowsTW1:tw2Open\", "
               "CASE WHEN customerWindows.JJCTSP2 = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCTSP2),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindowsTW1:tw2Close\", "
               "CASE WHEN customerWindows.JJCOPEN = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCOPEN),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindowsTW1:openTime\", "
-              "CASE WHEN customerWindows.JJCCLOS = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCCLOS),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindowsTW1:closetime\", "
+              "CASE WHEN customerWindows.JJCCLOS = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCCLOS),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindowsTW1:closeTime\", "
               "TRIM(LEADING ',' FROM deliveryDays.\"location:deliveryDays\") AS \"location:deliveryDays\" "
               "FROM PWRDTA.HHHORDHL6 AS orderInfo "
               "INNER JOIN PWRUSER.CMPNLIST1 AS companyInfo "

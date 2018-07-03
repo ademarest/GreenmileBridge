@@ -9,6 +9,7 @@ BridgeProgressWidget::BridgeProgressWidget(QWidget *parent) :
     connect(ui->bridgeButton, &QPushButton::pressed, bridge_, &Bridge::startBridge);
     connect(bridge_, &Bridge::statusMessage, this, &BridgeProgressWidget::writeMessageTextWidget);
     connect(bridge_, &Bridge::downloadProgess, this, &BridgeProgressWidget::updateProgressBarStatus);
+    connect(bridge_, &Bridge::errorMessage, this, &BridgeProgressWidget::writeMessageTextWidget);
 }
 
 BridgeProgressWidget::~BridgeProgressWidget()

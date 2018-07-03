@@ -24,6 +24,8 @@ public:
 
     void requestRouteKeysForDate(const QDate &date);
     void requestLocationKeys();
+    void requestAllOrganizationInfo();
+    void requestRouteComparisonInfo(const QDate &date);
 
 signals:
     void debugMessage(const QString &debug);
@@ -32,7 +34,9 @@ signals:
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
 
     void routeKeysForDate(QJsonArray array);
+    void routeComparisonInfo(QJsonArray array);
     void locationKeys(QJsonArray array);
+    void allOrganizationInfo(QJsonArray array);
 
 public slots:
 
