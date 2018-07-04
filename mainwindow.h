@@ -6,6 +6,7 @@
 #include "Bridge/bridgeprogresswidget.h"
 #include "Bridge/MasterRoute/masterroutesheetconfigwidget.h"
 #include "Bridge/AS400/as400configwidget.h"
+#include "Bridge/MasterRouteData/masterroutesheetdataconfigwidget.h"
 
 namespace Ui {
 class MainWindow;
@@ -25,6 +26,7 @@ private:
     BridgeProgressWidget            *bridgeProgress_    = new BridgeProgressWidget(this);
     MasterRouteSheetConfigWidget    *mrsConfig_         = new MasterRouteSheetConfigWidget(this);
     AS400ConfigWidget               *as400Config_       = new AS400ConfigWidget(this);
+    MasterRouteSheetDataConfigWidget *mrsDataConfig_    = new MasterRouteSheetDataConfigWidget(this);
 };
 
 #endif // MAINWINDOW_H

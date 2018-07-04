@@ -6,6 +6,7 @@
 #include "Greenmile/gmconnection.h"
 #include "MasterRoute/mrsconnection.h"
 #include "AS400/as400connection.h"
+#include "MasterRouteData/mrsdataconnection.h"
 
 class Bridge : public QObject
 {
@@ -29,15 +30,20 @@ public slots:
     void handleLocationKeys(QJsonArray locationArray);
     void handleRouteQueryResults(QMap<QString,QVariantList> sqlResults);
     void handleAllGreenmileOrgInfoResults(QJsonArray organizationInfo);
+    void handleMasterRouteDataResults(const QString &key, const QJsonObject &sheetData);
 
 private:
     GMConnection *gmConn = new GMConnection(this);
     MRSConnection *mrsConn = new MRSConnection(this);
     AS400 *as400Conn = new AS400(this);
+    MRSDataConnection *mrsDataConn = new MRSDataConnection(this);
 
     bool gmOrganizationInfoDone_    = true;
     bool gmRouteComparisonInfoDone_ = true;
     bool as400RouteQueryDone_       = true;
+    bool mrsRouteDataDone_          = true;
+    bool mrsDataEquipmentDone_      = true;
+    bool mrsDataDriverDone_         = true;
 
     bool bridgeRunStatus_ = false;
     void bridgeLoop();
@@ -61,7 +67,17 @@ private:
     QMap<QString,QMap<QDate,QMap<QString,QMap<QString,QJsonObject>>>> gmRouteLocations_;
     QMap<QString,QMap<QDate,QMap<QString,QMap<QString,QJsonObject>>>> gmRouteLocationTimeWindowOverrides_;
 
-    void mrsKeysFromData(const QJsonObject &sheetData);
+    void seattleMRSDailyScheduleToCommonForm(const QJsonObject &sheetData);
+    QMap<QString, QJsonObject> mrsOrganizations_;
+    QMap<QString,QMap<QDate,QMap<QString,QJsonObject>>> mrsRoute_;
+    QMap<QString,QMap<QDate,QMap<QString,QJsonArray>>> mrsDriver_;
+    QMap<QString,QMap<QDate,QMap<QString,QJsonArray>>>  mrsEquipment_;
+
+    void mrsDataDriverToCommonForm(const QJsonObject &sheetData);
+    QMap<QString, QJsonObject> mrsDataDrivers_;
+
+    void mrsDataEquipmentToCommonForm(const QJsonObject &sheetData);
+    QMap<QString, QJsonObject> mrsDataEquipment_;
 
     void makeRoutesToUpload();
 

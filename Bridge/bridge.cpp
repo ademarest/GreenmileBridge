@@ -12,19 +12,23 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
     connect(as400Conn, &AS400::debugMessage, this, &Bridge::statusMessage);
     connect(gmConn, &GMConnection::allOrganizationInfo, this, &Bridge::handleAllGreenmileOrgInfoResults);
     connect(gmConn, &GMConnection::routeComparisonInfo, this, &Bridge::handleRouteComparisonInfo);
+    connect(mrsDataConn, &MRSDataConnection::data, this, &Bridge::handleMasterRouteDataResults);
 }
 
 void Bridge::startBridge()
 {
     //gmConn->requestRouteKeysForDate(QDate::currentDate());
     //gmConn->requestLocationKeys();
-
-    mrsConn->requestRouteKeysForDate(QDate::currentDate());
     gmOrganizationInfoDone_ = false;
     gmRouteComparisonInfoDone_ = false;
     as400RouteQueryDone_ = false;
+
     gmConn->requestAllOrganizationInfo();
     gmConn->requestRouteComparisonInfo(QDate::currentDate());
+    mrsConn->requestRouteKeysForDate(QDate::currentDate());
+    mrsDataConn->requestValuesFromAGoogleSheet("powerUnit", "powerUnit");
+    mrsDataConn->requestValuesFromAGoogleSheet("driver", "driver");
+
     as400Conn->getRouteDataForGreenmile(QDate::currentDate(), 10000);
 }
 
@@ -36,7 +40,7 @@ void Bridge::stopBridge()
 void Bridge::handleMasterRouteSheetData(QJsonObject sheetData)
 {
     //qDebug() << sheetData;
-    mrsKeysFromData(sheetData);
+    seattleMRSDailyScheduleToCommonForm(sheetData);
 }
 
 bool Bridge::uploadRoutes()
@@ -89,9 +93,22 @@ void Bridge::handleAllGreenmileOrgInfoResults(QJsonArray organizationInfo)
 
     emit statusMessage("Organization info retrieved from Greenmile. There's "
                        + QString::number(organizationInfo.size())
-            + " organizations for all Charlie's divisions " + orgKeys.join(", "));
+                       + " organizations for all Charlie's divisions " + orgKeys.join(", "));
 
     gmOrganizationInfoToCommonForm(organizationInfo);
+}
+
+void Bridge::handleMasterRouteDataResults(const QString &key, const QJsonObject &sheetData)
+{
+    if(key == "powerUnit")
+    {
+        mrsDataEquipmentToCommonForm(sheetData);
+    }
+
+    if(key == "driver")
+    {
+        mrsDataDriverToCommonForm(sheetData);
+    }
 }
 
 void Bridge::bridgeLoop()
@@ -176,9 +193,9 @@ void Bridge::as400RouteResultToCommonForm(const QMap<QString, QVariantList> &sql
         //qDebug() << "order";
         QJsonObject order;
         order["number"]        = QJsonValue(sqlResults["order:number"][i].toString());
-        order["baselineSize1"] = QJsonValue(sqlResults["order:pieces"][i].toDouble());
-        order["baselineSize2"] = QJsonValue(sqlResults["order:cube"][i].toDouble());
-        order["baselineSize3"] = QJsonValue(sqlResults["order:weight"][i].toDouble());
+        order["plannedSize1"] = QJsonValue(sqlResults["order:pieces"][i].toDouble());
+        order["plannedSize2"] = QJsonValue(sqlResults["order:cube"][i].toDouble());
+        order["plannedSize3"] = QJsonValue(sqlResults["order:weight"][i].toDouble());
         stopOrders.append(order);
         stop["orders"] = stopOrders;
         as400Stops_[organizationKey][routeDate][routeKey][stopSequence] = stop;
@@ -187,12 +204,12 @@ void Bridge::as400RouteResultToCommonForm(const QMap<QString, QVariantList> &sql
         QJsonObject two;
         QString dowDeliver = sqlResults["location:deliveryDays"][i].toString();
 
-        two["closeTime"] = QJsonValue(sqlResults["locationOverrideTimeWindowsTW1:closeTime"][i].toString());
-        two["openTime"] = QJsonValue(sqlResults["locationOverrideTimeWindowsTW1:openTime"][i].toString());
-        two["tw1Close"] = QJsonValue(sqlResults["locationOverrideTimeWindowsTW1:tw1Close"][i].toString());
-        two["tw1Open"] = QJsonValue(sqlResults["locationOverrideTimeWindowsTW1:tw1Open"][i].toString());
-        two["tw2Close"] = QJsonValue(sqlResults["locationOverrideTimeWindowsTW1:tw2Close"][i].toString());
-        two["tw2Open"] = QJsonValue(sqlResults["locationOverrideTimeWindowsTW1:tw2Open"][i].toString());
+        two["closeTime"] = QJsonValue(sqlResults["locationOverrideTimeWindows:closeTime"][i].toString());
+        two["openTime"] = QJsonValue(sqlResults["locationOverrideTimeWindows:openTime"][i].toString());
+        two["tw1Close"] = QJsonValue(sqlResults["locationOverrideTimeWindows:tw1Close"][i].toString());
+        two["tw1Open"] = QJsonValue(sqlResults["locationOverrideTimeWindows:tw1Open"][i].toString());
+        two["tw2Close"] = QJsonValue(sqlResults["locationOverrideTimeWindows:tw2Close"][i].toString());
+        two["tw2Open"] = QJsonValue(sqlResults["locationOverrideTimeWindows:tw2Open"][i].toString());
 
         if(dowDeliver.contains("M"))
             two["monday"] = QJsonValue(true);
@@ -219,16 +236,24 @@ void Bridge::as400RouteResultToCommonForm(const QMap<QString, QVariantList> &sql
         route["key"]  = QJsonValue(routeKey);
         route["organization"]  = organization;
         QJsonArray stops;
+
         for(auto stop:as400Stops_[organizationKey][routeDate][routeKey])
             stops.append(stop);
+
         route["stops"] = stops;
         as400Route_[organizationKey][routeDate][routeKey] = route;
     }
 
     as400RouteQueryDone_ = true;
-    if(gmOrganizationInfoDone_ && gmRouteComparisonInfoDone_ && as400RouteQueryDone_)
+    if(gmOrganizationInfoDone_ &&
+            gmRouteComparisonInfoDone_ &&
+            as400RouteQueryDone_ &&
+            mrsRouteDataDone_ &&
+            mrsDataEquipmentDone_ &&
+            mrsDataDriverDone_)
+    {
         makeRoutesToUpload();
-
+    }
 }
 
 void Bridge::gmOrganizationInfoToCommonForm(const QJsonArray &organizationInfo)
@@ -246,8 +271,15 @@ void Bridge::gmOrganizationInfoToCommonForm(const QJsonArray &organizationInfo)
     }
 
     gmOrganizationInfoDone_ = true;
-    if(gmOrganizationInfoDone_ && gmRouteComparisonInfoDone_ && as400RouteQueryDone_)
+    if(gmOrganizationInfoDone_ &&
+            gmRouteComparisonInfoDone_ &&
+            as400RouteQueryDone_ &&
+            mrsRouteDataDone_ &&
+            mrsDataEquipmentDone_ &&
+            mrsDataDriverDone_)
+    {
         makeRoutesToUpload();
+    }
 }
 
 void Bridge::gmRouteComparisonInfoToCommonForm(const QJsonArray &routeComparisonInfo)
@@ -296,68 +328,230 @@ void Bridge::gmRouteComparisonInfoToCommonForm(const QJsonArray &routeComparison
     }
 
     gmRouteComparisonInfoDone_ = true;
-    if(gmOrganizationInfoDone_ && gmRouteComparisonInfoDone_ && as400RouteQueryDone_)
+
+    if(gmOrganizationInfoDone_ &&
+            gmRouteComparisonInfoDone_ &&
+            as400RouteQueryDone_ &&
+            mrsRouteDataDone_ &&
+            mrsDataEquipmentDone_ &&
+            mrsDataDriverDone_)
+    {
         makeRoutesToUpload();
+    }
 }
 
-void Bridge::mrsKeysFromData(const QJsonObject &sheetData)
+void Bridge::seattleMRSDailyScheduleToCommonForm(const QJsonObject &sheetData)
 {
-    QSet<QString> matchSet;
-    QStringList matchList;
+    bool foundDate = false;
+    QString dateFormat = "d-MMM-yyyy";
+    QString orgKey = "SEATTLE";
+    QDate date = QDate::fromString(sheetData["routeDate"].toString(), Qt::ISODate);
+    QString routeKey;
+    QJsonObject route;
+    QJsonObject driver;
+    QJsonObject equipment;
+    QJsonObject organization;
+    int driverOffset = 1;
+    int truckOffset = 2;
+    int trailerOffset = 3;
 
+    organization["key"] = orgKey;
+    mrsOrganizations_[orgKey] = organization;
+
+    //implement offset math
     //qDebug() << sheetData;
     QJsonArray rows = sheetData["values"].toArray();
+
+    //find MRS date;
+    for(auto rowArr:rows)
+    {
+        if(foundDate)
+            break;
+
+        QJsonArray row = rowArr.toArray();
+        for(int i = 0; i<row.size(); ++i)
+        {
+            QString value = row[i].toString();
+            QDate dateTest = QDate::fromString(value, dateFormat);
+            if(dateTest.isValid() && !dateTest.isNull())
+            {
+                foundDate = true;
+                date = dateTest;
+                break;
+            }
+        }
+    }
+
     for(auto rowArr:rows)
     {
         QJsonArray row = rowArr.toArray();
-        for(auto value:row)
+        for(int i = 0; i<row.size(); ++i)
         {
+            QString value = row[i].toString();
             QRegularExpression routeRegExp("^[A-Z]-[A-Z,0-9]{3}");
-            QRegularExpressionMatch match = routeRegExp.match(value.toString());
+            QRegularExpressionMatch match = routeRegExp.match(value);
             if(match.hasMatch())
-                matchSet.insert(match.captured(0));
+            {
+                routeKey = match.captured(0);
+                route["key"] = QJsonValue(routeKey);
+                route["date"] = QJsonValue(date.toString(Qt::ISODate));
+                mrsRoute_[orgKey][date][routeKey] = route;
+                if(i+driverOffset < row.size())
+                {
+                    driver["name"] = QJsonValue(row[i+driverOffset].toString());
+                    mrsDriver_[orgKey][date][routeKey].append(driver);
+                }
+                if(i+truckOffset < row.size())
+                {
+                    if((row[i+truckOffset].toString() != "") && (row[i+truckOffset].toString().trimmed().toInt() != 0))
+                    {
+                        equipment["key"] = QJsonValue(row[i+truckOffset].toString().simplified());
+                        mrsEquipment_[orgKey][date][routeKey].append(equipment);
+                    }
+                }
+                if(i+trailerOffset < row.size())
+                {
+                    if((row[i+trailerOffset].toString() != "") && (row[i+trailerOffset].toString().trimmed().toInt() != 0))
+                    {
+                        equipment["key"] = QJsonValue(row[i+trailerOffset].toString().simplified());
+                        mrsEquipment_[orgKey][date][routeKey].append(equipment);
+                    }
+                }
+            }
         }
     }
-    matchList = matchSet.toList();
-    matchList.sort();
-    qDebug() << matchList;
+
+    mrsRouteDataDone_ = true;
+    if(gmOrganizationInfoDone_ &&
+            gmRouteComparisonInfoDone_ &&
+            as400RouteQueryDone_ &&
+            mrsRouteDataDone_ &&
+            mrsDataEquipmentDone_ &&
+            mrsDataDriverDone_)
+    {
+        makeRoutesToUpload();
+    }
+}
+
+void Bridge::mrsDataDriverToCommonForm(const QJsonObject &sheetData)
+{
+    QJsonArray rows = sheetData["values"].toArray();
+    mrsDataDriverDone_ = true;
+    if(gmOrganizationInfoDone_ &&
+            gmRouteComparisonInfoDone_ &&
+            as400RouteQueryDone_ &&
+            mrsRouteDataDone_ &&
+            mrsDataEquipmentDone_ &&
+            mrsDataDriverDone_)
+    {
+        makeRoutesToUpload();
+    }
+}
+
+void Bridge::mrsDataEquipmentToCommonForm(const QJsonObject &sheetData)
+{
+    QJsonArray rows = sheetData["values"].toArray();
+    mrsDataEquipmentDone_ = true;
+    if(gmOrganizationInfoDone_ &&
+            gmRouteComparisonInfoDone_ &&
+            as400RouteQueryDone_ &&
+            mrsRouteDataDone_ &&
+            mrsDataEquipmentDone_ &&
+            mrsDataDriverDone_)
+    {
+        makeRoutesToUpload();
+    }
 }
 
 void Bridge::makeRoutesToUpload()
 {
-
+    //This whole class will be gutted and swapped to a database engine.
     //get common organizations
-    QList<QString> commonOrgNames;
-    QMap<QString,QList<QDate>> commonRouteDates;
-    QMap<QString,QMap<QDate,QList<QString>>> commonRouteKeys;
+
+
+    QJsonObject uploadRoute;
+    QList<QString> commonOrgNamesAS400_MRS;
+    QMap<QString,QList<QDate>> commonRouteDatesAS400_MRS;
+    QMap<QString,QMap<QDate,QList<QString>>> commonRouteKeysAS400_MRS;
+    QMap<QString,QMap<QDate,QList<QString>>> gmRoutesToUpdate;
+    QMap<QString,QMap<QDate,QList<QString>>> gmRoutesToUpload;
 
     for(auto as400OrgName:as400Organizations_.keys())
-        if(gmOrganizations_.contains(as400OrgName))
-            commonOrgNames.append(as400OrgName);
+        if(mrsOrganizations_.contains(as400OrgName))
+            commonOrgNamesAS400_MRS.append(as400OrgName);
 
-    if(commonOrgNames.isEmpty())
+    if(commonOrgNamesAS400_MRS.isEmpty())
     {
-        emit errorMessage("No common organizations between AS400, Greenmile, and Google Sheets, aborting.");
+        emit errorMessage("No common organizations between AS400 and Google Sheets, aborting.");
         return;
     }
 
-    for(auto orgName:commonOrgNames)
+    for(auto orgName:commonOrgNamesAS400_MRS)
         for(auto date: as400Route_[orgName].keys())
-            if(gmRoute_[orgName].contains(date))
-                commonRouteDates[orgName].append(date);
+            if(mrsRoute_[orgName].contains(date))
+                commonRouteDatesAS400_MRS[orgName].append(date);
 
-    if(commonRouteDates.isEmpty())
+    if(commonRouteDatesAS400_MRS.isEmpty())
     {
-        emit errorMessage("No common route dates between AS400, Greenmile, and Google Sheets, aborting.");
+        emit errorMessage("No common route dates between AS400 and Google Sheets, aborting.");
         return;
     }
 
-    for(auto orgName:commonOrgNames)
-        for(auto date: commonRouteDates[orgName])
+    for(auto orgName:commonOrgNamesAS400_MRS)
+        for(auto date: commonRouteDatesAS400_MRS[orgName])
             for(auto routeKey:as400Route_[orgName][date].keys())
-                if(gmRoute_[orgName][date].contains(routeKey))
-                    commonRouteKeys[orgName][date].append(routeKey);
+                if(mrsRoute_[orgName][date].contains(routeKey))
+                    commonRouteKeysAS400_MRS[orgName][date].append(routeKey);
 
-    qDebug() << "Keys: " << commonOrgNames << " Dates:" <<  commonRouteDates << "Route Keys: " << commonRouteKeys;
+    for(auto orgKey:commonRouteKeysAS400_MRS.keys())
+    {
+        if(gmRoute_.contains(orgKey))
+        {
+            for(auto date: commonRouteKeysAS400_MRS[orgKey].keys())
+            {
+                if(gmRoute_[orgKey].contains(date))
+                {
+                    for(auto routeKey: commonRouteKeysAS400_MRS[orgKey][date])
+                    {
+                        if(gmRoute_[orgKey][date].contains(routeKey))
+                        {
+                            gmRoutesToUpdate[orgKey][date].append(routeKey);
+                        }
+                        else
+                        {
+                            QJsonArray stops;
+                            gmRoutesToUpload[orgKey][date].append(routeKey);
+                            as400Route_[orgKey][date][routeKey]["plannedArrival"] = QJsonValue(QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+                            as400Route_[orgKey][date][routeKey]["plannedDeparture"] = QJsonValue(QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+                            as400Route_[orgKey][date][routeKey]["plannedComplete"] = QJsonValue(QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+                            as400Route_[orgKey][date][routeKey]["plannedStart"] = QJsonValue(QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+                            as400Route_[orgKey][date][routeKey]["origin"] = QJsonObject({{"id",QJsonValue(10000)}});
+                            as400Route_[orgKey][date][routeKey]["destination"] = QJsonObject({{"id",QJsonValue(10000)}});
+                            as400Route_[orgKey][date][routeKey]["organization"] = QJsonObject({{"id", gmOrganizations_[orgKey]["id"]}});
+                            as400Route_[orgKey][date][routeKey]["lastStopIsDestination"] = QJsonValue(false);
+                            as400Route_[orgKey][date][routeKey]["hasHelper"] = QJsonValue(false);
+
+
+                            for(auto stopVal:as400Route_[orgKey][date][routeKey]["stops"].toArray())
+                            {
+                                QJsonObject stop = stopVal.toObject();
+                                stop["stopType"] = QJsonObject({{"id", QJsonValue(10000)}});
+                                stops.append(stop);
+                            }
+                            as400Route_[orgKey][date][routeKey]["stops"] = QJsonValue(stops);
+
+                            qDebug() << QJsonDocument(as400Route_[orgKey][date][routeKey]).toJson(QJsonDocument::Compact);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    qDebug() << "upload" << gmRoutesToUpload;
+    qDebug() << "update" << gmRoutesToUpdate;
+    qDebug() << uploadRoute;
+
+
 
 }

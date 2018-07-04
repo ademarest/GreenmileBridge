@@ -10,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->bridgeProgressGridLayout->addWidget(bridgeProgress_);
     ui->mrsConfigGrid->addWidget(mrsConfig_);
     ui->as400ConfigGrid->addWidget(as400Config_);
+    ui->mrsDataConfigGrid->addWidget(mrsDataConfig_);
 }
 
 MainWindow::~MainWindow()
