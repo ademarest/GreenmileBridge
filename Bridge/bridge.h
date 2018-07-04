@@ -39,6 +39,7 @@ private:
     MRSDataConnection *mrsDataConn = new MRSDataConnection(this);
 
     bool gmOrganizationInfoDone_    = true;
+    bool gmLocationKeysDone_        = true;
     bool gmRouteComparisonInfoDone_ = true;
     bool as400RouteQueryDone_       = true;
     bool mrsRouteDataDone_          = true;
@@ -66,6 +67,8 @@ private:
     QMap<QString,QMap<QDate,QMap<QString,QJsonArray>>> gmEquipmentAssignments_;
     QMap<QString,QMap<QDate,QMap<QString,QMap<QString,QJsonObject>>>> gmRouteLocations_;
     QMap<QString,QMap<QDate,QMap<QString,QMap<QString,QJsonObject>>>> gmRouteLocationTimeWindowOverrides_;
+    void gmLocationInfoToCommonFormat(const QJsonArray &locationInfo);
+    QMap<QString,QMap<QString,QJsonObject>> gmLocations_;
 
     void seattleMRSDailyScheduleToCommonForm(const QJsonObject &sheetData);
     QMap<QString, QJsonObject> mrsOrganizations_;

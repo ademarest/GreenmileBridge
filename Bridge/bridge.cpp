@@ -19,10 +19,15 @@ void Bridge::startBridge()
 {
     //gmConn->requestRouteKeysForDate(QDate::currentDate());
     //gmConn->requestLocationKeys();
+    gmRouteComparisonInfoDone_ = false;
     gmOrganizationInfoDone_ = false;
     gmRouteComparisonInfoDone_ = false;
     as400RouteQueryDone_ = false;
+    mrsRouteDataDone_ = false;
+    mrsDataDriverDone_ = false;
+    mrsDataEquipmentDone_ = false;
 
+    gmConn->requestLocationKeys();
     gmConn->requestAllOrganizationInfo();
     gmConn->requestRouteComparisonInfo(QDate::currentDate());
     mrsConn->requestRouteKeysForDate(QDate::currentDate());
@@ -74,6 +79,8 @@ void Bridge::handleLocationKeys(QJsonArray locationArray)
     emit statusMessage("Locations retrieved from Greenmile. There are "
                        + QString::number(locationArray.size())
                        + " locations.");
+
+    gmLocationInfoToCommonFormat(locationArray);
 }
 
 void Bridge::handleRouteQueryResults(QMap<QString, QVariantList> sqlResults)
@@ -187,73 +194,75 @@ void Bridge::as400RouteResultToCommonForm(const QMap<QString, QVariantList> &sql
         stop["key"]  = QJsonValue(QUuid::createUuid().toString());
         stop["baseLineSequenceNum"] = QJsonValue(sqlResults["stop:baseLineSequenceNum"][i].toInt());
         stop["location"] = QJsonObject {{"key", location["key"]}};
-        QJsonArray stopOrders = stop["orders"].toArray();
+    QJsonArray stopOrders = stop["orders"].toArray();
 
-        //Make Order
-        //qDebug() << "order";
-        QJsonObject order;
-        order["number"]        = QJsonValue(sqlResults["order:number"][i].toString());
-        order["plannedSize1"] = QJsonValue(sqlResults["order:pieces"][i].toDouble());
-        order["plannedSize2"] = QJsonValue(sqlResults["order:cube"][i].toDouble());
-        order["plannedSize3"] = QJsonValue(sqlResults["order:weight"][i].toDouble());
-        stopOrders.append(order);
-        stop["orders"] = stopOrders;
-        as400Stops_[organizationKey][routeDate][routeKey][stopSequence] = stop;
+    //Make Order
+    //qDebug() << "order";
+    QJsonObject order;
+    order["number"]        = QJsonValue(sqlResults["order:number"][i].toString());
+    order["plannedSize1"] = QJsonValue(sqlResults["order:pieces"][i].toDouble());
+    order["plannedSize2"] = QJsonValue(sqlResults["order:cube"][i].toDouble());
+    order["plannedSize3"] = QJsonValue(sqlResults["order:weight"][i].toDouble());
+    stopOrders.append(order);
+    stop["orders"] = stopOrders;
+    as400Stops_[organizationKey][routeDate][routeKey][stopSequence] = stop;
 
-        //qDebug() << "two";
-        QJsonObject two;
-        QString dowDeliver = sqlResults["location:deliveryDays"][i].toString();
+    //qDebug() << "two";
+    QJsonObject two;
+    QString dowDeliver = sqlResults["location:deliveryDays"][i].toString();
 
-        two["closeTime"] = QJsonValue(sqlResults["locationOverrideTimeWindows:closeTime"][i].toString());
-        two["openTime"] = QJsonValue(sqlResults["locationOverrideTimeWindows:openTime"][i].toString());
-        two["tw1Close"] = QJsonValue(sqlResults["locationOverrideTimeWindows:tw1Close"][i].toString());
-        two["tw1Open"] = QJsonValue(sqlResults["locationOverrideTimeWindows:tw1Open"][i].toString());
-        two["tw2Close"] = QJsonValue(sqlResults["locationOverrideTimeWindows:tw2Close"][i].toString());
-        two["tw2Open"] = QJsonValue(sqlResults["locationOverrideTimeWindows:tw2Open"][i].toString());
+    two["closeTime"] = QJsonValue(sqlResults["locationOverrideTimeWindows:closeTime"][i].toString());
+    two["openTime"] = QJsonValue(sqlResults["locationOverrideTimeWindows:openTime"][i].toString());
+    two["tw1Close"] = QJsonValue(sqlResults["locationOverrideTimeWindows:tw1Close"][i].toString());
+    two["tw1Open"] = QJsonValue(sqlResults["locationOverrideTimeWindows:tw1Open"][i].toString());
+    two["tw2Close"] = QJsonValue(sqlResults["locationOverrideTimeWindows:tw2Close"][i].toString());
+    two["tw2Open"] = QJsonValue(sqlResults["locationOverrideTimeWindows:tw2Open"][i].toString());
 
-        if(dowDeliver.contains("M"))
-            two["monday"] = QJsonValue(true);
-        if(dowDeliver.contains("T"))
-            two["tuesday"] = QJsonValue(true);
-        if(dowDeliver.contains("W"))
-            two["wednesday"] = QJsonValue(true);
-        if(dowDeliver.contains("R"))
-            two["thursday"] = QJsonValue(true);
-        if(dowDeliver.contains("F"))
-            two["friday"] = QJsonValue(true);
-        if(dowDeliver.contains("S"))
-            two["saturday"] = QJsonValue(true);
-        if(dowDeliver.contains("U"))
-            two["sunday"] = QJsonValue(true);
+    if(dowDeliver.contains("M"))
+        two["monday"] = QJsonValue(true);
+    if(dowDeliver.contains("T"))
+        two["tuesday"] = QJsonValue(true);
+    if(dowDeliver.contains("W"))
+        two["wednesday"] = QJsonValue(true);
+    if(dowDeliver.contains("R"))
+        two["thursday"] = QJsonValue(true);
+    if(dowDeliver.contains("F"))
+        two["friday"] = QJsonValue(true);
+    if(dowDeliver.contains("S"))
+        two["saturday"] = QJsonValue(true);
+    if(dowDeliver.contains("U"))
+        two["sunday"] = QJsonValue(true);
 
-        as400LocationTimeWindowOverrides_[organizationKey][routeDate][routeKey][locationKey] = two;
+    as400LocationTimeWindowOverrides_[organizationKey][routeDate][routeKey][locationKey] = two;
 
-        //Make Route
-        //qDebug() << "route";
-        QJsonObject route;
-        route = as400Route_[organizationKey][routeDate][routeKey];
-        route["date"] = QJsonValue(routeDate.toString(Qt::ISODate));
-        route["key"]  = QJsonValue(routeKey);
-        route["organization"]  = organization;
-        QJsonArray stops;
+    //Make Route
+    //qDebug() << "route";
+    QJsonObject route;
+    route = as400Route_[organizationKey][routeDate][routeKey];
+    route["date"] = QJsonValue(routeDate.toString(Qt::ISODate));
+    route["key"]  = QJsonValue(routeKey);
+    route["organization"]  = organization;
+    QJsonArray stops;
 
-        for(auto stop:as400Stops_[organizationKey][routeDate][routeKey])
-            stops.append(stop);
+    for(auto stop:as400Stops_[organizationKey][routeDate][routeKey])
+        stops.append(stop);
 
-        route["stops"] = stops;
-        as400Route_[organizationKey][routeDate][routeKey] = route;
-    }
+    route["stops"] = stops;
+    as400Route_[organizationKey][routeDate][routeKey] = route;
+}
 
-    as400RouteQueryDone_ = true;
-    if(gmOrganizationInfoDone_ &&
-            gmRouteComparisonInfoDone_ &&
-            as400RouteQueryDone_ &&
-            mrsRouteDataDone_ &&
-            mrsDataEquipmentDone_ &&
-            mrsDataDriverDone_)
-    {
-        makeRoutesToUpload();
-    }
+
+as400RouteQueryDone_ = true;
+if(gmRouteComparisonInfoDone_ &&
+gmOrganizationInfoDone_ &&
+gmRouteComparisonInfoDone_ &&
+as400RouteQueryDone_ &&
+mrsRouteDataDone_ &&
+mrsDataDriverDone_ &&
+mrsDataEquipmentDone_)
+{
+    makeRoutesToUpload();
+}
 }
 
 void Bridge::gmOrganizationInfoToCommonForm(const QJsonArray &organizationInfo)
@@ -271,12 +280,13 @@ void Bridge::gmOrganizationInfoToCommonForm(const QJsonArray &organizationInfo)
     }
 
     gmOrganizationInfoDone_ = true;
-    if(gmOrganizationInfoDone_ &&
+    if(gmRouteComparisonInfoDone_ &&
+            gmOrganizationInfoDone_ &&
             gmRouteComparisonInfoDone_ &&
             as400RouteQueryDone_ &&
             mrsRouteDataDone_ &&
-            mrsDataEquipmentDone_ &&
-            mrsDataDriverDone_)
+            mrsDataDriverDone_ &&
+            mrsDataEquipmentDone_)
     {
         makeRoutesToUpload();
     }
@@ -287,6 +297,18 @@ void Bridge::gmRouteComparisonInfoToCommonForm(const QJsonArray &routeComparison
     if(routeComparisonInfo.isEmpty())
     {
         emit errorMessage("Greenmile Route Comparison response is empty. Aborting.");
+        gmRouteComparisonInfoDone_ = true;
+
+        if(gmRouteComparisonInfoDone_ &&
+                gmOrganizationInfoDone_ &&
+                gmRouteComparisonInfoDone_ &&
+                as400RouteQueryDone_ &&
+                mrsRouteDataDone_ &&
+                mrsDataDriverDone_ &&
+                mrsDataEquipmentDone_)
+        {
+            makeRoutesToUpload();
+        }
         return;
     }
 
@@ -329,12 +351,42 @@ void Bridge::gmRouteComparisonInfoToCommonForm(const QJsonArray &routeComparison
 
     gmRouteComparisonInfoDone_ = true;
 
-    if(gmOrganizationInfoDone_ &&
+    if(gmRouteComparisonInfoDone_ &&
+            gmOrganizationInfoDone_ &&
             gmRouteComparisonInfoDone_ &&
             as400RouteQueryDone_ &&
             mrsRouteDataDone_ &&
-            mrsDataEquipmentDone_ &&
-            mrsDataDriverDone_)
+            mrsDataDriverDone_ &&
+            mrsDataEquipmentDone_)
+    {
+        makeRoutesToUpload();
+    }
+}
+
+void Bridge::gmLocationInfoToCommonFormat(const QJsonArray &locationInfo)
+{
+    QJsonObject location;
+    QJsonObject organization;
+    QString orgKey;
+    QString locationKey;
+
+    for(auto locationVal:locationInfo)
+    {
+        location = locationVal.toObject();
+        locationKey = location["key"].toString();
+        organization = location["organization"].toObject();
+        orgKey = organization["key"].toString();
+        gmLocations_[orgKey][locationKey] = location;
+    }
+
+    gmLocationKeysDone_ = true;
+    if(gmRouteComparisonInfoDone_ &&
+            gmOrganizationInfoDone_ &&
+            gmRouteComparisonInfoDone_ &&
+            as400RouteQueryDone_ &&
+            mrsRouteDataDone_ &&
+            mrsDataDriverDone_ &&
+            mrsDataEquipmentDone_)
     {
         makeRoutesToUpload();
     }
@@ -422,12 +474,13 @@ void Bridge::seattleMRSDailyScheduleToCommonForm(const QJsonObject &sheetData)
     }
 
     mrsRouteDataDone_ = true;
-    if(gmOrganizationInfoDone_ &&
+    if(gmRouteComparisonInfoDone_ &&
+            gmOrganizationInfoDone_ &&
             gmRouteComparisonInfoDone_ &&
             as400RouteQueryDone_ &&
             mrsRouteDataDone_ &&
-            mrsDataEquipmentDone_ &&
-            mrsDataDriverDone_)
+            mrsDataDriverDone_ &&
+            mrsDataEquipmentDone_)
     {
         makeRoutesToUpload();
     }
@@ -437,12 +490,13 @@ void Bridge::mrsDataDriverToCommonForm(const QJsonObject &sheetData)
 {
     QJsonArray rows = sheetData["values"].toArray();
     mrsDataDriverDone_ = true;
-    if(gmOrganizationInfoDone_ &&
+    if(gmRouteComparisonInfoDone_ &&
+            gmOrganizationInfoDone_ &&
             gmRouteComparisonInfoDone_ &&
             as400RouteQueryDone_ &&
             mrsRouteDataDone_ &&
-            mrsDataEquipmentDone_ &&
-            mrsDataDriverDone_)
+            mrsDataDriverDone_ &&
+            mrsDataEquipmentDone_)
     {
         makeRoutesToUpload();
     }
@@ -452,12 +506,13 @@ void Bridge::mrsDataEquipmentToCommonForm(const QJsonObject &sheetData)
 {
     QJsonArray rows = sheetData["values"].toArray();
     mrsDataEquipmentDone_ = true;
-    if(gmOrganizationInfoDone_ &&
+    if(gmRouteComparisonInfoDone_ &&
+            gmOrganizationInfoDone_ &&
             gmRouteComparisonInfoDone_ &&
             as400RouteQueryDone_ &&
             mrsRouteDataDone_ &&
-            mrsDataEquipmentDone_ &&
-            mrsDataDriverDone_)
+            mrsDataDriverDone_ &&
+            mrsDataEquipmentDone_)
     {
         makeRoutesToUpload();
     }
@@ -468,7 +523,7 @@ void Bridge::makeRoutesToUpload()
     //This whole class will be gutted and swapped to a database engine.
     //get common organizations
 
-
+    qDebug() << "hep;";
     QJsonObject uploadRoute;
     QList<QString> commonOrgNamesAS400_MRS;
     QMap<QString,QList<QDate>> commonRouteDatesAS400_MRS;
@@ -505,7 +560,7 @@ void Bridge::makeRoutesToUpload()
 
     for(auto orgKey:commonRouteKeysAS400_MRS.keys())
     {
-        if(gmRoute_.contains(orgKey))
+        if(gmOrganizations_.contains(orgKey))
         {
             for(auto date: commonRouteKeysAS400_MRS[orgKey].keys())
             {
@@ -520,6 +575,7 @@ void Bridge::makeRoutesToUpload()
                         else
                         {
                             QJsonArray stops;
+                            QJsonObject location;
                             gmRoutesToUpload[orgKey][date].append(routeKey);
                             as400Route_[orgKey][date][routeKey]["plannedArrival"] = QJsonValue(QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
                             as400Route_[orgKey][date][routeKey]["plannedDeparture"] = QJsonValue(QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
@@ -539,9 +595,38 @@ void Bridge::makeRoutesToUpload()
                                 stops.append(stop);
                             }
                             as400Route_[orgKey][date][routeKey]["stops"] = QJsonValue(stops);
-
+                            gmConn->uploadARoute(as400Route_[orgKey][date][routeKey]);
                             qDebug() << QJsonDocument(as400Route_[orgKey][date][routeKey]).toJson(QJsonDocument::Compact);
                         }
+                    }
+                }
+                else
+                {
+                    for(auto routeKey: commonRouteKeysAS400_MRS[orgKey][date])
+                    {
+                        QJsonArray stops;
+                        QJsonObject location;
+                        gmRoutesToUpload[orgKey][date].append(routeKey);
+                        as400Route_[orgKey][date][routeKey]["plannedArrival"] = QJsonValue(QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+                        as400Route_[orgKey][date][routeKey]["plannedDeparture"] = QJsonValue(QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+                        as400Route_[orgKey][date][routeKey]["plannedComplete"] = QJsonValue(QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+                        as400Route_[orgKey][date][routeKey]["plannedStart"] = QJsonValue(QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+                        as400Route_[orgKey][date][routeKey]["origin"] = QJsonObject({{"id",QJsonValue(10000)}});
+                        as400Route_[orgKey][date][routeKey]["destination"] = QJsonObject({{"id",QJsonValue(10000)}});
+                        as400Route_[orgKey][date][routeKey]["organization"] = QJsonObject({{"id", gmOrganizations_[orgKey]["id"]}});
+                        as400Route_[orgKey][date][routeKey]["lastStopIsDestination"] = QJsonValue(false);
+                        as400Route_[orgKey][date][routeKey]["hasHelper"] = QJsonValue(false);
+
+
+                        for(auto stopVal:as400Route_[orgKey][date][routeKey]["stops"].toArray())
+                        {
+                            QJsonObject stop = stopVal.toObject();
+                            stop["stopType"] = QJsonObject({{"id", QJsonValue(10000)}});
+                            stops.append(stop);
+                        }
+                        as400Route_[orgKey][date][routeKey]["stops"] = QJsonValue(stops);
+                        gmConn->uploadARoute(as400Route_[orgKey][date][routeKey]);
+                        qDebug() << QJsonDocument(as400Route_[orgKey][date][routeKey]).toJson(QJsonDocument::Compact);
                     }
                 }
             }

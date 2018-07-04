@@ -26,6 +26,7 @@ public:
     void requestLocationKeys();
     void requestAllOrganizationInfo();
     void requestRouteComparisonInfo(const QDate &date);
+    void uploadARoute(const QJsonObject &routeJson);
 
 signals:
     void debugMessage(const QString &debug);

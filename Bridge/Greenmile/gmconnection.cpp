@@ -32,7 +32,7 @@ void GMConnection::requestLocationKeys()
     QString key = "locationKey";
     QString serverAddrTail =    "/Location/restrictions?criteria"
                                 "={\"filters\":[\"id\","
-                                " \"key\"]}";
+                                " \"key\", \"organization.id\", \"organization.key\"]}";
 
     QByteArray postData = QString("{}").toLocal8Bit();
 
@@ -63,6 +63,17 @@ void GMConnection::requestRouteComparisonInfo(const QDate &date)
                              " \"stops.location.locationOverrideTimeWindows.*\"]}";
 
     QByteArray postData = QString("{\"attr\":\"date\", \"eq\":\"" + date.toString(Qt::ISODate) + "\"}").toLocal8Bit();
+
+    makeGMPostRequest(key, serverAddrTail, postData);
+}
+
+void GMConnection::uploadARoute(const QJsonObject &routeJson)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString key = routeJson["key"].toString();
+    QString serverAddrTail = "/Route?resequence=false&calculatePlanning=true";
+
+    QByteArray postData = QJsonDocument(routeJson).toJson(QJsonDocument::Compact);
 
     makeGMPostRequest(key, serverAddrTail, postData);
 }
@@ -118,17 +129,14 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
             emit statusMessage(reply->errorString());
 
         }
-        else
-        {
-            if(key == "routeKey")
-                emit routeKeysForDate(json);
-            if(key == "locationKey")
-                emit locationKeys(json);
-            if(key == "allOrganizationInfo")
-                emit allOrganizationInfo(json);
-            if(key == "routeComparisonInfo")
-                emit routeComparisonInfo(json);
-        }
+        if(key == "routeKey")
+            emit routeKeysForDate(json);
+        if(key == "locationKey")
+            emit locationKeys(json);
+        if(key == "allOrganizationInfo")
+            emit allOrganizationInfo(json);
+        if(key == "routeComparisonInfo")
+            emit routeComparisonInfo(json);
     }
 
     networkRequestsInProgress_.remove(key);

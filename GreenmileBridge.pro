@@ -37,7 +37,8 @@ SOURCES += \
     Bridge/AS400/as400connection.cpp \
     Bridge/bridgedatabase.cpp \
     Bridge/MasterRouteData/masterroutesheetdataconfigwidget.cpp \
-    Bridge/MasterRouteData/mrsdataconnection.cpp
+    Bridge/MasterRouteData/mrsdataconnection.cpp \
+    Bridge/Netcode/oauth2broker.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -52,7 +53,8 @@ HEADERS += \
     Bridge/AS400/as400connection.h \
     Bridge/bridgedatabase.h \
     Bridge/MasterRouteData/masterroutesheetdataconfigwidget.h \
-    Bridge/MasterRouteData/mrsdataconnection.h
+    Bridge/MasterRouteData/mrsdataconnection.h \
+    Bridge/Netcode/oauth2broker.h
 
 FORMS += \
         mainwindow.ui \
