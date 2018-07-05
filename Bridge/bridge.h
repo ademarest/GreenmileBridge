@@ -7,6 +7,7 @@
 #include "MasterRoute/mrsconnection.h"
 #include "AS400/as400connection.h"
 #include "MasterRouteData/mrsdataconnection.h"
+#include "Bridge/bridgedatabase.h"
 
 class Bridge : public QObject
 {
@@ -37,6 +38,7 @@ private:
     MRSConnection *mrsConn = new MRSConnection(this);
     AS400 *as400Conn = new AS400(this);
     MRSDataConnection *mrsDataConn = new MRSDataConnection(this);
+    BridgeDatabase *bridgeDB = new BridgeDatabase(this);
 
     bool gmOrganizationInfoDone_    = true;
     bool gmLocationKeysDone_        = true;

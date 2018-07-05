@@ -13,6 +13,7 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
     connect(gmConn, &GMConnection::allOrganizationInfo, this, &Bridge::handleAllGreenmileOrgInfoResults);
     connect(gmConn, &GMConnection::routeComparisonInfo, this, &Bridge::handleRouteComparisonInfo);
     connect(mrsDataConn, &MRSDataConnection::data, this, &Bridge::handleMasterRouteDataResults);
+    connect(bridgeDB, &BridgeDatabase::debugMessage, this, &Bridge::statusMessage);
 }
 
 void Bridge::startBridge()
@@ -90,6 +91,7 @@ void Bridge::handleRouteQueryResults(QMap<QString, QVariantList> sqlResults)
             + " stops for all Charlie's divisions" + QStringList(sqlResults.keys()).join(", "));
 
     as400RouteResultToCommonForm(sqlResults);
+    bridgeDB->handleAS400RouteQuery(sqlResults);
 }
 
 void Bridge::handleAllGreenmileOrgInfoResults(QJsonArray organizationInfo)
@@ -152,7 +154,7 @@ void Bridge::as400RouteResultToCommonForm(const QMap<QString, QVariantList> &sql
         routeKey        = sqlResults["route:key"][i].toString();
         routeDate       = sqlResults["route:date"][i].toDate();
         locationKey     = sqlResults["location:key"][i].toString();
-        stopSequence    = sqlResults["stop:baseLineSequenceNum"][i].toInt();
+        stopSequence    = sqlResults["stop:plannedSequenceNumber"][i].toInt();
 
         //Make Organization
         //qDebug() << "org";
@@ -192,7 +194,7 @@ void Bridge::as400RouteResultToCommonForm(const QMap<QString, QVariantList> &sql
         //qDebug() << "stop";
         QJsonObject stop = as400Stops_[organizationKey][routeDate][routeKey][stopSequence];
         stop["key"]  = QJsonValue(QUuid::createUuid().toString());
-        stop["baseLineSequenceNum"] = QJsonValue(sqlResults["stop:baseLineSequenceNum"][i].toInt());
+        stop["plannedSequenceNumber"] = QJsonValue(sqlResults["stop:plannedSequenceNumber"][i].toInt());
         stop["location"] = QJsonObject {{"key", location["key"]}};
     QJsonArray stopOrders = stop["orders"].toArray();
 

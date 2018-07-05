@@ -127,7 +127,7 @@ bool AS400::getRouteDataForGreenmile(const QDate &date, const int chunkSize)
               "orderInfo.HHHEXSH AS \"order:weight\", "
               "orderInfo.HHHEXCB AS \"order:cube\", "
               "TRIM(companyInfo.L1NAME) AS \"organization:key\", "
-              "stopInfo.\"stop:baseLineSequenceNum\" AS \"stop:baseLineSequenceNum\", "
+              "stopInfo.\"stop:baseLineSequenceNum\" AS \"stop:plannedSequenceNumber\", "
               "TRIM(assignmentInfo.EERDRVN) AS \"driver:key\", "
               "TRIM(assignmentInfo.EERTKNB) AS \"equipment:key\", "
               "TRIM(customerInfo.FFDCNMB) AS \"location:description\", "
