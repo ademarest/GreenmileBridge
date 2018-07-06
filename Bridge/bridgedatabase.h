@@ -28,10 +28,14 @@ signals:
 
 public slots:
     void handleAS400RouteQuery(const QMap<QString,QVariantList> &sqlResults);
+    void handleGMRouteQuery(const QJsonArray &jsonArray);
+    void handleGMOrganizationQuery(const QJsonArray &jsonArray);
 
 private:
     //Utility Section
-    QMap<QString,QVariantList> transposeJsonArrayToSQL(const QJsonArray &data);
+    QMap<QString,QVariantList> transposeJsonArrayToSQL(const QStringList &expectedKeys, const QJsonArray &data);
+    QVariantMap transposeJsonObjectToVarMap(const QStringList &expectedKeys, const QJsonObject &obj);
+    QVariant jsonValueToQVariant(const QJsonValue &val);
     QJsonArray transposeSQLToJsonArray(const QMap<QString,QVariantList> &data);
 
     bool truncateATable(const QString &tableName);
@@ -53,6 +57,7 @@ private:
     void createMRSDailyAssignmentTable();
 
     void createGMRouteTable();
+    void createGMOrganizationTable();
     void createGMEquipmentTable();
     void createGMDriverTable();
     void createGMLocationTable();

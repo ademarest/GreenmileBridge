@@ -156,34 +156,24 @@ void MRSDataConnection::buildOAuth2(const QString &key)
     }
     networkOAuth2Flows_[key]->setReplyHandler(networkOAuth2ReplyHandlers_[key]);
 
-    qDebug() << "a" << networkOAuth2ReplyHandlers_[key]->isListening();
     if(jsonSettings_["refresh_token"].toString().isEmpty())
     {
-        qDebug() << "aif";
         networkOAuth2Flows_[key]->grant();
         startOAuth2GrantTimer(key);
-        qDebug() << "adingo if";
     }
     else if(QDateTime::fromString(jsonSettings_["expiration_at"].toString(), Qt::ISODateWithMs) < QDateTime::currentDateTime())
     {
-        qDebug() << "aelse if";
         networkOAuth2Flows_[key]->setRefreshToken(jsonSettings_["refresh_token"].toString());
-        qDebug() << "aelse if";
         networkOAuth2Flows_[key]->setToken(jsonSettings_["token"].toString());
-        qDebug() << "aelse if";
         //When refreshAccessToken completed, emits granted.
         networkOAuth2Flows_[key]->refreshAccessToken();
-        qDebug() << "aelse if";
         startOAuth2GrantTimer(key);
-        qDebug() << "adingo else if";
     }
     else
     {
-        qDebug() << "aelse";
         networkOAuth2Flows_[key]->setRefreshToken(jsonSettings_["refresh_token"].toString());
         networkOAuth2Flows_[key]->setToken(jsonSettings_["token"].toString());
         emit networkOAuth2Flows_[key]->granted();
-        qDebug() << "adingo else";
     }
 }
 

@@ -72,6 +72,7 @@ void Bridge::handleRouteComparisonInfo(QJsonArray routeArray)
                        + QDate::currentDate().toString(Qt::ISODate)
                        + ".");
 
+    bridgeDB->handleGMRouteQuery(routeArray);
     gmRouteComparisonInfoToCommonForm(routeArray);
 }
 
@@ -104,6 +105,7 @@ void Bridge::handleAllGreenmileOrgInfoResults(QJsonArray organizationInfo)
                        + QString::number(organizationInfo.size())
                        + " organizations for all Charlie's divisions " + orgKeys.join(", "));
 
+    bridgeDB->handleGMOrganizationQuery(organizationInfo);
     gmOrganizationInfoToCommonForm(organizationInfo);
 }
 
@@ -525,7 +527,7 @@ void Bridge::makeRoutesToUpload()
     //This whole class will be gutted and swapped to a database engine.
     //get common organizations
 
-    qDebug() << "hep;";
+    //qDebug() << "hep;";
     QJsonObject uploadRoute;
     QList<QString> commonOrgNamesAS400_MRS;
     QMap<QString,QList<QDate>> commonRouteDatesAS400_MRS;
@@ -598,7 +600,7 @@ void Bridge::makeRoutesToUpload()
                             }
                             as400Route_[orgKey][date][routeKey]["stops"] = QJsonValue(stops);
                             gmConn->uploadARoute(as400Route_[orgKey][date][routeKey]);
-                            qDebug() << QJsonDocument(as400Route_[orgKey][date][routeKey]).toJson(QJsonDocument::Compact);
+                            //qDebug() << QJsonDocument(as400Route_[orgKey][date][routeKey]).toJson(QJsonDocument::Compact);
                         }
                     }
                 }
@@ -628,16 +630,16 @@ void Bridge::makeRoutesToUpload()
                         }
                         as400Route_[orgKey][date][routeKey]["stops"] = QJsonValue(stops);
                         gmConn->uploadARoute(as400Route_[orgKey][date][routeKey]);
-                        qDebug() << QJsonDocument(as400Route_[orgKey][date][routeKey]).toJson(QJsonDocument::Compact);
+                        //qDebug() << QJsonDocument(as400Route_[orgKey][date][routeKey]).toJson(QJsonDocument::Compact);
                     }
                 }
             }
         }
     }
 
-    qDebug() << "upload" << gmRoutesToUpload;
-    qDebug() << "update" << gmRoutesToUpdate;
-    qDebug() << uploadRoute;
+    //qDebug() << "upload" << gmRoutesToUpload;
+    //qDebug() << "update" << gmRoutesToUpdate;
+    //qDebug() << uploadRoute;
 
 
 
