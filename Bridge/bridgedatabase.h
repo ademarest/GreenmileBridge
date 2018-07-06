@@ -30,6 +30,7 @@ public slots:
     void handleAS400RouteQuery(const QMap<QString,QVariantList> &sqlResults);
     void handleGMRouteQuery(const QJsonArray &jsonArray);
     void handleGMOrganizationQuery(const QJsonArray &jsonArray);
+    void handleGMLocationInfo(const QJsonArray &jsonArray);
 
 private:
     //Utility Section
@@ -58,28 +59,12 @@ private:
 
     void createGMRouteTable();
     void createGMOrganizationTable();
-    void createGMEquipmentTable();
-    void createGMDriverTable();
     void createGMLocationTable();
     void createGMLocationTimeWindowOverrideTable();
+    void createGMEquipmentTable();
+    void createGMDriverTable();
+
     //End Table Creation Section
-
-    //Table Population Section
-    void populateAS400RouteQueryTable(const QMap<QString,QVariantList> &sqlResults);
-
-    void populateMRSDataDriverTable(const QJsonObject &data);
-    void populateMRSDataEquipmentTable(const QJsonObject &data);
-    void populateMRSDataRouteStartTimeTable(const QJsonObject &data);
-    void populateMRSDataOverrideTable(const QJsonObject &data);
-
-    void populateMRSDailyAssignmentTable(const QJsonObject &data);
-
-    void populateGMRouteTable(const QJsonArray &data);
-    void populateGMEquipmentTable(const QJsonArray &data);
-    void populateGMDriverTable(const QJsonArray &data);
-    void populateGMLocationTable(const QJsonArray &data);
-    void populateGMLocationTimeWindowOverrideTable(const QJsonArray &data);
-    //End Table Population Section
 
     //Private Variable Section
     QString dbPath_ = qApp->applicationDirPath() + "/bridgeDatabase.db";

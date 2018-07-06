@@ -39,6 +39,17 @@ void GMConnection::requestLocationKeys()
     makeGMPostRequest(key, serverAddrTail, postData);
 }
 
+void GMConnection::requestLocaitonInfo()
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString key = "locationInfo";
+    QString serverAddrTail = "/Location/restrictions?criteria={\"filters\":[\"*\", \"locationOverrideTimeWindows.id\", \"locationType.id\", \"organization.id\"]}";
+
+    QByteArray postData = QString("{}").toLocal8Bit();
+
+    makeGMPostRequest(key, serverAddrTail, postData);
+}
+
 void GMConnection::requestAllOrganizationInfo()
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
@@ -137,6 +148,8 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
             emit allOrganizationInfo(json);
         if(key == "routeComparisonInfo")
             emit routeComparisonInfo(json);
+        if(key == "locationInfo")
+            emit gmLocationInfo(json);
     }
 
     networkRequestsInProgress_.remove(key);

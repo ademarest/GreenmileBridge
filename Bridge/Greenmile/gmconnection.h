@@ -24,6 +24,7 @@ public:
 
     void requestRouteKeysForDate(const QDate &date);
     void requestLocationKeys();
+    void requestLocaitonInfo();
     void requestAllOrganizationInfo();
     void requestRouteComparisonInfo(const QDate &date);
     void uploadARoute(const QJsonObject &routeJson);
@@ -38,6 +39,7 @@ signals:
     void routeComparisonInfo(QJsonArray array);
     void locationKeys(QJsonArray array);
     void allOrganizationInfo(QJsonArray array);
+    void gmLocationInfo(QJsonArray array);
 
 public slots:
 

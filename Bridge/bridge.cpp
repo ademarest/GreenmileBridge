@@ -14,20 +14,23 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
     connect(gmConn, &GMConnection::routeComparisonInfo, this, &Bridge::handleRouteComparisonInfo);
     connect(mrsDataConn, &MRSDataConnection::data, this, &Bridge::handleMasterRouteDataResults);
     connect(bridgeDB, &BridgeDatabase::debugMessage, this, &Bridge::statusMessage);
+    connect(gmConn, &GMConnection::gmLocationInfo, this, &Bridge::handleGMLocationInfo);
 }
 
 void Bridge::startBridge()
 {
     //gmConn->requestRouteKeysForDate(QDate::currentDate());
     //gmConn->requestLocationKeys();
+    gmLocationKeysDone_ = false;
     gmRouteComparisonInfoDone_ = false;
     gmOrganizationInfoDone_ = false;
-    gmRouteComparisonInfoDone_ = false;
     as400RouteQueryDone_ = false;
     mrsRouteDataDone_ = false;
     mrsDataDriverDone_ = false;
     mrsDataEquipmentDone_ = false;
+    gmLocationInfoDone_ = false;
 
+    gmConn->requestLocaitonInfo();
     gmConn->requestLocationKeys();
     gmConn->requestAllOrganizationInfo();
     gmConn->requestRouteComparisonInfo(QDate::currentDate());
@@ -83,6 +86,26 @@ void Bridge::handleLocationKeys(QJsonArray locationArray)
                        + " locations.");
 
     gmLocationInfoToCommonFormat(locationArray);
+}
+
+void Bridge::handleGMLocationInfo(QJsonArray locationArray)
+{
+    emit statusMessage("Locations info retrieved from Greenmile. There are "
+                       + QString::number(locationArray.size())
+                       + " locations.");
+    bridgeDB->handleGMLocationInfo(locationArray);
+
+    gmLocationInfoDone_ = true;
+    if(gmLocationKeysDone_ &&
+    gmOrganizationInfoDone_ &&
+    gmRouteComparisonInfoDone_ &&
+    as400RouteQueryDone_ &&
+    mrsRouteDataDone_ &&
+    mrsDataDriverDone_ &&
+    mrsDataEquipmentDone_ &&  gmLocationInfoDone_)
+    {
+        makeRoutesToUpload();
+    }
 }
 
 void Bridge::handleRouteQueryResults(QMap<QString, QVariantList> sqlResults)
@@ -257,13 +280,13 @@ void Bridge::as400RouteResultToCommonForm(const QMap<QString, QVariantList> &sql
 
 
 as400RouteQueryDone_ = true;
-if(gmRouteComparisonInfoDone_ &&
+if(gmLocationKeysDone_ &&
 gmOrganizationInfoDone_ &&
 gmRouteComparisonInfoDone_ &&
 as400RouteQueryDone_ &&
 mrsRouteDataDone_ &&
 mrsDataDriverDone_ &&
-mrsDataEquipmentDone_)
+mrsDataEquipmentDone_ &&  gmLocationInfoDone_)
 {
     makeRoutesToUpload();
 }
@@ -284,13 +307,13 @@ void Bridge::gmOrganizationInfoToCommonForm(const QJsonArray &organizationInfo)
     }
 
     gmOrganizationInfoDone_ = true;
-    if(gmRouteComparisonInfoDone_ &&
+    if(gmLocationKeysDone_ &&
             gmOrganizationInfoDone_ &&
             gmRouteComparisonInfoDone_ &&
             as400RouteQueryDone_ &&
             mrsRouteDataDone_ &&
             mrsDataDriverDone_ &&
-            mrsDataEquipmentDone_)
+            mrsDataEquipmentDone_ &&  gmLocationInfoDone_)
     {
         makeRoutesToUpload();
     }
@@ -303,13 +326,13 @@ void Bridge::gmRouteComparisonInfoToCommonForm(const QJsonArray &routeComparison
         emit errorMessage("Greenmile Route Comparison response is empty. Aborting.");
         gmRouteComparisonInfoDone_ = true;
 
-        if(gmRouteComparisonInfoDone_ &&
+        if(gmLocationKeysDone_ &&
                 gmOrganizationInfoDone_ &&
                 gmRouteComparisonInfoDone_ &&
                 as400RouteQueryDone_ &&
                 mrsRouteDataDone_ &&
                 mrsDataDriverDone_ &&
-                mrsDataEquipmentDone_)
+                mrsDataEquipmentDone_ &&  gmLocationInfoDone_)
         {
             makeRoutesToUpload();
         }
@@ -355,13 +378,13 @@ void Bridge::gmRouteComparisonInfoToCommonForm(const QJsonArray &routeComparison
 
     gmRouteComparisonInfoDone_ = true;
 
-    if(gmRouteComparisonInfoDone_ &&
+    if(gmLocationKeysDone_ &&
             gmOrganizationInfoDone_ &&
             gmRouteComparisonInfoDone_ &&
             as400RouteQueryDone_ &&
             mrsRouteDataDone_ &&
             mrsDataDriverDone_ &&
-            mrsDataEquipmentDone_)
+            mrsDataEquipmentDone_ &&  gmLocationInfoDone_)
     {
         makeRoutesToUpload();
     }
@@ -384,13 +407,13 @@ void Bridge::gmLocationInfoToCommonFormat(const QJsonArray &locationInfo)
     }
 
     gmLocationKeysDone_ = true;
-    if(gmRouteComparisonInfoDone_ &&
+    if(gmLocationKeysDone_ &&
             gmOrganizationInfoDone_ &&
             gmRouteComparisonInfoDone_ &&
             as400RouteQueryDone_ &&
             mrsRouteDataDone_ &&
             mrsDataDriverDone_ &&
-            mrsDataEquipmentDone_)
+            mrsDataEquipmentDone_ &&  gmLocationInfoDone_)
     {
         makeRoutesToUpload();
     }
@@ -478,13 +501,13 @@ void Bridge::seattleMRSDailyScheduleToCommonForm(const QJsonObject &sheetData)
     }
 
     mrsRouteDataDone_ = true;
-    if(gmRouteComparisonInfoDone_ &&
+    if(gmLocationKeysDone_ &&
             gmOrganizationInfoDone_ &&
             gmRouteComparisonInfoDone_ &&
             as400RouteQueryDone_ &&
             mrsRouteDataDone_ &&
             mrsDataDriverDone_ &&
-            mrsDataEquipmentDone_)
+            mrsDataEquipmentDone_ &&  gmLocationInfoDone_)
     {
         makeRoutesToUpload();
     }
@@ -494,13 +517,13 @@ void Bridge::mrsDataDriverToCommonForm(const QJsonObject &sheetData)
 {
     QJsonArray rows = sheetData["values"].toArray();
     mrsDataDriverDone_ = true;
-    if(gmRouteComparisonInfoDone_ &&
+    if(gmLocationKeysDone_ &&
             gmOrganizationInfoDone_ &&
             gmRouteComparisonInfoDone_ &&
             as400RouteQueryDone_ &&
             mrsRouteDataDone_ &&
             mrsDataDriverDone_ &&
-            mrsDataEquipmentDone_)
+            mrsDataEquipmentDone_ &&  gmLocationInfoDone_)
     {
         makeRoutesToUpload();
     }
@@ -510,13 +533,13 @@ void Bridge::mrsDataEquipmentToCommonForm(const QJsonObject &sheetData)
 {
     QJsonArray rows = sheetData["values"].toArray();
     mrsDataEquipmentDone_ = true;
-    if(gmRouteComparisonInfoDone_ &&
+    if(gmLocationKeysDone_ &&
             gmOrganizationInfoDone_ &&
             gmRouteComparisonInfoDone_ &&
             as400RouteQueryDone_ &&
             mrsRouteDataDone_ &&
             mrsDataDriverDone_ &&
-            mrsDataEquipmentDone_)
+            mrsDataEquipmentDone_ &&  gmLocationInfoDone_)
     {
         makeRoutesToUpload();
     }

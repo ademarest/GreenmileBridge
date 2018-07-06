@@ -29,6 +29,7 @@ public slots:
     void handleRouteKeysForDate(QJsonArray routeArray);
     void handleRouteComparisonInfo(QJsonArray routeArray);
     void handleLocationKeys(QJsonArray locationArray);
+    void handleGMLocationInfo(QJsonArray locationArray);
     void handleRouteQueryResults(QMap<QString,QVariantList> sqlResults);
     void handleAllGreenmileOrgInfoResults(QJsonArray organizationInfo);
     void handleMasterRouteDataResults(const QString &key, const QJsonObject &sheetData);
@@ -40,6 +41,7 @@ private:
     MRSDataConnection *mrsDataConn = new MRSDataConnection(this);
     BridgeDatabase *bridgeDB = new BridgeDatabase(this);
 
+    bool gmLocationInfoDone_        = true;
     bool gmOrganizationInfoDone_    = true;
     bool gmLocationKeysDone_        = true;
     bool gmRouteComparisonInfoDone_ = true;

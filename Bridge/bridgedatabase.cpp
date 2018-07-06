@@ -7,6 +7,7 @@ BridgeDatabase::BridgeDatabase(QObject *parent) : QObject(parent)
         createAS400RouteQueryTable();
         createGMRouteTable();
         createGMOrganizationTable();
+        createGMLocationTable();
     }
 }
 
@@ -41,6 +42,29 @@ void BridgeDatabase::handleGMOrganizationQuery(const QJsonArray &jsonArray)
                               "description"};
 
     writeToTable("gmOrganizations", transposeJsonArrayToSQL(expectedKeys, jsonArray));
+}
+
+void BridgeDatabase::handleGMLocationInfo(const QJsonArray &jsonArray)
+{
+    QStringList expectedKeys {"id",
+                              "key",
+                              "description",
+                              "addressLine1",
+                              "addressLine2",
+                              "city",
+                              "state",
+                              "zipCode",
+                              "latitude",
+                              "longitude",
+                              "geocodingQuality",
+                              "deliveryDays",
+                              "enabled",
+                              "hasGeofence",
+                              "organization:id",
+                              "locationOverrideTimeWindows:0:id",
+                              "locationType:id"};
+
+    writeToTable("gmLocations", transposeJsonArrayToSQL(expectedKeys, jsonArray));
 }
 
 QMap<QString, QVariantList> BridgeDatabase::transposeJsonArrayToSQL(const QStringList &expectedKeys, const QJsonArray &data)
@@ -474,3 +498,31 @@ void BridgeDatabase::createGMOrganizationTable()
 
     executeAQuery(query, "create table");
 }
+
+void BridgeDatabase::createGMLocationTable()
+{
+    QString query = "CREATE TABLE `gmLocations` "
+                    "(`id` INTEGER NOT NULL UNIQUE, "
+                    "`key` TEXT, "
+                    "`description` TEXT, "
+                    "`addressLine1` TEXT, "
+                    "`addressLine2` TEXT, "
+                    "`city` TEXT, "
+                    "`state` TEXT, "
+                    "`zipCode` TEXT, "
+                    "`latitude` NUMERIC, "
+                    "`longitude` NUMERIC, "
+                    "`geocodingQuality` TEXT, "
+                    "`deliveryDays` TEXT, "
+                    "`enabled` TEXT, "
+                    "`hasGeofence` TEXT, "
+                    "`organization:id` INTEGER, "
+                    "`locationOverrideTimeWindows:0:id` INTEGER, "
+                    "`locationType:id` INTEGER, "
+                    "PRIMARY KEY(`id`))";
+
+    executeAQuery(query, "create table");
+}
+
+
+
