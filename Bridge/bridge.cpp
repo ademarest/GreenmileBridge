@@ -15,6 +15,7 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
     connect(mrsDataConn, &MRSDataConnection::data, this, &Bridge::handleMasterRouteDataResults);
     connect(bridgeDB, &BridgeDatabase::debugMessage, this, &Bridge::statusMessage);
     connect(gmConn, &GMConnection::gmLocationInfo, this, &Bridge::handleGMLocationInfo);
+    connect(mrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &Bridge::handleMRSDailyScheduleSQL);
 }
 
 void Bridge::startBridge()
@@ -34,7 +35,7 @@ void Bridge::startBridge()
     gmConn->requestLocationKeys();
     gmConn->requestAllOrganizationInfo();
     gmConn->requestRouteComparisonInfo(QDate::currentDate());
-    mrsConn->requestRouteKeysForDate(QDate::currentDate());
+    mrsConn->requestRouteKeysForDate("SEATTLE", QDate::currentDate());
     mrsDataConn->requestValuesFromAGoogleSheet("powerUnit", "powerUnit");
     mrsDataConn->requestValuesFromAGoogleSheet("driver", "driver");
 
@@ -143,6 +144,11 @@ void Bridge::handleMasterRouteDataResults(const QString &key, const QJsonObject 
     {
         mrsDataDriverToCommonForm(sheetData);
     }
+}
+
+void Bridge::handleMRSDailyScheduleSQL(const QMap<QString, QVariantList> sql)
+{
+    bridgeDB->handleMRSDailyAssignmentSQL(sql);
 }
 
 void Bridge::bridgeLoop()

@@ -27,10 +27,11 @@ signals:
     void errorMessage(const QString &dbg);
 
 public slots:
-    void handleAS400RouteQuery(const QMap<QString,QVariantList> &sqlResults);
+    void handleAS400RouteQuery(const QMap<QString,QVariantList> &sql);
     void handleGMRouteQuery(const QJsonArray &jsonArray);
     void handleGMOrganizationQuery(const QJsonArray &jsonArray);
     void handleGMLocationInfo(const QJsonArray &jsonArray);
+    void handleMRSDailyAssignmentSQL(const QMap<QString, QVariantList> &sql);
 
 private:
     //Utility Section

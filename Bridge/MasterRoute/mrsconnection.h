@@ -12,7 +12,7 @@ class MRSConnection : public QObject
     Q_OBJECT
 public:
     explicit MRSConnection(QObject *parent = nullptr);
-    void requestRouteKeysForDate(const QDate &date);
+    void requestRouteKeysForDate(const QString &organizationKey, const QDate &date);
 
 signals:
     void debugMessage(const QString &debug);
@@ -21,6 +21,7 @@ signals:
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
     void oauth2AlreadyGranted();
     void routeSheetData(const QJsonObject &data);
+    void mrsDailyScheduleSQL(const QMap<QString,QVariantList> &sql);
 
 public slots:
 
@@ -32,6 +33,8 @@ private slots:
     void sendNetworkRequest();
 
 private:
+    QMap<QString,QVariantList> mrsDailyScheduleJsonToSQL(const QJsonObject &data);
+
     JsonSettings *settings_ = new JsonSettings(this);
     QString dbPath_ = qApp->applicationDirPath() + "/mrsconnection.db";
     QJsonObject jsonSettings_   {{"client_id", QJsonValue()},

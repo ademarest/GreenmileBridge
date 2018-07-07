@@ -43,7 +43,7 @@ void GMConnection::requestLocaitonInfo()
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
     QString key = "locationInfo";
-    QString serverAddrTail = "/Location/restrictions?criteria={\"filters\":[\"*\", \"locationOverrideTimeWindows.id\", \"locationType.id\", \"organization.id\"]}";
+    QString serverAddrTail = "/Location/restrictions?criteria={\"filters\":[\"*\", \"locationOverrideTimeWindows.id\", \"locationType.id\", \"locationType.key\", \"organization.id\", \"organization.key\"]}";
 
     QByteArray postData = QString("{}").toLocal8Bit();
 

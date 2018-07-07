@@ -5,9 +5,9 @@ MRSConnection::MRSConnection(QObject *parent) : QObject(parent)
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 }
 
-void MRSConnection::requestRouteKeysForDate(const QDate &date)
+void MRSConnection::requestRouteKeysForDate(const QString &organizationKey, const QDate &date)
 {
-    QString key = "routeKeys";
+    QString key = organizationKey + ":routeKeys";
     QUrl address = jsonSettings_["base_url"].toString() + date.toString("dddd");
     networkRequestInfo_[key]["address"] = address;
     networkRequestInfo_[key]["request_type"] = "get";
@@ -32,6 +32,8 @@ void MRSConnection::handleNetworkReply(QNetworkReply *reply)
         else
         {
             emit statusMessage("Google sheets retrieved, there's " + QString::number(json["values"].toArray().size()) + " rows in the sheet.");
+            json["organization:key"] = QJsonValue(key.split(":").first());
+            emit mrsDailyScheduleSQL(mrsDailyScheduleJsonToSQL(json));
             emit routeSheetData(json);
         }
     }
@@ -125,32 +127,32 @@ void MRSConnection::buildOAuth2(const QString &key)
     networkOAuth2Flows_[key]->setClientIdentifierSharedKey(jsonSettings_["client_secret"].toString());
 
     networkOAuth2Flows_[key]->setModifyParametersFunction\
-        ([&](QAbstractOAuth::Stage stage, QVariantMap *parameters)\
-         {
-              if(stage == QAbstractOAuth::Stage::RequestingAuthorization)
-              {
-                 qDebug() << "Request Access";
-                 parameters->insert("approval_prompt", "force");
-                 parameters->insert("access_type", "offline");
-                 qDebug() << "--------------------------------";
-              }
-              if(stage == QAbstractOAuth::Stage::RefreshingAccessToken)
-              {
-                  qDebug() << "Refresh Access";
-                  parameters->clear();
-                  parameters->insert("client_secret", jsonSettings_["client_secret"].toString());
-                  parameters->insert("refresh_token", jsonSettings_["refresh_token"].toString());
-                  parameters->insert("grant_type", "refresh_token");
-                  parameters->insert("client_id", jsonSettings_["client_id"].toString());
-              }
-          });
+            ([&](QAbstractOAuth::Stage stage, QVariantMap *parameters)\
+    {
+        if(stage == QAbstractOAuth::Stage::RequestingAuthorization)
+        {
+            qDebug() << "Request Access";
+            parameters->insert("approval_prompt", "force");
+            parameters->insert("access_type", "offline");
+            qDebug() << "--------------------------------";
+        }
+        if(stage == QAbstractOAuth::Stage::RefreshingAccessToken)
+        {
+            qDebug() << "Refresh Access";
+            parameters->clear();
+            parameters->insert("client_secret", jsonSettings_["client_secret"].toString());
+            parameters->insert("refresh_token", jsonSettings_["refresh_token"].toString());
+            parameters->insert("grant_type", "refresh_token");
+            parameters->insert("client_id", jsonSettings_["client_id"].toString());
+        }
+    });
 
     networkOAuth2ReplyHandlers_[key] = new QOAuthHttpServerReplyHandler(port, this);
     while(!networkOAuth2ReplyHandlers_[key]->isListening())
     {
-       qApp->processEvents();
-       delete networkOAuth2ReplyHandlers_[key];
-       networkOAuth2ReplyHandlers_[key] = new QOAuthHttpServerReplyHandler(port, this);
+        qApp->processEvents();
+        delete networkOAuth2ReplyHandlers_[key];
+        networkOAuth2ReplyHandlers_[key] = new QOAuthHttpServerReplyHandler(port, this);
     }
     networkOAuth2Flows_[key]->setReplyHandler(networkOAuth2ReplyHandlers_[key]);
 
@@ -226,4 +228,75 @@ void MRSConnection::sendNetworkRequest()
 
     networkTimers_[key]->stop();
     networkTimers_[key]->start(jsonSettings_["request_timeout"].toInt() * 1000);
+}
+
+QMap<QString, QVariantList> MRSConnection::mrsDailyScheduleJsonToSQL(const QJsonObject &data)
+{
+    QMap<QString, QVariantList> sqlData;
+    QDate date;
+    bool foundDate = false;
+    QString dateFormat = "d-MMM-yyyy";
+    QString orgKey = data["organization:key"].toString();
+    QString routeKey;
+    int driverOffset = 1;
+    int truckOffset = 2;
+    int trailerOffset = 3;
+
+    //implement offset math
+    //qDebug() << sheetData;
+    QJsonArray rows = data["values"].toArray();
+
+    //find MRS date;
+    for(auto rowArr:rows)
+    {
+        if(foundDate)
+            break;
+
+        QJsonArray row = rowArr.toArray();
+        for(int i = 0; i<row.size(); ++i)
+        {
+            QString value = row[i].toString();
+            QDate dateTest = QDate::fromString(value, dateFormat);
+            if(dateTest.isValid() && !dateTest.isNull())
+            {
+                foundDate = true;
+                date = dateTest;
+                break;
+            }
+        }
+    }
+
+    for(auto rowArr:rows)
+    {
+        QJsonArray row = rowArr.toArray();
+        for(int i = 0; i<row.size(); ++i)
+        {
+            QString value = row[i].toString();
+            QRegularExpression routeRegExp("^[A-Z]-[A-Z,0-9]{3}");
+            QRegularExpressionMatch match = routeRegExp.match(value);
+            if(match.hasMatch())
+            {
+                routeKey = match.captured(0);
+                sqlData["route:key"].append(QVariant(routeKey));
+                sqlData["route:date"].append(QVariant(date));
+                sqlData["organization:key"].append(QVariant(orgKey));
+
+                if(i+driverOffset < row.size() && !row[i+driverOffset].toString().simplified().isEmpty())
+                    sqlData["driver:name"].append(QVariant(row[i+driverOffset].toString().simplified()));
+                else
+                    sqlData["driver:name"].append(QVariant());
+
+                if(i+truckOffset < row.size() && !row[i+truckOffset].toString().simplified().isEmpty())
+                    sqlData["truck:key"].append(QVariant(row[i+truckOffset].toString().simplified()));
+                else
+                    sqlData["truck:key"].append(QVariant());
+
+                if(i+trailerOffset < row.size() && !row[i+trailerOffset].toString().simplified().isEmpty())
+                    sqlData["trailer:key"].append(QVariant(row[i+trailerOffset].toString().simplified()));
+                else
+                    sqlData["trailer:key"].append(QVariant());
+            }
+        }
+    }
+    return sqlData;
 }

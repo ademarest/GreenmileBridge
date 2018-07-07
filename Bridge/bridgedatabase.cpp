@@ -8,12 +8,13 @@ BridgeDatabase::BridgeDatabase(QObject *parent) : QObject(parent)
         createGMRouteTable();
         createGMOrganizationTable();
         createGMLocationTable();
+        createMRSDailyAssignmentTable();
     }
 }
 
-void BridgeDatabase::handleAS400RouteQuery(const QMap<QString, QVariantList> &sqlResults)
+void BridgeDatabase::handleAS400RouteQuery(const QMap<QString, QVariantList> &sql)
 {
-    writeToTable("as400RouteQuery", sqlResults);
+    writeToTable("as400RouteQuery", sql);
 }
 
 void BridgeDatabase::handleGMRouteQuery(const QJsonArray &jsonArray)
@@ -61,10 +62,18 @@ void BridgeDatabase::handleGMLocationInfo(const QJsonArray &jsonArray)
                               "enabled",
                               "hasGeofence",
                               "organization:id",
+                              "organization:key",
                               "locationOverrideTimeWindows:0:id",
-                              "locationType:id"};
+                              "locationType:id",
+                              "locationType:key"};
 
     writeToTable("gmLocations", transposeJsonArrayToSQL(expectedKeys, jsonArray));
+}
+
+void BridgeDatabase::handleMRSDailyAssignmentSQL(const QMap<QString, QVariantList> &sql)
+{
+    qDebug() << sql.size() << sql.keys();
+    writeToTable("mrsDailyAssignments", sql);
 }
 
 QMap<QString, QVariantList> BridgeDatabase::transposeJsonArrayToSQL(const QStringList &expectedKeys, const QJsonArray &data)
@@ -517,12 +526,26 @@ void BridgeDatabase::createGMLocationTable()
                     "`enabled` TEXT, "
                     "`hasGeofence` TEXT, "
                     "`organization:id` INTEGER, "
+                    "`organization:key` TEXT, "
                     "`locationOverrideTimeWindows:0:id` INTEGER, "
                     "`locationType:id` INTEGER, "
+                    "`locationType:key` TEXT, "
                     "PRIMARY KEY(`id`))";
 
     executeAQuery(query, "create table");
 }
 
+void BridgeDatabase::createMRSDailyAssignmentTable()
+{
+    QString query = "CREATE TABLE `mrsDailyAssignments` "
+                    "(`route:key` TEXT NOT NULL, "
+                    "`route:date` TEXT NOT NULL, "
+                    "`organization:key` TEXT NOT NULL, "
+                    "`driver:name` TEXT, "
+                    "`truck:key` TEXT, "
+                    "`trailer:key` TEXT, "
+                    "PRIMARY KEY(`route:key`, `route:date`, `organization:key`))";
 
+    executeAQuery(query, "create table");
+}
 

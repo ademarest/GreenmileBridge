@@ -33,6 +33,7 @@ public slots:
     void handleRouteQueryResults(QMap<QString,QVariantList> sqlResults);
     void handleAllGreenmileOrgInfoResults(QJsonArray organizationInfo);
     void handleMasterRouteDataResults(const QString &key, const QJsonObject &sheetData);
+    void handleMRSDailyScheduleSQL(const QMap<QString,QVariantList> sql);
 
 private:
     GMConnection *gmConn = new GMConnection(this);
