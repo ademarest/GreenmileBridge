@@ -2,46 +2,62 @@
 
 Bridge::Bridge(QObject *parent) : QObject(parent)
 {
-    connect(gmConn, &GMConnection::downloadProgess, this, &Bridge::downloadProgess);
-    connect(gmConn, &GMConnection::routeKeysForDate, this, &Bridge::handleRouteKeysForDate);
-    connect(gmConn, &GMConnection::locationKeys, this, &Bridge::handleLocationKeys);
-    connect(gmConn, &GMConnection::statusMessage, this, &Bridge::statusMessage);
-    connect(mrsConn, &MRSConnection::statusMessage, this, &Bridge::statusMessage);
-    connect(mrsConn, &MRSConnection::routeSheetData, this, &Bridge::handleMasterRouteSheetData);
+    connect(bridgeDB, &BridgeDatabase::debugMessage, this, &Bridge::statusMessage);
+    connect(bridgeDB, &BridgeDatabase::errorMessage, this, &Bridge::statusMessage);
+    connect(bridgeDB, &BridgeDatabase::statusMessage, this, &Bridge::statusMessage);
+//    connect(gmConn, &GMConnection::downloadProgess, this, &Bridge::downloadProgess);
+//    connect(gmConn, &GMConnection::routeKeysForDate, this, &Bridge::handleRouteKeysForDate);
+//    connect(gmConn, &GMConnection::locationKeys, this, &Bridge::handleLocationKeys);
+//    connect(gmConn, &GMConnection::statusMessage, this, &Bridge::statusMessage);
+//    connect(mrsConn, &MRSConnection::statusMessage, this, &Bridge::statusMessage);
+//    connect(mrsConn, &MRSConnection::routeSheetData, this, &Bridge::handleMasterRouteSheetData);
     connect(as400Conn, &AS400::greenmileRouteInfoResults, this, &Bridge::handleRouteQueryResults);
     connect(as400Conn, &AS400::debugMessage, this, &Bridge::statusMessage);
-    connect(gmConn, &GMConnection::allOrganizationInfo, this, &Bridge::handleAllGreenmileOrgInfoResults);
-    connect(gmConn, &GMConnection::routeComparisonInfo, this, &Bridge::handleRouteComparisonInfo);
-    connect(mrsDataConn, &MRSDataConnection::data, this, &Bridge::handleMasterRouteDataResults);
-    connect(bridgeDB, &BridgeDatabase::debugMessage, this, &Bridge::statusMessage);
-    connect(gmConn, &GMConnection::gmLocationInfo, this, &Bridge::handleGMLocationInfo);
-    connect(mrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &Bridge::handleMRSDailyScheduleSQL);
+//    connect(gmConn, &GMConnection::allOrganizationInfo, this, &Bridge::handleAllGreenmileOrgInfoResults);
+//    connect(gmConn, &GMConnection::routeComparisonInfo, this, &Bridge::handleRouteComparisonInfo);
+//    connect(mrsDataConn, &MRSDataConnection::data, this, &Bridge::handleMasterRouteDataResults);
+//    connect(bridgeDB, &BridgeDatabase::debugMessage, this, &Bridge::statusMessage);
+//    connect(gmConn, &GMConnection::gmLocationInfo, this, &Bridge::handleGMLocationInfo);
+//    connect(mrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &Bridge::handleMRSDailyScheduleSQL);
 }
+
 
 void Bridge::startBridge()
 {
-    //gmConn->requestRouteKeysForDate(QDate::currentDate());
-    //gmConn->requestLocationKeys();
-    gmLocationKeysDone_ = false;
-    gmRouteComparisonInfoDone_ = false;
-    gmOrganizationInfoDone_ = false;
-    as400RouteQueryDone_ = false;
-    mrsRouteDataDone_ = false;
-    mrsDataDriverDone_ = false;
-    mrsDataEquipmentDone_ = false;
-    gmLocationInfoDone_ = false;
+    bridgeDB->init();
+    emit statusMessage("hep");
+//    gmConn->requestRouteKeysForDate(QDate::currentDate());
+//    gmConn->requestLocationKeys();
+//    gmLocationKeysDone_ = false;
+//    gmRouteComparisonInfoDone_ = false;
+//    gmOrganizationInfoDone_ = false;
+//    as400RouteQueryDone_ = false;
+//    mrsRouteDataDone_ = false;
+//    mrsDataDriverDone_ = false;
+//    mrsDataEquipmentDone_ = false;
+//    gmLocationInfoDone_ = false;
 
-    gmConn->requestLocaitonInfo();
-    gmConn->requestLocationKeys();
-    gmConn->requestAllOrganizationInfo();
-    gmConn->requestRouteComparisonInfo(QDate::currentDate());
-    mrsConn->requestRouteKeysForDate("SEATTLE", QDate::currentDate());
-    mrsDataConn->requestValuesFromAGoogleSheet("powerUnit", "powerUnit");
-    mrsDataConn->requestValuesFromAGoogleSheet("driver", "driver");
+//    gmConn->requestLocaitonInfo();
+//    gmConn->requestLocationKeys();
+//    gmConn->requestAllOrganizationInfo();
+//    gmConn->requestRouteComparisonInfo(QDate::currentDate());
+//    mrsConn->requestRouteKeysForDate("SEATTLE", QDate::currentDate());
+//    mrsDataConn->requestValuesFromAGoogleSheet("powerUnit", "powerUnit");
+//    mrsDataConn->requestValuesFromAGoogleSheet("driver", "driver");
 
     as400Conn->getRouteDataForGreenmile(QDate::currentDate(), 10000);
 }
 
+void Bridge::handleRouteQueryResults(QMap<QString, QVariantList> sqlResults)
+{
+    emit statusMessage("Route info retrieved from AS400. There's "
+                       + QString::number(sqlResults["route:key"].size())
+            + " stops for all Charlie's divisions" + QStringList(sqlResults.keys()).join(", "));
+
+    bridgeDB->SQLDataInsert("as400RouteQuery", sqlResults);
+}
+
+/*
 void Bridge::stopBridge()
 {
 
@@ -109,15 +125,7 @@ void Bridge::handleGMLocationInfo(QJsonArray locationArray)
     }
 }
 
-void Bridge::handleRouteQueryResults(QMap<QString, QVariantList> sqlResults)
-{
-    emit statusMessage("Route info retrieved from AS400. There's "
-                       + QString::number(sqlResults["route:key"].size())
-            + " stops for all Charlie's divisions" + QStringList(sqlResults.keys()).join(", "));
 
-    as400RouteResultToCommonForm(sqlResults);
-    bridgeDB->handleAS400RouteQuery(sqlResults);
-}
 
 void Bridge::handleAllGreenmileOrgInfoResults(QJsonArray organizationInfo)
 {
@@ -669,7 +677,5 @@ void Bridge::makeRoutesToUpload()
     //qDebug() << "upload" << gmRoutesToUpload;
     //qDebug() << "update" << gmRoutesToUpdate;
     //qDebug() << uploadRoute;
-
-
-
 }
+*/

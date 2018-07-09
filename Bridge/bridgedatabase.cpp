@@ -2,78 +2,289 @@
 
 BridgeDatabase::BridgeDatabase(QObject *parent) : QObject(parent)
 {
-    if(!QFile(dbPath_).exists())
+}
+
+void BridgeDatabase::init()
+{
+    QString as400RouteQueryTableName    = "as400RouteQuery";
+    QString gmRouteQueryTableName       = "gmRoutes";
+    QString gmOrganizationTableName     = "gmOrganizations";
+    QString gmLocationInfoTableName     = "gmLocations";
+    QString mrsDailyAssignmentTableName = "mrsDailyAssignments";
+
+    QString as400ROuteQueryCreationQuery = "CREATE TABLE `as400RouteQuery` "
+                                           "(`driver:key` TEXT, "
+                                           "`equipment:key` TEXT, "
+                                           "`location:addressLine1` TEXT, "
+                                           "`location:addressLine2` TEXT, "
+                                           "`location:city` TEXT, "
+                                           "`location:deliveryDays` TEXT, "
+                                           "`location:description` TEXT, "
+                                           "`location:key` TEXT, "
+                                           "`location:state` TEXT, "
+                                           "`location:zipCode` TEXT, "
+                                           "`locationOverrideTimeWindows:closeTime` TEXT, "
+                                           "`locationOverrideTimeWindows:openTime` TEXT, "
+                                           "`locationOverrideTimeWindows:tw1Close` TEXT, "
+                                           "`locationOverrideTimeWindows:tw1Open` TEXT, "
+                                           "`locationOverrideTimeWindows:tw2Close` TEXT, "
+                                           "`locationOverrideTimeWindows:tw2Open` TEXT, "
+                                           "`order:cube` NUMERIC, "
+                                           "`order:number` TEXT NOT NULL UNIQUE, "
+                                           "`order:pieces` NUMERIC, "
+                                           "`order:weight` NUMERIC, "
+                                           "`organization:key` TEXT, "
+                                           "`route:date` TEXT, "
+                                           "`route:key` TEXT, "
+                                           "`stop:plannedSequenceNumber` INT, "
+                                           "PRIMARY KEY(`order:number`))";
+
+
+    QString gmRouteQueryCreationQuery = "CREATE TABLE `gmRoutes` "
+                                        "(`date` TEXT, "
+                                        "`driverAssignments` TEXT, "
+                                        "`driverAssignments:0:driver:key` TEXT, "
+                                        "`driversName` TEXT, "
+                                        "`equipmentAssignments` TEXT, "
+                                        "`equipmentAssignments:0:equipment:key` TEXT, "
+                                        "`id` INTEGER NOT NULL UNIQUE, "
+                                        "`key` TEXT, "
+                                        "`organization` TEXT, "
+                                        "`organization:key` TEXT, "
+                                        "`organization:id` INTEGER, "
+                                        "`stops` TEXT, "
+                                        "PRIMARY KEY(`id`))";
+
+    QString gmOrganizationCreationQuery = "CREATE TABLE `gmOrganizations` "
+                                          "(`key` TEXT, "
+                                          "`description` TEXT, "
+                                          "`id` INTEGER NOT NULL UNIQUE, "
+                                          "`unitSystem` TEXT, "
+                                          "PRIMARY KEY(`id`))";
+
+    QString gmLocationInfoCreationQuery = "CREATE TABLE `gmLocations` "
+                                          "(`id` INTEGER NOT NULL UNIQUE, "
+                                          "`key` TEXT, "
+                                          "`description` TEXT, "
+                                          "`addressLine1` TEXT, "
+                                          "`addressLine2` TEXT, "
+                                          "`city` TEXT, "
+                                          "`state` TEXT, "
+                                          "`zipCode` TEXT, "
+                                          "`latitude` NUMERIC, "
+                                          "`longitude` NUMERIC, "
+                                          "`geocodingQuality` TEXT, "
+                                          "`deliveryDays` TEXT, "
+                                          "`enabled` TEXT, "
+                                          "`hasGeofence` TEXT, "
+                                          "`organization:id` INTEGER, "
+                                          "`organization:key` TEXT, "
+                                          "`locationOverrideTimeWindows:0:id` INTEGER, "
+                                          "`locationType:id` INTEGER, "
+                                          "`locationType:key` TEXT, "
+                                          "PRIMARY KEY(`id`))";
+
+    QString mrsDailyAssignmentCreationQuery = "CREATE TABLE `mrsDailyAssignments` "
+                                              "(`route:key` TEXT NOT NULL, "
+                                              "`route:date` TEXT NOT NULL, "
+                                              "`organization:key` TEXT NOT NULL, "
+                                              "`driver:name` TEXT, "
+                                              "`truck:key` TEXT, "
+                                              "`trailer:key` TEXT, "
+                                              "PRIMARY KEY(`route:key`, `route:date`, `organization:key`))";;
+
+    QStringList gmRouteQueryExpectedKeys {"date",
+                                          "driverAssignments:0:driver:key",
+                                          "driverAssignments",
+                                          "driversName",
+                                          "equipmentAssignments:0:equipment:key",
+                                          "equipmentAssignments",
+                                          "id",
+                                          "key",
+                                          "organization:key",
+                                          "organization:id",
+                                          "organization",
+                                          "stops"};
+
+    QStringList gmOrganizationExpectedKeys {"id",
+                                            "key",
+                                            "unitSystem",
+                                            "description"};
+
+    QStringList gmLocationInfoExpectedKeys {"id",
+                                            "key",
+                                            "description",
+                                            "addressLine1",
+                                            "addressLine2",
+                                            "city",
+                                            "state",
+                                            "zipCode",
+                                            "latitude",
+                                            "longitude",
+                                            "geocodingQuality",
+                                            "deliveryDays",
+                                            "enabled",
+                                            "hasGeofence",
+                                            "organization:id",
+                                            "organization:key",
+                                            "locationOverrideTimeWindows:0:id",
+                                            "locationType:id",
+                                            "locationType:key"};
+
+    addJsonArrayInfo(gmRouteQueryTableName, gmRouteQueryCreationQuery, gmRouteQueryExpectedKeys);
+    addJsonArrayInfo(gmOrganizationTableName, gmOrganizationCreationQuery, gmOrganizationExpectedKeys);
+    addJsonArrayInfo(gmLocationInfoTableName, gmLocationInfoCreationQuery, gmLocationInfoExpectedKeys);
+    addSQLInfo(as400RouteQueryTableName, as400ROuteQueryCreationQuery);
+    addSQLInfo(mrsDailyAssignmentTableName, mrsDailyAssignmentCreationQuery);
+}
+
+void BridgeDatabase::SQLDataInsert(const QString &tableName, const QMap<QString, QVariantList> &sql)
+{
+    if(!okToInsertSQLData(tableName, "SQLDataInsert"))
+        return;
+
+    if(!isTableInDB(tableName))
+        executeInsertQuery(sqlTableInfoMap_[tableName]["creationQuery"].toString(), QString("create" + tableName));
+
+    writeToTable(tableName, sql);
+}
+
+void BridgeDatabase::JSONArrayInsert(const QString &tableName, const QJsonArray &jsonArray)
+{
+    if(!okToInsertJsonArray(tableName, "JSONArrayInsert"))
+        return;
+
+    if(!isTableInDB(tableName))
+        executeInsertQuery(jsonTableInfoMap_[tableName]["creationQuery"].toString(), QString("create" + tableName));
+
+    writeToTable(tableName, transposeJsonArrayToSQL(jsonTableInfoMap_[tableName]["expectedKeys"].toStringList(), jsonArray));
+}
+
+bool BridgeDatabase::okToInsertJsonArray(const QString &tableName, const QString &whatMethod)
+{
+    bool ok = false;
+    if(tableName.isNull() || tableName.isEmpty())
     {
-        createAS400RouteQueryTable();
-        createGMRouteTable();
-        createGMOrganizationTable();
-        createGMLocationTable();
-        createMRSDailyAssignmentTable();
+        emit errorMessage(whatMethod + ": JSON array info cannot be null");
+        qDebug() << whatMethod + ": JSON array info cannot be null.";
+        return ok;
     }
+    if(jsonTableInfoMap_[tableName]["creationQuery"].toString().isNull() || jsonTableInfoMap_[tableName]["creationQuery"].toString().isEmpty())
+    {
+        emit errorMessage(whatMethod + ": JSON array table creation query cannot be null");
+        qDebug() << whatMethod + ": JSON array table creation query cannot be null";
+        return ok;
+    }
+    if(jsonTableInfoMap_[tableName].isEmpty())
+    {
+        emit errorMessage(whatMethod + ": Expected JSON object keys cannot be null.");
+        qDebug() << whatMethod + ": Expected JSON object keys cannot be null.";
+        return ok;
+    }
+
+    emit statusMessage(whatMethod + ": Created " + tableName +  " table.");
+    ok = true;
+    return ok;
 }
 
-void BridgeDatabase::handleAS400RouteQuery(const QMap<QString, QVariantList> &sql)
+bool BridgeDatabase::okToInsertSQLData(const QString &tableName, const QString &whatMethod)
 {
-    writeToTable("as400RouteQuery", sql);
+    bool ok = false;
+    if(tableName.isNull() || tableName.isEmpty())
+    {
+        emit errorMessage(whatMethod + ": SQL table info cannot be null");
+        qDebug() << whatMethod + ": SQL table info cannot be null.";
+        return ok;
+    }
+    if(sqlTableInfoMap_[tableName]["creationQuery"].toString().isNull() || sqlTableInfoMap_[tableName]["creationQuery"].toString().isEmpty())
+    {
+        emit errorMessage(whatMethod + ": SQL table creation query cannot be null");
+        qDebug() << whatMethod + ": SQL table creation query cannot be null";
+        return ok;
+    }
+
+    emit statusMessage(whatMethod + ": Created " + tableName +  " table.");
+    ok = true;
+    return ok;
 }
 
-void BridgeDatabase::handleGMRouteQuery(const QJsonArray &jsonArray)
+bool BridgeDatabase::isTableInDB(const QString &tableName)
 {
-    QStringList expectedKeys {"date",
-                              "driverAssignments:0:driver:key",
-                              "driverAssignments",
-                              "driversName",
-                              "equipmentAssignments:0:equipment:key",
-                              "equipmentAssignments",
-                              "id",
-                              "key",
-                              "organization:key",
-                              "organization:id",
-                              "organization",
-                              "stops"};
+    bool existsInDB = false;
+    QString verb = "check for table " + tableName;
+    QString queryString = "SELECT name FROM sqlite_master WHERE type='table' AND name='"+tableName+"'";
 
-    writeToTable("gmRoutes", transposeJsonArrayToSQL(expectedKeys, jsonArray));
+    if(!executeQuery(queryString, verb).isEmpty())
+        existsInDB = true;
+
+    return existsInDB;
 }
 
-void BridgeDatabase::handleGMOrganizationQuery(const QJsonArray &jsonArray)
+bool BridgeDatabase::addJsonArrayInfo(const QString &tableName, const QString &tableCreationQuery, const QStringList &expectedJsonKeys)
 {
-    QStringList expectedKeys {"id",
-                              "key",
-                              "unitSystem",
-                              "description"};
+    bool ok = false;
+    if(tableName.isNull() || tableName.isEmpty())
+    {
+        emit errorMessage("JSON array info cannot be null");
+        qDebug() << "JSON array info cannot be null.";
+        return ok;
+    }
+    if(tableCreationQuery.isNull() || tableCreationQuery.isEmpty())
+    {
+        emit errorMessage("JSON array table creation query cannot be null");
+        qDebug() << "JSON array table creation query cannot be null";
+        return ok;
+    }
+    if(expectedJsonKeys.isEmpty())
+    {
+        emit errorMessage("Expected JSON object keys cannot be null.");
+        qDebug() << "Expected JSON object keys cannot be null.";
+        return ok;
+    }
 
-    writeToTable("gmOrganizations", transposeJsonArrayToSQL(expectedKeys, jsonArray));
+    jsonTableInfoMap_[tableName] = QVariantMap();
+    jsonTableInfoMap_[tableName]["creationQuery"] = tableCreationQuery;
+    jsonTableInfoMap_[tableName]["expectedKeys"] = expectedJsonKeys;
+
+    if(!isTableInDB(tableName))
+        executeQuery(jsonTableInfoMap_[tableName]["creationQuery"].toString(), QString(tableName + " creation"));
+
+    if(isTableInDB(tableName))
+        ok = true;
+    else
+        ok = false;
+
+    return ok;
 }
 
-void BridgeDatabase::handleGMLocationInfo(const QJsonArray &jsonArray)
+bool BridgeDatabase::addSQLInfo(const QString &tableName, const QString &tableCreationQuery)
 {
-    QStringList expectedKeys {"id",
-                              "key",
-                              "description",
-                              "addressLine1",
-                              "addressLine2",
-                              "city",
-                              "state",
-                              "zipCode",
-                              "latitude",
-                              "longitude",
-                              "geocodingQuality",
-                              "deliveryDays",
-                              "enabled",
-                              "hasGeofence",
-                              "organization:id",
-                              "organization:key",
-                              "locationOverrideTimeWindows:0:id",
-                              "locationType:id",
-                              "locationType:key"};
+    bool ok = false;
+    if(tableName.isNull() || tableName.isEmpty())
+    {
+        emit errorMessage("SQL table name info cannot be null");
+        qDebug() << "SQL table name info cannot be null.";
+        return ok;
+    }
+    if(tableCreationQuery.isNull() || tableCreationQuery.isEmpty())
+    {
+        emit errorMessage("SQL table creation query cannot be null");
+        qDebug() << "SQL table creation query cannot be null";
+        return ok;
+    }
 
-    writeToTable("gmLocations", transposeJsonArrayToSQL(expectedKeys, jsonArray));
-}
+    sqlTableInfoMap_[tableName] = QVariantMap();
+    sqlTableInfoMap_[tableName]["creationQuery"] = tableCreationQuery;
 
-void BridgeDatabase::handleMRSDailyAssignmentSQL(const QMap<QString, QVariantList> &sql)
-{
-    qDebug() << sql.size() << sql.keys();
-    writeToTable("mrsDailyAssignments", sql);
+    if(!isTableInDB(tableName))
+        executeQuery(sqlTableInfoMap_[tableName]["creationQuery"].toString(), QString(tableName + " creation"));
+
+    if(isTableInDB(tableName))
+        ok = true;
+    else
+        ok = false;
+
+    return ok;
 }
 
 QMap<QString, QVariantList> BridgeDatabase::transposeJsonArrayToSQL(const QStringList &expectedKeys, const QJsonArray &data)
@@ -128,12 +339,12 @@ QVariantMap BridgeDatabase::transposeJsonObjectToVarMap(const QStringList &expec
                     valCopy = subVal;
                 }
 
-               if(i == (subkeyList.size() - 1))
-               {
-                   vMap[str] = jsonValueToQVariant(valCopy);
+                if(i == (subkeyList.size() - 1))
+                {
+                    vMap[str] = jsonValueToQVariant(valCopy);
                     //qDebug() << str << valCopy;
                     break;
-               }
+                }
             }
         }
         else
@@ -142,9 +353,9 @@ QVariantMap BridgeDatabase::transposeJsonObjectToVarMap(const QStringList &expec
             //qDebug() << str << valCopy.toObject()[str];
         }
     }
-//    qDebug() << vMap.size();
-//    for(auto key:vMap.keys())
-//        qDebug() << key << vMap[key].type() << vMap["id"];
+    //    qDebug() << vMap.size();
+    //    for(auto key:vMap.keys())
+    //        qDebug() << key << vMap[key].type() << vMap["id"];
     return vMap;
 }
 
@@ -185,14 +396,14 @@ QVariant BridgeDatabase::jsonValueToQVariant(const QJsonValue &val)
 
 QJsonArray BridgeDatabase::transposeSQLToJsonArray(const QMap<QString, QVariantList> &data)
 {
-
-
+    qDebug() << data;
+    return QJsonArray();
 }
 
 bool BridgeDatabase::truncateATable(const QString &tableName)
 {
     QString truncateTableQuery = "TRUNCATE " + tableName;
-    return executeAQuery(truncateTableQuery, "truncate");
+    return executeInsertQuery(truncateTableQuery, "truncate");
 }
 
 bool BridgeDatabase::writeToTable(const QString &tableName, QMap<QString, QVariantList> invoiceResults)
@@ -205,7 +416,7 @@ bool BridgeDatabase::writeToTable(const QString &tableName, QMap<QString, QVaria
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", dbPath_);
         db.setDatabaseName(dbPath_);
 
-        emit debugMessage("Beginning SQLite " + tableName + " import.");
+        emit statusMessage("Beginning SQLite " + tableName + " import.");
         if(db.open())
         {
             success = executeQueryAsString(db,tableName, invoiceResults);
@@ -216,23 +427,77 @@ bool BridgeDatabase::writeToTable(const QString &tableName, QMap<QString, QVaria
         }
         else
         {
-            emit debugMessage("Failed to open SQLite database.");
-            emit debugMessage(db.lastError().text());
+            emit errorMessage("Failed to open SQLite database.");
+            emit errorMessage(db.lastError().text());
         }
 
         db.close();
-        emit debugMessage("Finished SQLite. INSERT OR REPLACE for database "
-                          + dbPath_
-                          + " for table "
-                          + tableName);
+        emit statusMessage("Finished SQLite. INSERT OR REPLACE for database "
+                           + dbPath_
+                           + " for table "
+                           + tableName);
     }
-    emit debugMessage("Cleaning up SQLite " + dbPath_ + " connection.");
+    emit statusMessage("Cleaning up SQLite " + dbPath_ + " connection.");
     QSqlDatabase::removeDatabase(dbPath_);
 
     return success;
 }
 
-bool BridgeDatabase::executeAQuery(const QString &queryString, const QString &verb)
+QMap<QString, QVariantList> BridgeDatabase::executeQuery(const QString &queryString, const QString &verb)
+{
+
+    bool success = false;
+    QMap<QString,QVariantList> sqlData;
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", dbPath_);
+        db.setDatabaseName(dbPath_);
+
+        emit statusMessage("Beginning SQLite " +verb);
+        if(db.open())
+        {
+            QSqlQuery query(db);
+            success = query.exec(queryString);
+
+            if(success)
+            {
+                while(query.next())
+                {
+                    for(int j = 0; j < query.record().count(); ++j)
+                    {
+                        sqlData[query.record().fieldName(j)].append(query.value(j));
+                    }
+                }
+            }
+            if(!success)
+            {
+                emit errorMessage("Failed to execute a "+verb+" type command"
+                                  + " on the SQLite database "
+                                  + dbPath_
+                                  + " for table "
+                                  + dbPath_);
+
+                emit errorMessage("Query error: " + query.lastError().text());
+            }
+        }
+        else
+        {
+            emit errorMessage("Failed to open SQLite database.");
+            emit errorMessage(db.lastError().text());
+        }
+
+        db.close();
+        emit statusMessage("Finished SQLite. "+verb+" completed database "
+                           + dbPath_
+                           + " for table "
+                           + dbPath_);
+    }
+    emit statusMessage("Cleaning up SQLite " + dbPath_ + " connection.");
+    QSqlDatabase::removeDatabase(dbPath_);
+
+    return sqlData;
+}
+
+bool BridgeDatabase::executeASYNCQuery(const QString &queryString, const QString &queryKey, const int chunkSize, const QString &verb)
 {
     bool success = false;
 
@@ -240,35 +505,130 @@ bool BridgeDatabase::executeAQuery(const QString &queryString, const QString &ve
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", dbPath_);
         db.setDatabaseName(dbPath_);
 
-        emit debugMessage("Beginning SQLite " +verb);
+        emit statusMessage("Beginning SQLite " +verb);
+        if(db.open())
+        {
+            QSqlQuery query(db);
+            success = query.exec(queryString);
+            processASYNCQuery(query, queryKey, chunkSize);
+            if(!success)
+            {
+                emit errorMessage("Failed to execute a "+verb+" type command"
+                                  + " on the SQLite database "
+                                  + dbPath_
+                                  + " for table "
+                                  + dbPath_);
+
+                emit errorMessage("Query error: " + query.lastError().text());
+            }
+        }
+        else
+        {
+            emit errorMessage("Failed to open SQLite database.");
+            emit errorMessage(db.lastError().text());
+        }
+
+        db.close();
+        emit statusMessage("Finished SQLite. "+verb+" completed database "
+                           + dbPath_
+                           + " for table "
+                           + dbPath_);
+    }
+    emit statusMessage("Cleaning up SQLite " + dbPath_ + " connection.");
+    QSqlDatabase::removeDatabase(dbPath_);
+    return success;
+}
+
+void BridgeDatabase::processASYNCQuery(QSqlQuery &query, const QString &queryKey, const int chunkSize, const QString &verb)
+{
+    bool firstRun = true;
+    int recordCounter = 0;
+    QMap<QString,QVariantList> sqlData;
+    while(query.next())
+    {
+        if(recordCounter == chunkSize && chunkSize != 0)
+        {
+            //Count the amt of records.
+            if(sqlData.isEmpty())
+            {
+                emit debugMessage(verb + ": SQLite query returned an empty result set.");
+                qDebug() << verb + ": SQLite query returned an empty result set.";
+            }
+            else
+                emit statusMessage(QString(verb + ": Retrieved " +  QString::number(sqlData.first().size()) + " records from SQLite."));
+
+            emit asyncSqlResults(firstRun, queryKey, sqlData);
+            firstRun = false;
+
+            for(auto key: sqlData.keys())
+            {
+                sqlData[key].clear();
+            }
+            sqlData.clear();
+            recordCounter = 0;
+        }
+
+        for(int j = 0; j < query.record().count(); ++j)
+        {
+            sqlData[query.record().fieldName(j)].append(query.value(j));
+        }
+        ++recordCounter;
+    }
+
+    //Count the amt of records.
+    if(sqlData.isEmpty())
+    {
+        emit debugMessage(verb + ": SQLite query returned an empty result set.");
+        qDebug() << verb + ": SQLite query returned an empty result set.";
+    }
+    else
+        emit statusMessage(QString(verb + ": Retrieved " +  QString::number(sqlData.first().size()) + " records from SQLite."));
+
+    emit asyncSqlResults(firstRun, queryKey, sqlData);
+
+    for(auto key: sqlData.keys())
+        sqlData[key].clear();
+
+    sqlData.clear();
+}
+
+bool BridgeDatabase::executeInsertQuery(const QString &queryString, const QString &verb)
+{
+    bool success = false;
+
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", dbPath_);
+        db.setDatabaseName(dbPath_);
+
+        emit statusMessage("Beginning SQLite " +verb);
         if(db.open())
         {
             QSqlQuery query(db);
             success = query.exec(queryString);
             if(!success)
             {
-                emit debugMessage("Failed to execute a "+verb+" type command"
+                emit errorMessage("Failed to execute a "+verb+" type command"
                                   + " on the SQLite database "
                                   + dbPath_
                                   + " for table "
                                   + dbPath_);
 
-                emit debugMessage("Query error: " + query.lastError().text());
+                emit errorMessage("Query error: " + query.lastError().text());
             }
         }
         else
         {
-            emit debugMessage("Failed to open SQLite database.");
-            emit debugMessage(db.lastError().text());
+            emit errorMessage("Failed to open SQLite database.");
+            emit errorMessage(db.lastError().text());
         }
 
         db.close();
-        emit debugMessage("Finished SQLite. "+verb+" completed database "
-                          + dbPath_
-                          + " for table "
-                          + dbPath_);
+        emit statusMessage("Finished SQLite. "+verb+" completed database "
+                           + dbPath_
+                           + " for table "
+                           + dbPath_);
     }
-    emit debugMessage("Cleaning up SQLite " + dbPath_ + " connection.");
+    emit statusMessage("Cleaning up SQLite " + dbPath_ + " connection.");
     QSqlDatabase::removeDatabase(dbPath_);
     return success;
 }
@@ -284,7 +644,6 @@ QStringList BridgeDatabase::generateValueTuples(QMap<QString, QVariantList> invo
         {
             if(invoiceResults[key].size() > invoiceResults.first().size())
             {
-                emit debugMessage("Cannot assemble value tuples. Index for " + key + " out of range.");
                 emit errorMessage("Cannot assemble value tuples. Index for " + key + " out of range.");
                 return QStringList();
             }
@@ -340,14 +699,14 @@ QStringList BridgeDatabase::generateValueTuples(QMap<QString, QVariantList> invo
                 break;
 
             case QVariant::Type::Invalid:
-                    valueList.append("NULL");
+                valueList.append("NULL");
                 break;
 
             default:
                 qDebug() << "Unknown variant type in switch. "
                             "If you see this a lot, "
                             " your event loop might be getting smashed... " << invoiceResults[key][i].type();
-                emit debugMessage(QString("Unsupported data type from AS400 database "
+                emit errorMessage(QString("Unsupported data type from SQLite database "
                                           + invoiceResults[key][i].toString()
                                           + " "
                                           + invoiceResults[key][i].type()));
@@ -363,7 +722,7 @@ QStringList BridgeDatabase::generateValueTuples(QMap<QString, QVariantList> invo
 bool BridgeDatabase::executeQueryAsBatch(QSqlDatabase &db, const QString &tableName, QMap<QString, QVariantList> sqlData)
 {
     qDebug() << "batch insert";
-    emit debugMessage("Falling back to batch insert.");
+    emit statusMessage("Falling back to batch insert.");
 
     bool success = false;
     int recordCount = 0;
@@ -389,21 +748,21 @@ bool BridgeDatabase::executeQueryAsBatch(QSqlDatabase &db, const QString &tableN
     for(auto results:sqlData)
         query.addBindValue(results);
 
-    emit debugMessage("Beginning SQLite fallback batch insert of " + QString::number(recordCount) + " length");
+    emit statusMessage("Beginning SQLite fallback batch insert of " + QString::number(recordCount) + " length");
 
     db.driver()->beginTransaction();
 
     if(query.execBatch())
         success = true;
     else
-        emit debugMessage("Query Error in batch insert. Last error is: " + query.lastError().text());
+        emit errorMessage("Query Error in batch insert. Last error is: " + query.lastError().text());
 
     db.driver()->commitTransaction();
 
     if(success)
-        emit debugMessage("Completed SQLite batch insert.");
+        emit statusMessage("Completed SQLite batch insert.");
     else
-        emit debugMessage("Failed SQLite batch insert.");
+        emit errorMessage("Failed SQLite batch insert.");
 
     return success;
 }
@@ -424,128 +783,23 @@ bool BridgeDatabase::executeQueryAsString(QSqlDatabase &db, const QString &table
     }
     valueTuples = generateValueTuples(sqlData);
     queryString.append(columnsToUpdate.join(", ") + ") VALUES " + valueTuples.join(", "));
-    emit debugMessage(QString("Query length for " + tableName + " is " + QString::number(queryString.size()) + " char."));
-    emit debugMessage(QString("Inserting " + QString::number(sqlData.first().size()) + " records into " + tableName + "."));
+    emit statusMessage(QString("Query length for " + tableName + " is " + QString::number(queryString.size()) + " char."));
+    emit statusMessage(QString("Inserting " + QString::number(sqlData.first().size()) + " records into " + tableName + "."));
 
     db.driver()->beginTransaction();
 
     if(query.exec(queryString))
     {
         success = true;
-        emit debugMessage("SQLite string upload to " + tableName + "  completed.");
+        emit statusMessage("SQLite string upload to " + tableName + "  completed.");
     }
     else
     {
         success = false;
-        emit debugMessage("Error in SQLite string query for " + tableName + ": " + query.lastError().text() + ".");
+        emit errorMessage("Error in SQLite string query for " + tableName + ": " + query.lastError().text() + ".");
     }
     db.driver()->commitTransaction();
 
     return success;
-}
-
-void BridgeDatabase::createAS400RouteQueryTable()
-{
-    QString query = "CREATE TABLE `as400RouteQuery` "
-                    "(`driver:key` TEXT, "
-                    "`equipment:key` TEXT, "
-                    "`location:addressLine1` TEXT, "
-                    "`location:addressLine2` TEXT, "
-                    "`location:city` TEXT, "
-                    "`location:deliveryDays` TEXT, "
-                    "`location:description` TEXT, "
-                    "`location:key` TEXT, "
-                    "`location:state` TEXT, "
-                    "`location:zipCode` TEXT, "
-                    "`locationOverrideTimeWindows:closeTime` TEXT, "
-                    "`locationOverrideTimeWindows:openTime` TEXT, "
-                    "`locationOverrideTimeWindows:tw1Close` TEXT, "
-                    "`locationOverrideTimeWindows:tw1Open` TEXT, "
-                    "`locationOverrideTimeWindows:tw2Close` TEXT, "
-                    "`locationOverrideTimeWindows:tw2Open` TEXT, "
-                    "`order:cube` NUMERIC, "
-                    "`order:number` TEXT NOT NULL UNIQUE, "
-                    "`order:pieces` NUMERIC, "
-                    "`order:weight` NUMERIC, "
-                    "`organization:key` TEXT, "
-                    "`route:date` TEXT, "
-                    "`route:key` TEXT, "
-                    "`stop:plannedSequenceNumber` INT, "
-                    "PRIMARY KEY(`order:number`))";
-
-    executeAQuery(query, "create table");
-}
-
-void BridgeDatabase::createGMRouteTable()
-{
-    QString query = "CREATE TABLE `gmRoutes` "
-                    "(`date` TEXT, "
-                    "`driverAssignments` TEXT, "
-                    "`driverAssignments:0:driver:key` TEXT, "
-                    "`driversName` TEXT, "
-                    "`equipmentAssignments` TEXT, "
-                    "`equipmentAssignments:0:equipment:key` TEXT, "
-                    "`id` INTEGER NOT NULL UNIQUE, "
-                    "`key` TEXT, "
-                    "`organization` TEXT, "
-                    "`organization:key` TEXT, "
-                    "`organization:id` INTEGER, "
-                    "`stops` TEXT, "
-                    "PRIMARY KEY(`id`))";
-
-    executeAQuery(query, "create table");
-}
-
-void BridgeDatabase::createGMOrganizationTable()
-{
-    QString query = "CREATE TABLE `gmOrganizations` "
-                    "(`key` TEXT, "
-                    "`description` TEXT, "
-                    "`id` INTEGER NOT NULL UNIQUE, "
-                    "`unitSystem` TEXT, "
-                    "PRIMARY KEY(`id`))";
-
-    executeAQuery(query, "create table");
-}
-
-void BridgeDatabase::createGMLocationTable()
-{
-    QString query = "CREATE TABLE `gmLocations` "
-                    "(`id` INTEGER NOT NULL UNIQUE, "
-                    "`key` TEXT, "
-                    "`description` TEXT, "
-                    "`addressLine1` TEXT, "
-                    "`addressLine2` TEXT, "
-                    "`city` TEXT, "
-                    "`state` TEXT, "
-                    "`zipCode` TEXT, "
-                    "`latitude` NUMERIC, "
-                    "`longitude` NUMERIC, "
-                    "`geocodingQuality` TEXT, "
-                    "`deliveryDays` TEXT, "
-                    "`enabled` TEXT, "
-                    "`hasGeofence` TEXT, "
-                    "`organization:id` INTEGER, "
-                    "`organization:key` TEXT, "
-                    "`locationOverrideTimeWindows:0:id` INTEGER, "
-                    "`locationType:id` INTEGER, "
-                    "`locationType:key` TEXT, "
-                    "PRIMARY KEY(`id`))";
-
-    executeAQuery(query, "create table");
-}
-
-void BridgeDatabase::createMRSDailyAssignmentTable()
-{
-    QString query = "CREATE TABLE `mrsDailyAssignments` "
-                    "(`route:key` TEXT NOT NULL, "
-                    "`route:date` TEXT NOT NULL, "
-                    "`organization:key` TEXT NOT NULL, "
-                    "`driver:name` TEXT, "
-                    "`truck:key` TEXT, "
-                    "`trailer:key` TEXT, "
-                    "PRIMARY KEY(`route:key`, `route:date`, `organization:key`))";
-
-    executeAQuery(query, "create table");
 }
 
