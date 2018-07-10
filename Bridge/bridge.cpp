@@ -11,23 +11,26 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
 
     connect(mrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &Bridge::handleMRSDailyScheduleSQL);
 
+    connect(mrsDataConn, &MRSDataConnection::data, this, &Bridge::routeMRSDataToFunction);
+
     connect(gmConn, &GMConnection::allOrganizationInfo, this, &Bridge::handleAllGreenmileOrgInfoResults);
     connect(gmConn, &GMConnection::routeComparisonInfo, this, &Bridge::handleRouteComparisonInfo);
     connect(gmConn, &GMConnection::gmLocationInfo, this, &Bridge::handleGMLocationInfo);
 
-//    connect(gmConn, &GMConnection::downloadProgess, this, &Bridge::downloadProgess);
-//    connect(gmConn, &GMConnection::statusMessage, this, &Bridge::statusMessage);
-//    connect(mrsConn, &MRSConnection::statusMessage, this, &Bridge::statusMessage);
-//    connect(mrsConn, &MRSConnection::routeSheetData, this, &Bridge::handleMasterRouteSheetData);
+    //    connect(gmConn, &GMConnection::downloadProgess, this, &Bridge::downloadProgess);
+    //    connect(gmConn, &GMConnection::statusMessage, this, &Bridge::statusMessage);
+    //    connect(mrsConn, &MRSConnection::statusMessage, this, &Bridge::statusMessage);
+    //    connect(mrsConn, &MRSConnection::routeSheetData, this, &Bridge::handleMasterRouteSheetData);
 
 
-//    connect(mrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &Bridge::handleMRSDailyScheduleSQL);
+    //    connect(mrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &Bridge::handleMRSDailyScheduleSQL);
 }
 
 
 void Bridge::startBridge()
 {
     mrsConn->requestRouteKeysForDate("SEATTLE", QDate::currentDate());
+    mrsDataConn->requestValuesFromAGoogleSheet("routeStart", "routeStart");
     as400Conn->getRouteDataForGreenmile(QDate::currentDate(), 10000);
     gmConn->requestAllOrganizationInfo();
     gmConn->requestRouteComparisonInfo(QDate::currentDate());
@@ -209,6 +212,95 @@ void Bridge::handleRouteComparisonInfo(const QJsonArray &array)
     bridgeDB->JSONArrayInsert("gmRoutes", array);
 }
 
+void Bridge::routeMRSDataToFunction(const QString &key, const QJsonObject &data)
+{
+    emit statusMessage("MRS Data for " + key + " retrieved.");
+    if(key == "routeStart")
+        handleMRSDataRouteStartTimes(key, data);
+}
+
+
+void Bridge::handleMRSDataRouteStartTimes(const QString &key, const QJsonObject &data)
+{
+    QMap<QString, QVariantList> sql;
+    QString gmRouteQueryTableName       = "routeStart";
+    //ROUTE	AVG STARTS PREV	AVG START TIME	MON	STARTS PREV DAY MON	TUE	STARTS PREV DAY TUE	WED	STARTS PREV DAY WED	THU	STARTS PREV DAY THU	FRI	STARTS PREV DAY FRI	SAT	STARTS PREV DAY SAT	SUN	STARTS PREV DAY SUN
+    QString gmRouteQueryCreationQuery = "CREATE TABLE `routeStart` "
+                                        "(`route` TEXT NOT NULL UNIQUE, "
+                                        "`avgStartsPrev` TEXT, "
+                                        "`avgStartTime` TEXT, "
+                                        "`mondayStartTime` TEXT, "
+                                        "`mondayStartsPrevDay` TEXT, "
+                                        "`tuesdayStartTime` TEXT, "
+                                        "`tuesdayStartsPrevDay` TEXT, "
+                                        "`wednesdayStartTime` TEXT, "
+                                        "`wednesdayStartsPrevDay` TEXT, "
+                                        "`thursdayStartTime` TEXT, "
+                                        "`thursdayStartsPrevDay` TEXT, "
+                                        "`fridayStartTime` TEXT, "
+                                        "`fridayStartsPrevDay` TEXT, "
+                                        "`saturdayStartTime` TEXT, "
+                                        "`saturdayStartsPrevDay` TEXT, "
+                                        "`sundayStartTime` TEXT, "
+                                        "`sundayStartsPrevDay` TEXT, "
+                                        "PRIMARY KEY(`route`))";
+
+    QStringList dataOrder {"route",
+                           "avgStartsPrev",
+                           "avgStartTime",
+                           "mondayStartTime",
+                           "mondayStartsPrevDay",
+                           "tuesdayStartTime",
+                           "tuesdayStartsPrevDay",
+                           "wednesdayStartTime",
+                           "wednesdayStartsPrevDay",
+                           "thursdayStartTime",
+                           "thursdayStartsPrevDay",
+                           "fridayStartTime",
+                           "fridayStartsPrevDay",
+                           "saturdayStartTime",
+                           "saturdayStartsPrevDay",
+                           "sundayStartTime",
+                           "sundayStartsPrevDay"};
+
+    qDebug() << data;
+    sql = googleDataToSQL(true, dataOrder, data);
+    bridgeDB->addSQLInfo(gmRouteQueryTableName, gmRouteQueryCreationQuery);
+    bridgeDB->SQLDataInsert(gmRouteQueryTableName, sql);
+
+    //    bridgeDB->addJsonArrayInfo(gmRouteQueryTableName, gmRouteQueryCreationQuery, gmRouteQueryExpectedKeys);
+    //    bridgeDB->JSONArrayInsert("gmRoutes", array);
+}
+
+QMap<QString, QVariantList> Bridge::googleDataToSQL(bool hasHeader, const QStringList dataOrder, const QJsonObject &data)
+{
+    QMap<QString, QVariantList> sql;
+    QJsonArray array;
+    QJsonArray row;
+    array = data["values"].toArray();
+    for(auto valArr:array)
+    {
+        if(hasHeader)
+        {
+            hasHeader = false;
+            continue;
+        }
+
+        row = valArr.toArray();
+        for(int i = 0; i < dataOrder.size(); ++i)
+        {
+            if(row.size() <= i)
+                sql[dataOrder[i]].append(QVariant());
+
+            else if(row[i].toString().isEmpty())
+                sql[dataOrder[i]].append(QVariant());
+
+            else
+                sql[dataOrder[i]].append(row[i].toVariant());
+        }
+    }
+    return sql;
+}
 /*
 void Bridge::stopBridge()
 {

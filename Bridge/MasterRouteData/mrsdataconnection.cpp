@@ -2,7 +2,6 @@
 
 MRSDataConnection::MRSDataConnection(QObject *parent) : QObject(parent)
 {
-
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 }
 

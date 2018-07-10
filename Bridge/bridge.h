@@ -28,13 +28,17 @@ public slots:
     void handleGMLocationInfo(const QJsonArray &array);
     void handleAllGreenmileOrgInfoResults(const QJsonArray &array);
     void handleRouteComparisonInfo(const QJsonArray &array);
+    void routeMRSDataToFunction(const QString &key, const QJsonObject &data);
 
 private:
     GMConnection *gmConn = new GMConnection(this);
     MRSConnection *mrsConn = new MRSConnection(this);
     AS400 *as400Conn = new AS400(this);
     MRSDataConnection *mrsDataConn = new MRSDataConnection(this);
-    BridgeDatabase *bridgeDB = new BridgeDatabase(this);
+    BridgeDatabase *bridgeDB = new BridgeDatabase(this); 
+
+    void handleMRSDataRouteStartTimes(const QString &key, const QJsonObject &data);
+    QMap<QString,QVariantList> googleDataToSQL(bool hasHeader, const QStringList dataOrder, const QJsonObject &data);
 };
 
 #endif // BRIDGE_H
