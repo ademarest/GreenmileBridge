@@ -24,7 +24,7 @@ public:
 
     void requestRouteKeysForDate(const QDate &date);
     void requestLocationKeys();
-    void requestLocaitonInfo();
+    void requestLocationInfo();
     void requestAllOrganizationInfo();
     void requestRouteComparisonInfo(const QDate &date);
     void uploadARoute(const QJsonObject &routeJson);

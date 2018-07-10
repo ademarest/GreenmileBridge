@@ -39,7 +39,7 @@ void GMConnection::requestLocationKeys()
     makeGMPostRequest(key, serverAddrTail, postData);
 }
 
-void GMConnection::requestLocaitonInfo()
+void GMConnection::requestLocationInfo()
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
     QString key = "locationInfo";

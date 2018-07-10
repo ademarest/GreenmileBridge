@@ -5,56 +5,208 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
     connect(bridgeDB, &BridgeDatabase::debugMessage, this, &Bridge::statusMessage);
     connect(bridgeDB, &BridgeDatabase::errorMessage, this, &Bridge::statusMessage);
     connect(bridgeDB, &BridgeDatabase::statusMessage, this, &Bridge::statusMessage);
+
+    connect(as400Conn, &AS400::greenmileRouteInfoResults, this, &Bridge::handleRouteQueryResults);
+    connect(as400Conn, &AS400::debugMessage, this, &Bridge::statusMessage);
+
+    connect(mrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &Bridge::handleMRSDailyScheduleSQL);
+
+    connect(gmConn, &GMConnection::allOrganizationInfo, this, &Bridge::handleAllGreenmileOrgInfoResults);
+    connect(gmConn, &GMConnection::routeComparisonInfo, this, &Bridge::handleRouteComparisonInfo);
+    connect(gmConn, &GMConnection::gmLocationInfo, this, &Bridge::handleGMLocationInfo);
+
 //    connect(gmConn, &GMConnection::downloadProgess, this, &Bridge::downloadProgess);
-//    connect(gmConn, &GMConnection::routeKeysForDate, this, &Bridge::handleRouteKeysForDate);
-//    connect(gmConn, &GMConnection::locationKeys, this, &Bridge::handleLocationKeys);
 //    connect(gmConn, &GMConnection::statusMessage, this, &Bridge::statusMessage);
 //    connect(mrsConn, &MRSConnection::statusMessage, this, &Bridge::statusMessage);
 //    connect(mrsConn, &MRSConnection::routeSheetData, this, &Bridge::handleMasterRouteSheetData);
-    connect(as400Conn, &AS400::greenmileRouteInfoResults, this, &Bridge::handleRouteQueryResults);
-    connect(as400Conn, &AS400::debugMessage, this, &Bridge::statusMessage);
-//    connect(gmConn, &GMConnection::allOrganizationInfo, this, &Bridge::handleAllGreenmileOrgInfoResults);
-//    connect(gmConn, &GMConnection::routeComparisonInfo, this, &Bridge::handleRouteComparisonInfo);
-//    connect(mrsDataConn, &MRSDataConnection::data, this, &Bridge::handleMasterRouteDataResults);
-//    connect(bridgeDB, &BridgeDatabase::debugMessage, this, &Bridge::statusMessage);
-//    connect(gmConn, &GMConnection::gmLocationInfo, this, &Bridge::handleGMLocationInfo);
+
+
 //    connect(mrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &Bridge::handleMRSDailyScheduleSQL);
 }
 
 
 void Bridge::startBridge()
 {
-    bridgeDB->init();
-    emit statusMessage("hep");
-//    gmConn->requestRouteKeysForDate(QDate::currentDate());
-//    gmConn->requestLocationKeys();
-//    gmLocationKeysDone_ = false;
-//    gmRouteComparisonInfoDone_ = false;
-//    gmOrganizationInfoDone_ = false;
-//    as400RouteQueryDone_ = false;
-//    mrsRouteDataDone_ = false;
-//    mrsDataDriverDone_ = false;
-//    mrsDataEquipmentDone_ = false;
-//    gmLocationInfoDone_ = false;
-
-//    gmConn->requestLocaitonInfo();
-//    gmConn->requestLocationKeys();
-//    gmConn->requestAllOrganizationInfo();
-//    gmConn->requestRouteComparisonInfo(QDate::currentDate());
-//    mrsConn->requestRouteKeysForDate("SEATTLE", QDate::currentDate());
-//    mrsDataConn->requestValuesFromAGoogleSheet("powerUnit", "powerUnit");
-//    mrsDataConn->requestValuesFromAGoogleSheet("driver", "driver");
-
+    mrsConn->requestRouteKeysForDate("SEATTLE", QDate::currentDate());
     as400Conn->getRouteDataForGreenmile(QDate::currentDate(), 10000);
+    gmConn->requestAllOrganizationInfo();
+    gmConn->requestRouteComparisonInfo(QDate::currentDate());
+    gmConn->requestLocationInfo();
 }
 
-void Bridge::handleRouteQueryResults(QMap<QString, QVariantList> sqlResults)
+void Bridge::handleRouteQueryResults(const QMap<QString, QVariantList> &sql)
 {
-    emit statusMessage("Route info retrieved from AS400. There's "
-                       + QString::number(sqlResults["route:key"].size())
-            + " stops for all Charlie's divisions" + QStringList(sqlResults.keys()).join(", "));
+    emit statusMessage("Route info retrieved from AS400. There's " + QString::number(sql["route:key"].size()) + " stops for all Charlie's divisions" + QStringList(sql.keys()).join(", "));
 
-    bridgeDB->SQLDataInsert("as400RouteQuery", sqlResults);
+    QString as400RouteQueryTableName    = "as400RouteQuery";
+    QString as400ROuteQueryCreationQuery = "CREATE TABLE `as400RouteQuery` "
+                                           "(`driver:key` TEXT, "
+                                           "`equipment:key` TEXT, "
+                                           "`location:addressLine1` TEXT, "
+                                           "`location:addressLine2` TEXT, "
+                                           "`location:city` TEXT, "
+                                           "`location:deliveryDays` TEXT, "
+                                           "`location:description` TEXT, "
+                                           "`location:key` TEXT, "
+                                           "`location:state` TEXT, "
+                                           "`location:zipCode` TEXT, "
+                                           "`locationOverrideTimeWindows:closeTime` TEXT, "
+                                           "`locationOverrideTimeWindows:openTime` TEXT, "
+                                           "`locationOverrideTimeWindows:tw1Close` TEXT, "
+                                           "`locationOverrideTimeWindows:tw1Open` TEXT, "
+                                           "`locationOverrideTimeWindows:tw2Close` TEXT, "
+                                           "`locationOverrideTimeWindows:tw2Open` TEXT, "
+                                           "`order:cube` NUMERIC, "
+                                           "`order:number` TEXT NOT NULL UNIQUE, "
+                                           "`order:pieces` NUMERIC, "
+                                           "`order:weight` NUMERIC, "
+                                           "`organization:key` TEXT, "
+                                           "`route:date` TEXT, "
+                                           "`route:key` TEXT, "
+                                           "`stop:plannedSequenceNumber` INT, "
+                                           "PRIMARY KEY(`order:number`))";
+
+    bridgeDB->addSQLInfo(as400RouteQueryTableName, as400ROuteQueryCreationQuery);
+    bridgeDB->SQLDataInsert("as400RouteQuery", sql);
+}
+
+void Bridge::handleMRSDailyScheduleSQL(const QMap<QString, QVariantList> &sql)
+{
+    QString mrsDailyAssignmentTableName = "mrsDailyAssignments";
+    QString mrsDailyAssignmentCreationQuery = "CREATE TABLE `mrsDailyAssignments` "
+                                              "(`route:key` TEXT NOT NULL, "
+                                              "`route:date` TEXT NOT NULL, "
+                                              "`organization:key` TEXT NOT NULL, "
+                                              "`driver:name` TEXT, "
+                                              "`truck:key` TEXT, "
+                                              "`trailer:key` TEXT, "
+                                              "PRIMARY KEY(`route:key`, `route:date`, `organization:key`))";
+
+    bridgeDB->addSQLInfo(mrsDailyAssignmentTableName, mrsDailyAssignmentCreationQuery);
+    bridgeDB->SQLDataInsert("mrsDailyAssignments", sql);
+}
+
+void Bridge::handleGMLocationInfo(const QJsonArray &array)
+{
+    emit statusMessage("Locations info retrieved from Greenmile. There are "
+                       + QString::number(array.size())
+                       + " locations.");
+
+    QString gmLocationInfoTableName     = "gmLocations";
+
+    QString gmLocationInfoCreationQuery = "CREATE TABLE `gmLocations` "
+                                          "(`id` INTEGER NOT NULL UNIQUE, "
+                                          "`key` TEXT, "
+                                          "`description` TEXT, "
+                                          "`addressLine1` TEXT, "
+                                          "`addressLine2` TEXT, "
+                                          "`city` TEXT, "
+                                          "`state` TEXT, "
+                                          "`zipCode` TEXT, "
+                                          "`latitude` NUMERIC, "
+                                          "`longitude` NUMERIC, "
+                                          "`geocodingQuality` TEXT, "
+                                          "`deliveryDays` TEXT, "
+                                          "`enabled` TEXT, "
+                                          "`hasGeofence` TEXT, "
+                                          "`organization:id` INTEGER, "
+                                          "`organization:key` TEXT, "
+                                          "`locationOverrideTimeWindows:0:id` INTEGER, "
+                                          "`locationType:id` INTEGER, "
+                                          "`locationType:key` TEXT, "
+                                          "PRIMARY KEY(`id`))";
+
+    QStringList gmLocationInfoExpectedKeys {"id",
+                                            "key",
+                                            "description",
+                                            "addressLine1",
+                                            "addressLine2",
+                                            "city",
+                                            "state",
+                                            "zipCode",
+                                            "latitude",
+                                            "longitude",
+                                            "geocodingQuality",
+                                            "deliveryDays",
+                                            "enabled",
+                                            "hasGeofence",
+                                            "organization:id",
+                                            "organization:key",
+                                            "locationOverrideTimeWindows:0:id",
+                                            "locationType:id",
+                                            "locationType:key"};
+
+    bridgeDB->addJsonArrayInfo(gmLocationInfoTableName, gmLocationInfoCreationQuery, gmLocationInfoExpectedKeys);
+    bridgeDB->JSONArrayInsert("gmLocations", array);
+}
+
+
+
+void Bridge::handleAllGreenmileOrgInfoResults(const QJsonArray &array)
+{
+    emit statusMessage("Organization info retrieved from Greenmile. There's "
+                       + QString::number(array.size())
+                       + " organizations for all Charlie's divisions.");
+
+    QString gmOrganizationTableName     = "gmOrganizations";
+
+
+    QString gmOrganizationCreationQuery = "CREATE TABLE `gmOrganizations` "
+                                          "(`key` TEXT, "
+                                          "`description` TEXT, "
+                                          "`id` INTEGER NOT NULL UNIQUE, "
+                                          "`unitSystem` TEXT, "
+                                          "PRIMARY KEY(`id`))";
+
+    QStringList gmOrganizationExpectedKeys {"id",
+                                            "key",
+                                            "unitSystem",
+                                            "description"};
+
+    bridgeDB->addJsonArrayInfo(gmOrganizationTableName, gmOrganizationCreationQuery, gmOrganizationExpectedKeys);
+    bridgeDB->JSONArrayInsert("gmOrganizations", array);
+}
+
+void Bridge::handleRouteComparisonInfo(const QJsonArray &array)
+{
+    emit statusMessage("Today's route comarison result recieved from Greenmile. There are "
+                       + QString::number(array.size())
+                       + " routes uploaded for "
+                       + QDate::currentDate().toString(Qt::ISODate)
+                       + ".");
+
+    QString gmRouteQueryTableName       = "gmRoutes";
+
+    QString gmRouteQueryCreationQuery = "CREATE TABLE `gmRoutes` "
+                                        "(`date` TEXT, "
+                                        "`driverAssignments` TEXT, "
+                                        "`driverAssignments:0:driver:key` TEXT, "
+                                        "`driversName` TEXT, "
+                                        "`equipmentAssignments` TEXT, "
+                                        "`equipmentAssignments:0:equipment:key` TEXT, "
+                                        "`id` INTEGER NOT NULL UNIQUE, "
+                                        "`key` TEXT, "
+                                        "`organization` TEXT, "
+                                        "`organization:key` TEXT, "
+                                        "`organization:id` INTEGER, "
+                                        "`stops` TEXT, "
+                                        "PRIMARY KEY(`id`))";
+
+    QStringList gmRouteQueryExpectedKeys {"date",
+                                          "driverAssignments:0:driver:key",
+                                          "driverAssignments",
+                                          "driversName",
+                                          "equipmentAssignments:0:equipment:key",
+                                          "equipmentAssignments",
+                                          "id",
+                                          "key",
+                                          "organization:key",
+                                          "organization:id",
+                                          "organization",
+                                          "stops"};
+
+    bridgeDB->addJsonArrayInfo(gmRouteQueryTableName, gmRouteQueryCreationQuery, gmRouteQueryExpectedKeys);
+    bridgeDB->JSONArrayInsert("gmRoutes", array);
 }
 
 /*

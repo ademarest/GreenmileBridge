@@ -23,7 +23,11 @@ signals:
 
 public slots:
     void startBridge();
-    void handleRouteQueryResults(QMap<QString, QVariantList> sqlResults);
+    void handleRouteQueryResults(const QMap<QString, QVariantList> &sql);
+    void handleMRSDailyScheduleSQL(const QMap<QString, QVariantList> &sql);
+    void handleGMLocationInfo(const QJsonArray &array);
+    void handleAllGreenmileOrgInfoResults(const QJsonArray &array);
+    void handleRouteComparisonInfo(const QJsonArray &array);
 
 private:
     GMConnection *gmConn = new GMConnection(this);
