@@ -216,11 +216,11 @@ void Bridge::routeMRSDataToFunction(const QString &key, const QJsonObject &data)
 {
     emit statusMessage("MRS Data for " + key + " retrieved.");
     if(key == "routeStart")
-        handleMRSDataRouteStartTimes(key, data);
+        handleMRSDataRouteStartTimes(data);
 }
 
 
-void Bridge::handleMRSDataRouteStartTimes(const QString &key, const QJsonObject &data)
+void Bridge::handleMRSDataRouteStartTimes(const QJsonObject &data)
 {
     QMap<QString, QVariantList> sql;
     QString gmRouteQueryTableName       = "routeStart";
@@ -263,13 +263,9 @@ void Bridge::handleMRSDataRouteStartTimes(const QString &key, const QJsonObject 
                            "sundayStartTime",
                            "sundayStartsPrevDay"};
 
-    qDebug() << data;
     sql = googleDataToSQL(true, dataOrder, data);
     bridgeDB->addSQLInfo(gmRouteQueryTableName, gmRouteQueryCreationQuery);
     bridgeDB->SQLDataInsert(gmRouteQueryTableName, sql);
-
-    //    bridgeDB->addJsonArrayInfo(gmRouteQueryTableName, gmRouteQueryCreationQuery, gmRouteQueryExpectedKeys);
-    //    bridgeDB->JSONArrayInsert("gmRoutes", array);
 }
 
 QMap<QString, QVariantList> Bridge::googleDataToSQL(bool hasHeader, const QStringList dataOrder, const QJsonObject &data)
