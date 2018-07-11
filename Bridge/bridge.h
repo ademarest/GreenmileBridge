@@ -37,8 +37,13 @@ private:
     MRSDataConnection *mrsDataConn = new MRSDataConnection(this);
     BridgeDatabase *bridgeDB = new BridgeDatabase(this); 
 
-    void handleMRSDataRouteStartTimes(const QString &key, const QJsonObject &data);
+    void beginAnalysis();
+
+    void handleMRSDataRouteStartTimes(const QJsonObject &data);
+    void handleMRSDataDrivers(const QJsonObject &data);
+    void handleMRSDataPowerUnits(const QJsonObject &data);
     QMap<QString,QVariantList> googleDataToSQL(bool hasHeader, const QStringList dataOrder, const QJsonObject &data);
+    QSet<QString> dataGatheringJobs_;
 };
 
 #endif // BRIDGE_H

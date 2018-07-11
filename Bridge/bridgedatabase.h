@@ -13,11 +13,13 @@ public:
     QJsonArray getRoutesToUpload();
     QJsonArray getRoutesToUpdate();
     QJsonArray getLocationsToUpdate();
-    QJsonArray getLocationsToUpload();
+    QJsonArray getLocationsToUpload(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString);
     QJsonArray getDriversToUpdate();
     QJsonArray getDriversToUpload();
     QJsonArray getEquipmentToUpdate();
     QJsonArray getEquipmentToUpload();
+
+    bool populateAS400LocationOverrideTimeWindows();
 
     void init();
     bool doesDatabaseExist(const QFile &dbFile);

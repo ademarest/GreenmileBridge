@@ -4,6 +4,46 @@ BridgeDatabase::BridgeDatabase(QObject *parent) : QObject(parent)
 {
 }
 
+bool BridgeDatabase::populateAS400LocationOverrideTimeWindows()
+{
+    return false;
+}
+
+QJsonArray BridgeDatabase::getLocationsToUpload(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString)
+{
+    QJsonArray array;
+    QString query = "SELECT "
+                    "as400RouteQuery.`location:key` as `key`,"
+                    "as400RouteQuery.`location:addressLine1` as `addressLine1`,"
+                    "as400RouteQuery.`location:addressLine2` as `addressLine2`,"
+                    "as400RouteQuery.`location:city` as `city`,"
+                    "as400RouteQuery.`location:deliveryDays` as `deliveryDays`,"
+                    "as400RouteQuery.`location:description` as `description`,"
+                    "as400RouteQuery.`location:key` as `key`,"
+                    "as400RouteQuery.`location:state` as `state`,"
+                    "as400RouteQuery.`location:zipCode` as `zipCode` "
+                    "FROM as400RouteQuery WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString(Qt::ISODate)+"\" AND `location:key` NOT IN (SELECT `key` FROM gmLocations) AND `route:key` IN (SELECT `route:key` FROM mrsDailyAssignments WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString(Qt::ISODate)+"\" AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL AND `route:key` > \""+minRouteString+"\" AND `route:key` < \""+maxRouteString+"\") GROUP BY as400RouteQuery.`location:key`";
+    QMap<QString,QVariantList> sql = executeQuery(query, "Finding locations to upload");
+
+    if(!sql.empty())
+    {
+        for(int i = 0; i < sql.first().size(); ++i)
+        {
+            QJsonObject obj = QJsonObject();
+            for(auto key:sql.keys())
+            {
+                obj[key] = sql[key][i].toJsonValue();
+            }
+            obj["enabled"]      = QJsonValue(true);
+            obj["locationType"] = QJsonObject{{"id",QJsonValue(10001)}};
+            obj["organization"] = QJsonObject{{"id",QJsonValue(10020)}};
+            array.append(obj);
+        }
+    }
+    qDebug() << QJsonDocument(array).toJson(QJsonDocument::Compact);
+    return array;
+}
+
 void BridgeDatabase::SQLDataInsert(const QString &tableName, const QMap<QString, QVariantList> &sql)
 {
     if(!okToInsertSQLData(tableName, "SQLDataInsert"))

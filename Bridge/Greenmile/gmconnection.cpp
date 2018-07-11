@@ -66,8 +66,8 @@ void GMConnection::requestRouteComparisonInfo(const QDate &date)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
     QString key = "routeComparisonInfo";
-    QString serverAddrTail = "/Route/restrictions?criteria={\"filters\":[\"id\","
-                             " \"key\",\"organization.key\","
+    QString serverAddrTail = "/Route/restrictions?criteria={\"filters\":[\"*\","
+                             " \"organization.key\","
                              " \"equipmentAssignments.equipment.*\","
                              " \"driverAssignments.driver.*\","
                              " \"stops.location.*\","
