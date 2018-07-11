@@ -9,9 +9,10 @@ bool BridgeDatabase::populateAS400LocationOverrideTimeWindows()
     return false;
 }
 
-QJsonArray BridgeDatabase::getLocationsToUpload(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString)
+QJsonObject BridgeDatabase::getLocationsToUpload(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString)
 {
-    QJsonArray array;
+    //QJsonArray responseArray;
+    QJsonObject locationObj;
     QString query = "SELECT "
                     "as400RouteQuery.`location:key` as `key`,"
                     "as400RouteQuery.`location:addressLine1` as `addressLine1`,"
@@ -24,7 +25,8 @@ QJsonArray BridgeDatabase::getLocationsToUpload(const QString &organizationKey, 
                     "as400RouteQuery.`location:zipCode` as `zipCode` "
                     "FROM as400RouteQuery WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString(Qt::ISODate)+"\" AND `location:key` NOT IN (SELECT `key` FROM gmLocations) AND `route:key` IN (SELECT `route:key` FROM mrsDailyAssignments WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString(Qt::ISODate)+"\" AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL AND `route:key` > \""+minRouteString+"\" AND `route:key` < \""+maxRouteString+"\") GROUP BY as400RouteQuery.`location:key`";
     QMap<QString,QVariantList> sql = executeQuery(query, "Finding locations to upload");
-
+    qDebug() << "sql empty check";
+    qDebug() << sql;
     if(!sql.empty())
     {
         for(int i = 0; i < sql.first().size(); ++i)
@@ -37,11 +39,28 @@ QJsonArray BridgeDatabase::getLocationsToUpload(const QString &organizationKey, 
             obj["enabled"]      = QJsonValue(true);
             obj["locationType"] = QJsonObject{{"id",QJsonValue(10001)}};
             obj["organization"] = QJsonObject{{"id",QJsonValue(10020)}};
-            array.append(obj);
+            locationObj[obj["key"].toString()] = obj;
         }
+
+//        for(auto jVal:locationArray)
+//        {
+//            QJsonObject obj = jVal.toObject();
+//            QJsonObject geocodeObj = QJsonObject();
+//            geocodeObj["address"] = QJsonValue(obj["addressLine1"].toString());
+//            geocodeObj["locality"] = QJsonValue(obj["city"].toString());
+//            geocodeObj["administrativeArea"] = QJsonValue(obj["state"].toString());
+//            geocodeArray.append(geocodeObj);
+//        }
     }
-    qDebug() << QJsonDocument(array).toJson(QJsonDocument::Compact);
-    return array;
+    else
+        qDebug() << "sql empty";
+    //qDebug() << QJsonDocument(locationArray).toJson(QJsonDocument::Compact);
+
+
+//    responseMap["locations"] = locationArray;
+//    responseMap["geocode"] = geocodeArray;
+
+    return locationObj;
 }
 
 void BridgeDatabase::SQLDataInsert(const QString &tableName, const QMap<QString, QVariantList> &sql)

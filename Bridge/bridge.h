@@ -23,6 +23,7 @@ signals:
 
 public slots:
     void startBridge();
+    void handleGMResponse(const QString &key, const QJsonObject &obj);
     void handleRouteQueryResults(const QMap<QString, QVariantList> &sql);
     void handleMRSDailyScheduleSQL(const QMap<QString, QVariantList> &sql);
     void handleGMLocationInfo(const QJsonArray &array);
@@ -44,6 +45,8 @@ private:
     void handleMRSDataPowerUnits(const QJsonObject &data);
     QMap<QString,QVariantList> googleDataToSQL(bool hasHeader, const QStringList dataOrder, const QJsonObject &data);
     QSet<QString> dataGatheringJobs_;
+    QJsonObject dataBucket_;
+    void applyGeocodeResponseToLocation(const QString &key, const QJsonObject &obj);
 };
 
 #endif // BRIDGE_H

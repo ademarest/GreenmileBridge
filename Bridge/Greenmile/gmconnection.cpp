@@ -89,6 +89,29 @@ void GMConnection::uploadARoute(const QJsonObject &routeJson)
     makeGMPostRequest(key, serverAddrTail, postData);
 }
 
+void GMConnection::geocodeLocation(const QJsonObject &locationJson)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString key = locationJson["key"].toString();
+    QString serverAddrTail = "/Geocode";
+
+    QJsonObject geocodeObj;
+    geocodeObj["address"] = QJsonValue(locationJson["addressLine1"].toString());
+    geocodeObj["locality"] = QJsonValue(locationJson["city"].toString());
+    geocodeObj["administrativeArea"] = QJsonValue(locationJson["state"].toString());
+
+    QByteArray postData = QJsonDocument(geocodeObj).toJson(QJsonDocument::Compact);
+    makeGMPostRequest(key, serverAddrTail, postData);
+}
+
+bool GMConnection::isProcessingNetworkRequests()
+{
+    if(networkRequestsInProgress_.isEmpty())
+        return false;
+    else
+        return true;
+}
+
 void GMConnection::makeGMPostRequest(const QString &requestKey,
                                      const QString &serverAddrTail,
                                      const QByteArray &postData)
@@ -129,17 +152,28 @@ void GMConnection::makeGMPostRequest(const QString &requestKey,
 void GMConnection::handleNetworkReply(QNetworkReply *reply)
 {
     QString key = reply->objectName();
+    QJsonArray json;
+    QJsonObject jObj;
 
     if(reply->isOpen())
     {
-        QJsonArray json = QJsonDocument::fromJson(reply->readAll()).array();
-
+        qDebug() << "b4 doc";
+        QJsonDocument jDoc = QJsonDocument::fromJson(reply->readAll());
+        if(jDoc.isArray())
+        {
+            json = jDoc.array();
+        }
+        if(jDoc.isObject())
+        {
+            jObj = jDoc.object();
+            emit gmNetworkResponse(key, jObj);
+        }
         if(json.isEmpty())
         {
             emit statusMessage("Empty result set for " + key + ". Check network connections.");
             emit statusMessage(reply->errorString());
-
         }
+        qDebug() << "afterDoc";
         if(key == "routeKey")
             emit routeKeysForDate(json);
         if(key == "locationKey")

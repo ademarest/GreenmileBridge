@@ -13,7 +13,7 @@ public:
     QJsonArray getRoutesToUpload();
     QJsonArray getRoutesToUpdate();
     QJsonArray getLocationsToUpdate();
-    QJsonArray getLocationsToUpload(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString);
+    QJsonObject getLocationsToUpload(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString);
     QJsonArray getDriversToUpdate();
     QJsonArray getDriversToUpload();
     QJsonArray getEquipmentToUpdate();

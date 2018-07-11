@@ -16,6 +16,7 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
     connect(gmConn, &GMConnection::allOrganizationInfo, this, &Bridge::handleAllGreenmileOrgInfoResults);
     connect(gmConn, &GMConnection::routeComparisonInfo, this, &Bridge::handleRouteComparisonInfo);
     connect(gmConn, &GMConnection::gmLocationInfo, this, &Bridge::handleGMLocationInfo);
+    connect(gmConn, &GMConnection::gmNetworkResponse, this, &Bridge::handleGMResponse);
 }
 
 
@@ -49,17 +50,42 @@ void Bridge::startBridge()
     gmConn->requestRouteComparisonInfo(QDate::currentDate());
 
 
-//    dataGatheringJobs_.insert("gmLocations");
-//    gmConn->requestLocationInfo();
+    dataGatheringJobs_.insert("gmLocations");
+    gmConn->requestLocationInfo();
 }
 
 void Bridge::beginAnalysis()
 {
-    qDebug() << "ping";
+    qDebug() << "BA";
     if(!dataGatheringJobs_.isEmpty())
         return;
-    bridgeDB->getLocationsToUpload("SEATTLE", QDate::currentDate(), "D", "U");
+
+    QJsonObject locationsToUpload = bridgeDB->getLocationsToUpload("SEATTLE", QDate::currentDate(), "D", "U");
+    for(auto key:locationsToUpload.keys())
+    {
+        dataBucket_["geocode:" + key] = locationsToUpload[key].toObject();
+
+        while(gmConn->isProcessingNetworkRequests())
+            qApp->processEvents();
+
+        gmConn->geocodeLocation(dataBucket_["geocode:" + key].toObject());
+    }
 }
+
+void Bridge::handleGMResponse(const QString &key, const QJsonObject &obj)
+{
+    qDebug() << "key just moved through handleGMResponse" << key;
+    if(key.split(":").first() == "geocode")
+        applyGeocodeResponseToLocation(key, obj);
+}
+
+void Bridge::applyGeocodeResponseToLocation(const QString &key, const QJsonObject &obj)
+{
+    dataBucket_[key].toObject()["latitude"] = obj["results"]["geometry"]["location"]["lat"];
+    dataBucket_[key].toObject()["longitude"] = obj["results"]["geometry"]["location"]["lng"];
+    qDebug() << dataBucket_[key];
+}
+
 
 void Bridge::handleRouteQueryResults(const QMap<QString, QVariantList> &sql)
 {
@@ -174,8 +200,6 @@ void Bridge::handleGMLocationInfo(const QJsonArray &array)
     dataGatheringJobs_.remove("gmLocations");
     beginAnalysis();
 }
-
-
 
 void Bridge::handleAllGreenmileOrgInfoResults(const QJsonArray &array)
 {

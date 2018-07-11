@@ -28,12 +28,17 @@ public:
     void requestAllOrganizationInfo();
     void requestRouteComparisonInfo(const QDate &date);
     void uploadARoute(const QJsonObject &routeJson);
+    void geocodeLocation(const QJsonObject &locationJson);
+
+    bool isProcessingNetworkRequests();
 
 signals:
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
     void statusMessage(const QString &status);
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
+
+    void gmNetworkResponse(const QString &key, const QJsonObject &obj);
 
     void routeKeysForDate(QJsonArray array);
     void routeComparisonInfo(QJsonArray array);
