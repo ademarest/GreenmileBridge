@@ -27,8 +27,11 @@ public:
     void requestLocationInfo();
     void requestAllOrganizationInfo();
     void requestRouteComparisonInfo(const QDate &date);
+    void requestDriverInfo();
+    void requestEquipmentInfo();
     void uploadARoute(const QJsonObject &routeJson);
     void geocodeLocation(const QJsonObject &locationJson);
+    void uploadALocation(const QJsonObject &locationJson);
 
     bool isProcessingNetworkRequests();
 
@@ -38,7 +41,7 @@ signals:
     void statusMessage(const QString &status);
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
 
-    void gmNetworkResponse(const QString &key, const QJsonObject &obj);
+    void gmNetworkResponse(const QString &key, const QJsonValue &obj);
 
     void routeKeysForDate(QJsonArray array);
     void routeComparisonInfo(QJsonArray array);

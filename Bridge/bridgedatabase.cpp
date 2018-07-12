@@ -24,6 +24,8 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &organizationKey,
                     "as400RouteQuery.`location:state` as `state`,"
                     "as400RouteQuery.`location:zipCode` as `zipCode` "
                     "FROM as400RouteQuery WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString(Qt::ISODate)+"\" AND `location:key` NOT IN (SELECT `key` FROM gmLocations) AND `route:key` IN (SELECT `route:key` FROM mrsDailyAssignments WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString(Qt::ISODate)+"\" AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL AND `route:key` > \""+minRouteString+"\" AND `route:key` < \""+maxRouteString+"\") GROUP BY as400RouteQuery.`location:key`";
+
+    emit debugMessage(query);
     QMap<QString,QVariantList> sql = executeQuery(query, "Finding locations to upload");
     qDebug() << "sql empty check";
     qDebug() << sql;

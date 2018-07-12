@@ -78,6 +78,28 @@ void GMConnection::requestRouteComparisonInfo(const QDate &date)
     makeGMPostRequest(key, serverAddrTail, postData);
 }
 
+void GMConnection::requestDriverInfo()
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString key = "gmDrivers";
+    QString serverAddrTail = "/Driver/restrictions?criteria={\"filters\":[\"*\", \"organization.*\"]}";
+
+    QByteArray postData = QString("{}").toLocal8Bit();
+
+    makeGMPostRequest(key, serverAddrTail, postData);
+}
+
+void GMConnection::requestEquipmentInfo()
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString key = "gmEquipment";
+    QString serverAddrTail = "/Equipment/restrictions?criteria={\"filters\":[\"*\", \"organization.*\", \"equipmentType.*\"]}";
+
+    QByteArray postData = QString("{}").toLocal8Bit();
+
+    makeGMPostRequest(key, serverAddrTail, postData);
+}
+
 void GMConnection::uploadARoute(const QJsonObject &routeJson)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
@@ -92,15 +114,28 @@ void GMConnection::uploadARoute(const QJsonObject &routeJson)
 void GMConnection::geocodeLocation(const QJsonObject &locationJson)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString key = locationJson["key"].toString();
+    QString key = "geocode:"+locationJson["key"].toString();
     QString serverAddrTail = "/Geocode";
 
     QJsonObject geocodeObj;
     geocodeObj["address"] = QJsonValue(locationJson["addressLine1"].toString());
     geocodeObj["locality"] = QJsonValue(locationJson["city"].toString());
     geocodeObj["administrativeArea"] = QJsonValue(locationJson["state"].toString());
+    geocodeObj["postalCode"] = QJsonValue(locationJson["zipCode"].toString());
 
     QByteArray postData = QJsonDocument(geocodeObj).toJson(QJsonDocument::Compact);
+    qDebug() << key << serverAddrTail << postData;
+    makeGMPostRequest(key, serverAddrTail, postData);
+}
+
+void GMConnection::uploadALocation(const QJsonObject &locationJson)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString key = "uploadLocation:" + locationJson["key"].toString();
+    QString serverAddrTail = "/Location";
+
+    QByteArray postData = QJsonDocument(locationJson).toJson(QJsonDocument::Compact);
+
     makeGMPostRequest(key, serverAddrTail, postData);
 }
 
@@ -151,21 +186,37 @@ void GMConnection::makeGMPostRequest(const QString &requestKey,
 
 void GMConnection::handleNetworkReply(QNetworkReply *reply)
 {
+    bool replyValid = false;
     QString key = reply->objectName();
     QJsonArray json;
     QJsonObject jObj;
+    QJsonDocument jDoc;
 
     if(reply->isOpen())
     {
-        qDebug() << "b4 doc";
-        QJsonDocument jDoc = QJsonDocument::fromJson(reply->readAll());
+        replyValid = true;
+        jDoc = QJsonDocument::fromJson(reply->readAll());
+    }
+
+    networkRequestsInProgress_.remove(key);
+    networkTimers_[key]->stop();
+    networkTimers_[key]->deleteLater();
+    networkManagers_[key]->deleteLater();
+    networkReplies_[key]->deleteLater();
+
+    if(replyValid)
+    {
         if(jDoc.isArray())
         {
+            qDebug() << "am are array";
             json = jDoc.array();
+            emit gmNetworkResponse(key, json);
         }
         if(jDoc.isObject())
         {
+            qDebug() << "am are errbjack";
             jObj = jDoc.object();
+            qDebug() << jDoc.toJson(QJsonDocument::Compact);
             emit gmNetworkResponse(key, jObj);
         }
         if(json.isEmpty())
@@ -173,7 +224,6 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
             emit statusMessage("Empty result set for " + key + ". Check network connections.");
             emit statusMessage(reply->errorString());
         }
-        qDebug() << "afterDoc";
         if(key == "routeKey")
             emit routeKeysForDate(json);
         if(key == "locationKey")
@@ -184,13 +234,7 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
             emit routeComparisonInfo(json);
         if(key == "locationInfo")
             emit gmLocationInfo(json);
-    }
-
-    networkRequestsInProgress_.remove(key);
-    networkTimers_[key]->stop();
-    networkTimers_[key]->deleteLater();
-    networkManagers_[key]->deleteLater();
-    networkReplies_[key]->deleteLater();
+    }    
 }
 
 void GMConnection::startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal)

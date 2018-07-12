@@ -50,6 +50,12 @@ void Bridge::startBridge()
     gmConn->requestRouteComparisonInfo(QDate::currentDate());
 
 
+    dataGatheringJobs_.insert("gmDrivers");
+    gmConn->requestDriverInfo();
+
+    dataGatheringJobs_.insert("gmEquipment");
+    gmConn->requestEquipmentInfo();
+
     dataGatheringJobs_.insert("gmLocations");
     gmConn->requestLocationInfo();
 }
@@ -60,32 +66,133 @@ void Bridge::beginAnalysis()
     if(!dataGatheringJobs_.isEmpty())
         return;
 
+    qDebug() << "AA";
     QJsonObject locationsToUpload = bridgeDB->getLocationsToUpload("SEATTLE", QDate::currentDate(), "D", "U");
+    qDebug() << locationsToUpload;
     for(auto key:locationsToUpload.keys())
     {
         dataBucket_["geocode:" + key] = locationsToUpload[key].toObject();
 
+        qDebug() << "before process";
+
         while(gmConn->isProcessingNetworkRequests())
             qApp->processEvents();
 
+        qDebug() << "after process";
+
         gmConn->geocodeLocation(dataBucket_["geocode:" + key].toObject());
     }
+
+    while(gmConn->isProcessingNetworkRequests())
+        qApp->processEvents();
+
+    qDebug() << "done geocoding!";
 }
 
-void Bridge::handleGMResponse(const QString &key, const QJsonObject &obj)
+void Bridge::handleGMResponse(const QString &key, const QJsonValue &val)
 {
     qDebug() << "key just moved through handleGMResponse" << key;
     if(key.split(":").first() == "geocode")
-        applyGeocodeResponseToLocation(key, obj);
+    {
+        applyGeocodeResponseToLocation(key, val.toObject());
+    }
+    if(key == "gmDrivers")
+    {
+        handleGMDriverInfo(val.toArray());
+    }
+    if(key == "gmEquipment")
+    {
+        handleGMEquipmentInfo(val.toArray());
+    }
 }
 
 void Bridge::applyGeocodeResponseToLocation(const QString &key, const QJsonObject &obj)
 {
-    dataBucket_[key].toObject()["latitude"] = obj["results"]["geometry"]["location"]["lat"];
-    dataBucket_[key].toObject()["longitude"] = obj["results"]["geometry"]["location"]["lng"];
+    QJsonObject dbObj = dataBucket_[key].toObject();
+
+    if(obj["status"].toString() == "OK")
+    {
+        dbObj["geocodingQuality"] = QJsonValue("AUTO");
+        dbObj["latitude"] = obj["results"].toArray().first()["geometry"]["location"]["lat"];
+        dbObj["longitude"] = obj["results"].toArray().first()["geometry"]["location"]["lng"];
+    }
+    else
+        dbObj["geocodingQuality"] = QJsonValue("UNSUCCESSFUL");
+
+    dataBucket_[key] = dbObj;
     qDebug() << dataBucket_[key];
 }
 
+
+void Bridge::handleGMDriverInfo(const QJsonArray &drivers)
+{
+    emit statusMessage("GM driver response recieved.");
+
+    QString gmDriverTableName    = "gmDrivers";
+
+    QString gmDriverCreationQuery = "CREATE TABLE `gmDrivers` "
+                                    "(`id` INTEGER NOT NULL UNIQUE, "
+                                    "`login` TEXT, "
+                                    "`enabled` TEXT, "
+                                    "`organization:id` INTEGER, "
+                                    "`organization:key` TEXT, "
+                                    "`key` TEXT, "
+                                    "`name` TEXT, "
+                                    "`unitSystem` TEXT, "
+                                    "`driverType` TEXT, "
+                                    "PRIMARY KEY(`id`))";
+
+    QStringList gmDriverExpectedKeys {"id",
+                                      "login",
+                                      "enabled",
+                                      "organization:id",
+                                      "organization:key",
+                                      "key",
+                                      "name",
+                                      "unitSystem",
+                                      "driverType"};
+
+    bridgeDB->addJsonArrayInfo(gmDriverTableName, gmDriverCreationQuery, gmDriverExpectedKeys);
+    bridgeDB->JSONArrayInsert(gmDriverTableName, drivers);
+
+    dataGatheringJobs_.remove(gmDriverTableName);
+    beginAnalysis();
+}
+
+void Bridge::handleGMEquipmentInfo(const QJsonArray &array)
+{
+    emit statusMessage("GM equipment response recieved.");
+
+    QString tableName    = "gmEquipment";
+
+    QString creationQuery = "CREATE TABLE `gmEquipment` "
+                            "(`id` INTEGER NOT NULL UNIQUE, "
+                            "`key` TEXT, "
+                            "`description` TEXT, "
+                            "`equipmentType:id` INTEGER, "
+                            "`equipmentType:key` TEXT, "
+                            "`organization:id` INTEGER, "
+                            "`organization:key` TEXT, "
+                            "`gpsUnitId` TEXT, "
+                            "`enabled` TEXT, "
+                            "PRIMARY KEY(`id`))";
+
+    QStringList expectedKeys {"id",
+                              "key",
+                              "description",
+                              "equipmentType:id",
+                              "equipmentType:key",
+                              "organization:id",
+                              "organization:key",
+                              "gpsUnitId",
+                              "enabled"};
+
+    bridgeDB->addJsonArrayInfo(tableName, creationQuery, expectedKeys);
+    bridgeDB->JSONArrayInsert(tableName, array);
+
+    dataGatheringJobs_.remove(tableName);
+    beginAnalysis();
+}
 
 void Bridge::handleRouteQueryResults(const QMap<QString, QVariantList> &sql)
 {
@@ -302,24 +409,24 @@ void Bridge::handleMRSDataRouteStartTimes(const QJsonObject &data)
     QString sheetName       = "routeStartTimes";
     //ROUTE	AVG STARTS PREV	AVG START TIME	MON	STARTS PREV DAY MON	TUE	STARTS PREV DAY TUE	WED	STARTS PREV DAY WED	THU	STARTS PREV DAY THU	FRI	STARTS PREV DAY FRI	SAT	STARTS PREV DAY SAT	SUN	STARTS PREV DAY SUN
     QString creationQuery = "CREATE TABLE `routeStartTimes` "
-                                        "(`route` TEXT NOT NULL UNIQUE, "
-                                        "`avgStartsPrev` TEXT, "
-                                        "`avgStartTime` TEXT, "
-                                        "`mondayStartTime` TEXT, "
-                                        "`mondayStartsPrevDay` TEXT, "
-                                        "`tuesdayStartTime` TEXT, "
-                                        "`tuesdayStartsPrevDay` TEXT, "
-                                        "`wednesdayStartTime` TEXT, "
-                                        "`wednesdayStartsPrevDay` TEXT, "
-                                        "`thursdayStartTime` TEXT, "
-                                        "`thursdayStartsPrevDay` TEXT, "
-                                        "`fridayStartTime` TEXT, "
-                                        "`fridayStartsPrevDay` TEXT, "
-                                        "`saturdayStartTime` TEXT, "
-                                        "`saturdayStartsPrevDay` TEXT, "
-                                        "`sundayStartTime` TEXT, "
-                                        "`sundayStartsPrevDay` TEXT, "
-                                        "PRIMARY KEY(`route`))";
+                            "(`route` TEXT NOT NULL UNIQUE, "
+                            "`avgStartsPrev` TEXT, "
+                            "`avgStartTime` TEXT, "
+                            "`mondayStartTime` TEXT, "
+                            "`mondayStartsPrevDay` TEXT, "
+                            "`tuesdayStartTime` TEXT, "
+                            "`tuesdayStartsPrevDay` TEXT, "
+                            "`wednesdayStartTime` TEXT, "
+                            "`wednesdayStartsPrevDay` TEXT, "
+                            "`thursdayStartTime` TEXT, "
+                            "`thursdayStartsPrevDay` TEXT, "
+                            "`fridayStartTime` TEXT, "
+                            "`fridayStartsPrevDay` TEXT, "
+                            "`saturdayStartTime` TEXT, "
+                            "`saturdayStartsPrevDay` TEXT, "
+                            "`sundayStartTime` TEXT, "
+                            "`sundayStartsPrevDay` TEXT, "
+                            "PRIMARY KEY(`route`))";
 
     QStringList dataOrder {"route",
                            "avgStartsPrev",
@@ -352,11 +459,11 @@ void Bridge::handleMRSDataDrivers(const QJsonObject &data)
     QMap<QString, QVariantList> sql;
     QString sheetName       = "drivers";
     QString creationQuery = "CREATE TABLE `drivers` "
-                                        "(`employeeNumber` TEXT NOT NULL UNIQUE, "
-                                        "`employeeName` TEXT, "
-                                        "`eld` TEXT, "
-                                        "`class` TEXT, "
-                                        "PRIMARY KEY(`employeeNumber`))";
+                            "(`employeeNumber` TEXT NOT NULL UNIQUE, "
+                            "`employeeName` TEXT, "
+                            "`eld` TEXT, "
+                            "`class` TEXT, "
+                            "PRIMARY KEY(`employeeNumber`))";
 
     QStringList dataOrder {"employeeNumber",
                            "employeeName",
@@ -377,14 +484,14 @@ void Bridge::handleMRSDataPowerUnits(const QJsonObject &data)
     QString sheetName       = "powerUnits";
 
     QString creationQuery = "CREATE TABLE `powerUnits` "
-                                        "(`number` TEXT NOT NULL UNIQUE, "
-                                        "`type` TEXT, "
-                                        "`gpsUnitCode` TEXT, "
-                                        "`gpsType` TEXT, "
-                                        "`cube` TEXT, "
-                                        "`weight` TEXT, "
-                                        "`liftGate` TEXT, "
-                                        "PRIMARY KEY(`number`))";
+                            "(`number` TEXT NOT NULL UNIQUE, "
+                            "`type` TEXT, "
+                            "`gpsUnitCode` TEXT, "
+                            "`gpsType` TEXT, "
+                            "`cube` TEXT, "
+                            "`weight` TEXT, "
+                            "`liftGate` TEXT, "
+                            "PRIMARY KEY(`number`))";
 
     QStringList dataOrder {"number",
                            "type",
