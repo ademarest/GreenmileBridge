@@ -100,13 +100,35 @@ void GMConnection::requestEquipmentInfo()
     makeGMPostRequest(key, serverAddrTail, postData);
 }
 
-void GMConnection::uploadARoute(const QJsonObject &routeJson)
+void GMConnection::uploadARoute(const QString &key, const QJsonObject &routeJson)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString key = routeJson["key"].toString();
+    //QString key = routeJson["key"].toString();
     QString serverAddrTail = "/Route?resequence=false&calculatePlanning=true";
 
     QByteArray postData = QJsonDocument(routeJson).toJson(QJsonDocument::Compact);
+
+    makeGMPostRequest(key, serverAddrTail, postData);
+}
+
+void GMConnection::assignDriverToRoute(const QString &key, const QJsonObject &routeDriverAssignmentJson)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    //QString key = routeJson["key"].toString();
+    QString serverAddrTail = "/RouteDriverAssignment";
+
+    QByteArray postData = QJsonDocument(routeDriverAssignmentJson).toJson(QJsonDocument::Compact);
+
+    makeGMPostRequest(key, serverAddrTail, postData);
+}
+
+void GMConnection::assignEquipmentToRoute(const QString &key, const QJsonObject &routeEquipmentAssignmentJson)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    //QString key = routeJson["key"].toString();
+    QString serverAddrTail = "/RouteEquipmentAssignment";
+
+    QByteArray postData = QJsonDocument(routeEquipmentAssignmentJson).toJson(QJsonDocument::Compact);
 
     makeGMPostRequest(key, serverAddrTail, postData);
 }
@@ -191,7 +213,8 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
     QJsonArray json;
     QJsonObject jObj;
     QJsonDocument jDoc;
-
+    qDebug() << reply->errorString();
+    emit statusMessage(reply->errorString());
     if(reply->isOpen())
     {
         replyValid = true;

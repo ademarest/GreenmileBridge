@@ -43,26 +43,166 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &organizationKey,
             obj["organization"] = QJsonObject{{"id",QJsonValue(10020)}};
             locationObj[obj["key"].toString()] = obj;
         }
-
-//        for(auto jVal:locationArray)
-//        {
-//            QJsonObject obj = jVal.toObject();
-//            QJsonObject geocodeObj = QJsonObject();
-//            geocodeObj["address"] = QJsonValue(obj["addressLine1"].toString());
-//            geocodeObj["locality"] = QJsonValue(obj["city"].toString());
-//            geocodeObj["administrativeArea"] = QJsonValue(obj["state"].toString());
-//            geocodeArray.append(geocodeObj);
-//        }
     }
     else
         qDebug() << "sql empty";
-    //qDebug() << QJsonDocument(locationArray).toJson(QJsonDocument::Compact);
-
-
-//    responseMap["locations"] = locationArray;
-//    responseMap["geocode"] = geocodeArray;
 
     return locationObj;
+}
+
+QJsonObject BridgeDatabase::getRoutesToUpload(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString)
+{
+    //QJsonArray responseArray;
+    QJsonObject returnObj;
+    QStringList splitKey;
+    QMap<QString, QJsonObject> route;
+    QMap<QString, QMap<int, QJsonObject>> stops;
+    QMap<QString, QJsonObject> organization;
+    QMap<QString, QJsonObject> destination;
+    QMap<QString, QJsonObject> origin;
+    QMap<QString, QJsonObject> driver;
+    QMap<QString, QJsonObject> equipment;
+
+    QString query = "SELECT routeQuery.`order:number` as `order:number`, routeQuery.`order:pieces` as `order:plannedSize1`, routeQuery.`order:cube` as `order:plannedSize2`, routeQuery.`order:weight` as `order:plannedSize3`, routeQuery.`route:date`, routeQuery.`route:key`, routeQuery.`stop:baseLineSequenceNum`, gmOrg.`id` as `organization:id`, `gmDriverInfo`.`id` as `driver:id`, `gmEquipmentInfo`.`id` as `equipment:id`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedArrival`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedComplete`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedDeparture`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedStart`, `rst`.`avgStartsPrev` AS `startsPreviousDay`, `gmLoc`.`id` as `origin:id`, `gmLoc`.`id` as `destination:id`, `gmLocID`.`id` as `location:id` FROM as400RouteQuery `routeQuery` LEFT JOIN gmOrganizations `gmOrg` ON gmOrg.`key` = routeQuery.`organization:key` LEFT JOIN mrsDailyAssignments `dailyAssignment` ON `routeQuery`.`route:key` = `dailyAssignment`.`route:key` AND `routeQuery`.`route:date` = `dailyAssignment`.`route:date`AND `routeQuery`.`organization:key` = `dailyAssignment`.`organization:key` LEFT JOIN drivers `mrsDataDrivers` ON `dailyAssignment`.`driver:name` = `mrsDataDrivers`.`employeeName` LEFT JOIN gmDrivers `gmDriverInfo` ON `gmDriverInfo`.`login` = `mrsDataDrivers`.`employeeNumber` LEFT JOIN gmEquipment `gmEquipmentInfo` ON `gmEquipmentInfo`.`key` = `dailyAssignment`.`truck:key` LEFT JOIN routeStartTimes `rst` ON `rst`.`route` = `routeQuery`.`route:key` LEFT JOIN gmLocations `gmLoc` ON `gmLoc`.`key` = `routeQuery`.`organization:key` LEFT JOIN gmLocations `gmLocID` ON `gmLocID`.`key` = `routeQuery`.`location:key`"
+                    "WHERE `routeQuery`.`organization:key` = \""+organizationKey+"\" AND `routeQuery`.`route:date` = \""+date.toString("yyyy-MM-dd")+"\" AND `routeQuery`.`route:key` NOT IN (SELECT `key` FROM gmRoutes WHERE `organization:key` = \""+organizationKey+"\" AND `date` = \""+date.toString("yyyy-MM-dd")+"\") AND `routeQuery`.`route:key` IN (SELECT `route:key` FROM mrsDailyAssignments WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString("yyyy-MM-dd")+"\" AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL AND `route:key` > \""+minRouteString+"\" AND `route:key` < \""+maxRouteString+"\")";
+    emit debugMessage(query);
+    QMap<QString,QVariantList> sql = executeQuery(query, "Building routes to upload");
+    qDebug() << "sql empty check";
+    qDebug() << sql;
+    bool startsPrevDay  = false;
+    bool reverseOrder   = false;
+    if(!sql.empty())
+    {
+        for(int i = 0; i < sql.first().size(); ++i)
+        {
+            QJsonObject order;
+            QJsonObject location;
+            QString routeKey = sql["route:key"][i].toString();
+            int stopKey = sql["stop:baseLineSequenceNum"][i].toInt();
+            for(auto key:sql.keys())
+            {
+                splitKey = key.split(":");
+                if(splitKey.size() != 2)
+                {
+                    if(key == "startsPreviousDay")
+                    {
+                        if(sql[key][i].isNull())
+                            startsPrevDay = false;
+                        else
+                            startsPrevDay = true;
+                    }
+                }
+                if(splitKey.size() == 2)
+                {
+
+                    if(splitKey[0] == "route")
+                    {
+                        if(splitKey[1].contains("planned") && sql[key][i].toDateTime().isValid())
+                        {
+                            if(startsPrevDay)
+                                route[routeKey][splitKey[1]] = QJsonValue(sql[key][i].toDateTime().toUTC().addDays(-1).toString(Qt::ISODate));
+                            else
+                                route[routeKey][splitKey[1]] = QJsonValue(sql[key][i].toDateTime().toUTC().toString(Qt::ISODate));
+                        }
+                        else if(splitKey[1].contains("planned") && sql[key][i].isNull())
+                        {
+                            qDebug() << "start into for route is now";
+                            if(startsPrevDay)
+                                route[routeKey][splitKey[1]] = QJsonValue(QDateTime::currentDateTimeUtc().addDays(-1).toString(Qt::ISODate));
+                            else
+                                route[routeKey][splitKey[1]] = QJsonValue(QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+                        }
+                        else
+                        {
+                            route[routeKey][splitKey[1]] = sql[key][i].toJsonValue();
+                        }
+                    }
+                    if(splitKey[0] == "origin")
+                    {
+                        origin[routeKey][splitKey[1]] = sql[key][i].toJsonValue();
+                    }
+                    if(splitKey[0] == "destination")
+                    {
+                        destination[routeKey][splitKey[1]] = sql[key][i].toJsonValue();
+                    }
+                    if(splitKey[0] == "organization")
+                    {
+                        organization[routeKey][splitKey[1]] = sql[key][i].toJsonValue();
+                    }
+                    if(splitKey[0] == "location")
+                    {
+                        location[splitKey[1]] = QJsonValue(sql[key][i].toString());
+                    }
+                    if(splitKey[0] == "order")
+                    {
+                        order[splitKey[1]] = sql[key][i].toJsonValue();
+                    }
+                    if(splitKey[0] == "stop")
+                    {
+                        stops[routeKey][stopKey][splitKey[1]] = sql[key][i].toJsonValue();
+                    }
+                    if(splitKey[0] == "driver")
+                    {
+                        driver[routeKey]["id"] = sql[key][i].toJsonValue();
+                    }
+                    if(splitKey[0] == "equipment")
+                    {
+                        equipment[routeKey]["id"] = sql[key][i].toJsonValue();
+                    }
+                }
+
+            }
+            if(splitKey[0] == "stop")
+            {
+                stops[routeKey][stopKey]["location"] = location;
+                stops[routeKey][stopKey]["key"] = QJsonValue(QUuid::createUuid().toString());
+                stops[routeKey][stopKey]["stopType"] = QJsonObject{{"id",QJsonValue(10000)}};
+                QJsonArray orderArr = stops[routeKey][stopKey]["orders"].toArray();
+                orderArr.append(order);
+                stops[routeKey][stopKey]["orders"] = QJsonValue(orderArr);
+            }
+        }
+    }
+
+    else
+        qDebug() << "sql empty";
+
+
+    for(auto routeKey:route.keys())
+    {
+        route[routeKey]["origin"] = origin[routeKey];
+        route[routeKey]["destination"] = destination[routeKey];
+        route[routeKey]["organization"] = organization[routeKey];
+        route[routeKey]["hasHelper"] = QJsonValue(false);
+        route[routeKey]["lastStopIsDestination"] = QJsonValue(false);
+        QJsonArray stopArr = route[routeKey]["stops"].toArray();
+        for(auto stopKey:stops[routeKey].keys())
+        {
+            stopArr.append(stops[routeKey][stopKey]);
+        }
+        route[routeKey]["stops"] = QJsonValue(stopArr);
+
+        QString routeCompoundKey;
+        QString driverCompoundKey;
+        QString equipmentCompoundKey;
+        QStringList genericKeyList;
+        genericKeyList  << routeKey
+                        << QString::number(route[routeKey]["organization"].toObject()["id"].toInt())
+                        << route[routeKey]["date"].toString();
+
+
+        routeCompoundKey = "routeUpload:" + genericKeyList.join(":");
+        driverCompoundKey = "driverAssignment:" + genericKeyList.join(":");
+        equipmentCompoundKey = "equipmentAssignment:" + genericKeyList.join(":");
+
+
+        qDebug() << route[routeKey];
+        returnObj[routeCompoundKey] = route[routeKey];
+        returnObj[driverCompoundKey] = driver[routeKey];
+        returnObj[equipmentCompoundKey] = equipment[routeKey];
+    }
+    qDebug() << returnObj;
+    return returnObj;
 }
 
 void BridgeDatabase::SQLDataInsert(const QString &tableName, const QMap<QString, QVariantList> &sql)

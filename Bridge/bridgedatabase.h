@@ -10,7 +10,7 @@ class BridgeDatabase : public QObject
 public:
     explicit BridgeDatabase(QObject *parent = nullptr);
 
-    QJsonArray getRoutesToUpload();
+    QJsonObject getRoutesToUpload(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString);
     QJsonArray getRoutesToUpdate();
     QJsonArray getLocationsToUpdate();
     QJsonObject getLocationsToUpload(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString);

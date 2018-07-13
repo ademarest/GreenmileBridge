@@ -29,7 +29,9 @@ public:
     void requestRouteComparisonInfo(const QDate &date);
     void requestDriverInfo();
     void requestEquipmentInfo();
-    void uploadARoute(const QJsonObject &routeJson);
+    void uploadARoute(const QString &key, const QJsonObject &routeJson);
+    void assignDriverToRoute(const QString &key, const QJsonObject &routeDriverAssignmentJson);
+    void assignEquipmentToRoute(const QString &key, const QJsonObject &routeEquipmentAssignmentJson);
     void geocodeLocation(const QJsonObject &locationJson);
     void uploadALocation(const QJsonObject &locationJson);
 
