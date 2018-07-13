@@ -19,6 +19,7 @@ public:
     QJsonArray getEquipmentToUpdate();
     QJsonArray getEquipmentToUpload();
 
+    bool truncateATable(const QString &tableName);
     bool populateAS400LocationOverrideTimeWindows();
 
     void init();
@@ -52,7 +53,6 @@ private:
     QVariant jsonValueToQVariant(const QJsonValue &val);
     QJsonArray transposeSQLToJsonArray(const QMap<QString,QVariantList> &data);
 
-    bool truncateATable(const QString &tableName);
     bool writeToTable(const QString &tableName, QMap<QString, QVariantList> invoiceResults);
     bool executeInsertQuery(const QString &query, const QString &verb = "unspecified insert query");
     QMap<QString, QVariantList> executeQuery(const QString &queryString, const QString &verb  = "unspecified query");

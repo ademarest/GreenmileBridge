@@ -469,7 +469,7 @@ QJsonArray BridgeDatabase::transposeSQLToJsonArray(const QMap<QString, QVariantL
 
 bool BridgeDatabase::truncateATable(const QString &tableName)
 {
-    QString truncateTableQuery = "TRUNCATE " + tableName;
+    QString truncateTableQuery = "DELETE FROM " + tableName;
     return executeInsertQuery(truncateTableQuery, "truncate");
 }
 

@@ -33,7 +33,7 @@ public:
     void assignDriverToRoute(const QString &key, const QJsonObject &routeDriverAssignmentJson);
     void assignEquipmentToRoute(const QString &key, const QJsonObject &routeEquipmentAssignmentJson);
     void geocodeLocation(const QJsonObject &locationJson);
-    void uploadALocation(const QJsonObject &locationJson);
+    void uploadALocation(const QString &key, const QJsonObject &locationJson);
 
     bool isProcessingNetworkRequests();
 

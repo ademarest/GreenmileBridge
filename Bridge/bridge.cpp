@@ -119,6 +119,15 @@ void Bridge::handleGMResponse(const QString &key, const QJsonValue &val)
     if(key.split(":").first() == "geocode")
     {
         applyGeocodeResponseToLocation(key, val.toObject());
+
+        QStringList keyList  = key.split(":");
+        keyList[0] = "uploadLocation";
+        QString uploadLocationKey = keyList.join(":");
+        gmConn->uploadALocation(uploadLocationKey, dataBucket_[key].toObject());
+    }
+    if(key.split(":").first() == "uploadLocation")
+    {
+        qDebug() << key << "uploaded!";
     }
     if(key.split(":").first() == "routeUpload")
     {
@@ -203,6 +212,7 @@ void Bridge::handleGMDriverInfo(const QJsonArray &drivers)
                                       "unitSystem",
                                       "driverType"};
 
+    bridgeDB->truncateATable(gmDriverTableName);
     bridgeDB->addJsonArrayInfo(gmDriverTableName, gmDriverCreationQuery, gmDriverExpectedKeys);
     bridgeDB->JSONArrayInsert(gmDriverTableName, drivers);
 
@@ -238,6 +248,7 @@ void Bridge::handleGMEquipmentInfo(const QJsonArray &array)
                               "gpsUnitId",
                               "enabled"};
 
+    bridgeDB->truncateATable(tableName);
     bridgeDB->addJsonArrayInfo(tableName, creationQuery, expectedKeys);
     bridgeDB->JSONArrayInsert(tableName, array);
 
@@ -277,6 +288,7 @@ void Bridge::handleRouteQueryResults(const QMap<QString, QVariantList> &sql)
                                            "`stop:baseLineSequenceNum` INT, "
                                            "PRIMARY KEY(`order:number`))";
 
+    bridgeDB->truncateATable(as400RouteQueryTableName);
     bridgeDB->addSQLInfo(as400RouteQueryTableName, as400RouteQueryCreationQuery);
     bridgeDB->SQLDataInsert("as400RouteQuery", sql);
     dataGatheringJobs_.remove("as400RouteQuery");
@@ -352,6 +364,7 @@ void Bridge::handleGMLocationInfo(const QJsonArray &array)
                                             "locationType:id",
                                             "locationType:key"};
 
+    bridgeDB->truncateATable(gmLocationInfoTableName);
     bridgeDB->addJsonArrayInfo(gmLocationInfoTableName, gmLocationInfoCreationQuery, gmLocationInfoExpectedKeys);
     bridgeDB->JSONArrayInsert("gmLocations", array);
 
@@ -380,6 +393,7 @@ void Bridge::handleAllGreenmileOrgInfoResults(const QJsonArray &array)
                                             "unitSystem",
                                             "description"};
 
+    bridgeDB->truncateATable(gmOrganizationTableName);
     bridgeDB->addJsonArrayInfo(gmOrganizationTableName, gmOrganizationCreationQuery, gmOrganizationExpectedKeys);
     bridgeDB->JSONArrayInsert("gmOrganizations", array);
 
@@ -435,6 +449,7 @@ void Bridge::handleRouteComparisonInfo(const QJsonArray &array)
                                           "baselineSize2",
                                           "baselineSize3"};
 
+    bridgeDB->truncateATable(gmRouteQueryTableName);
     bridgeDB->addJsonArrayInfo(gmRouteQueryTableName, gmRouteQueryCreationQuery, gmRouteQueryExpectedKeys);
     bridgeDB->JSONArrayInsert("gmRoutes", array);
 
@@ -498,6 +513,8 @@ void Bridge::handleMRSDataRouteStartTimes(const QJsonObject &data)
                            "sundayStartsPrevDay"};
 
     sql = googleDataToSQL(true, dataOrder, data);
+
+    bridgeDB->truncateATable(sheetName);
     bridgeDB->addSQLInfo(sheetName, creationQuery);
     bridgeDB->SQLDataInsert(sheetName, sql);
 
@@ -521,6 +538,7 @@ void Bridge::handleMRSDataDrivers(const QJsonObject &data)
                            "eld",
                            "class"};
 
+    bridgeDB->truncateATable(sheetName);
     sql = googleDataToSQL(true, dataOrder, data);
     bridgeDB->addSQLInfo(sheetName, creationQuery);
     bridgeDB->SQLDataInsert(sheetName, sql);
@@ -552,6 +570,7 @@ void Bridge::handleMRSDataPowerUnits(const QJsonObject &data)
                            "weight",
                            "liftGate"};
 
+    bridgeDB->truncateATable(sheetName);
     sql = googleDataToSQL(true, dataOrder, data);
     bridgeDB->addSQLInfo(sheetName, creationQuery);
     bridgeDB->SQLDataInsert(sheetName, sql);

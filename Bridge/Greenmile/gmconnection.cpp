@@ -150,10 +150,10 @@ void GMConnection::geocodeLocation(const QJsonObject &locationJson)
     makeGMPostRequest(key, serverAddrTail, postData);
 }
 
-void GMConnection::uploadALocation(const QJsonObject &locationJson)
+void GMConnection::uploadALocation(const QString &key, const QJsonObject &locationJson)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString key = "uploadLocation:" + locationJson["key"].toString();
+    //QString key = "uploadLocation:" + locationJson["key"].toString();
     QString serverAddrTail = "/Location";
 
     QByteArray postData = QJsonDocument(locationJson).toJson(QJsonDocument::Compact);
