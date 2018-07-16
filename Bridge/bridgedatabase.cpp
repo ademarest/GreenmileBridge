@@ -434,7 +434,7 @@ QVariant BridgeDatabase::jsonValueToQVariant(const QJsonValue &val)
         return QVariant();
 
     case QJsonValue::Bool:
-        return QVariant(val.toInt());
+        return val.toVariant();
 
     case QJsonValue::Double:
         return val.toVariant();
@@ -716,6 +716,13 @@ QStringList BridgeDatabase::generateValueTuples(QMap<QString, QVariantList> invo
             }
             switch(invoiceResults[key][i].type()) {
 
+            case QVariant::Type::Bool:
+                if(invoiceResults[key][i].isNull())
+                    valueList.append("NULL");
+                else
+                    valueList.append(invoiceResults[key][i].toString());
+                break;
+
             case QVariant::Type::Int:
                 if(invoiceResults[key][i].isNull())
                     valueList.append("NULL");
@@ -770,6 +777,7 @@ QStringList BridgeDatabase::generateValueTuples(QMap<QString, QVariantList> invo
                 break;
 
             default:
+                qApp->processEvents();
                 qDebug() << "Unknown variant type in switch. "
                             "If you see this a lot, "
                             " your event loop might be getting smashed... " << invoiceResults[key][i].type();
@@ -829,7 +837,7 @@ bool BridgeDatabase::executeQueryAsBatch(QSqlDatabase &db, const QString &tableN
     if(success)
         emit statusMessage("Completed SQLite batch insert.");
     else
-        emit errorMessage("Failed SQLite batch insert.");
+        emit errorMessage("SQLite completed batch insert with errors.");
 
     return success;
 }

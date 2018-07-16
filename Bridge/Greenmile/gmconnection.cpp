@@ -213,8 +213,12 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
     QJsonArray json;
     QJsonObject jObj;
     QJsonDocument jDoc;
-    qDebug() << reply->errorString();
-    emit statusMessage(reply->errorString());
+
+    if(reply->error() != QNetworkReply::NoError)
+    {
+        emit errorMessage(reply->errorString());
+        qDebug() << reply->error();
+    }
     if(reply->isOpen())
     {
         replyValid = true;
@@ -231,15 +235,14 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
     {
         if(jDoc.isArray())
         {
-            qDebug() << "am are array";
+            qDebug() << "GM Response for " + key + " was an array.";
             json = jDoc.array();
             emit gmNetworkResponse(key, json);
         }
         if(jDoc.isObject())
         {
-            qDebug() << "am are errbjack";
+            qDebug() << "GM Response for " + key + " was an object.";
             jObj = jDoc.object();
-            qDebug() << jDoc.toJson(QJsonDocument::Compact);
             emit gmNetworkResponse(key, jObj);
         }
         if(json.isEmpty())

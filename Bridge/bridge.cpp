@@ -22,6 +22,7 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
 
 void Bridge::startBridge()
 {
+    dataBucket_ = QJsonObject();
     dataGatheringJobs_.insert("mrsDailyAssignments");
     mrsConn->requestRouteKeysForDate("SEATTLE", QDate::currentDate());
 
@@ -124,10 +125,12 @@ void Bridge::handleGMResponse(const QString &key, const QJsonValue &val)
         keyList[0] = "uploadLocation";
         QString uploadLocationKey = keyList.join(":");
         gmConn->uploadALocation(uploadLocationKey, dataBucket_[key].toObject());
+        dataBucket_.remove(key);
     }
     if(key.split(":").first() == "uploadLocation")
     {
         qDebug() << key << "uploaded!";
+        dataBucket_.remove(key);
     }
     if(key.split(":").first() == "routeUpload")
     {
