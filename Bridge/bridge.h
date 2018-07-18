@@ -38,6 +38,7 @@ private:
     MRSDataConnection *mrsDataConn = new MRSDataConnection(this);
     BridgeDatabase *bridgeDB = new BridgeDatabase(this); 
 
+    void beginGathering();
     void beginAnalysis();
 
     void handleMRSDataRouteStartTimes(const QJsonObject &data);
@@ -49,6 +50,12 @@ private:
     void applyGeocodeResponseToLocation(const QString &key, const QJsonObject &obj);
     void handleGMDriverInfo(const QJsonArray &drivers);
     void handleGMEquipmentInfo(const QJsonArray &array);
+
+
+    //TEMP
+    QTimer *bridgeTimer = new QTimer(this);
+    QDate bridgeDate = QDate::currentDate();
+    bool bridgeInProgress = false;
 };
 
 #endif // BRIDGE_H

@@ -133,6 +133,22 @@ void GMConnection::assignEquipmentToRoute(const QString &key, const QJsonObject 
     makeGMPostRequest(key, serverAddrTail, postData);
 }
 
+void GMConnection::deleteDriverAssignment(const QString &key, const int entityID)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString serverAddrTail = "/RouteDriverAssignment/" + QString::number(entityID);
+    qDebug() << serverAddrTail;
+    makeGMDeleteRequest(key, serverAddrTail);
+}
+
+void GMConnection::deleteEquipmentAssignment(const QString &key, const int entityID)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString serverAddrTail = "/RouteEquipmentAssignment/" + QString::number(entityID);
+    qDebug() << serverAddrTail;
+    makeGMDeleteRequest(key, serverAddrTail);
+}
+
 void GMConnection::geocodeLocation(const QJsonObject &locationJson)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
@@ -193,6 +209,41 @@ void GMConnection::makeGMPostRequest(const QString &requestKey,
     networkManagers_[requestKey]->setObjectName(requestKey);
 
     networkReplies_[requestKey] = networkManagers_[requestKey]->post(request,postData);
+    networkReplies_[requestKey]->setObjectName(requestKey);
+
+    connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::downloadProgess);
+    connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::startNetworkTimer);
+    connect(networkManagers_[requestKey],   &QNetworkAccessManager::finished,   this, &GMConnection::handleNetworkReply);
+    connect(networkTimers_  [requestKey],   &QTimer::timeout,                   this, &GMConnection::requestTimedOut);
+
+    networkRequestsInProgress_.insert(requestKey);
+
+    networkTimers_[requestKey]->stop();
+    networkTimers_[requestKey]->start(jsonSettings_["requestTimeoutSec"].toInt() * 1000);
+}
+
+void GMConnection::makeGMDeleteRequest(const QString &requestKey, const QString &serverAddrTail)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+
+    if(networkRequestsInProgress_.contains(requestKey))
+    {
+        emit statusMessage("Net request "
+                           + requestKey
+                           + " already in progress."
+                             " Try again when the current request has completed.");
+        return;
+    }
+
+    QNetworkRequest request = makeGMNetworkRequest(serverAddrTail);
+
+    networkTimers_[requestKey] = new QTimer(this);
+    networkTimers_[requestKey]->setObjectName(requestKey);
+
+    networkManagers_[requestKey] = new QNetworkAccessManager(this);
+    networkManagers_[requestKey]->setObjectName(requestKey);
+
+    networkReplies_[requestKey] = networkManagers_[requestKey]->deleteResource(request);
     networkReplies_[requestKey]->setObjectName(requestKey);
 
     connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::downloadProgess);

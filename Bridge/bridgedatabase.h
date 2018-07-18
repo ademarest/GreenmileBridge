@@ -11,7 +11,8 @@ public:
     explicit BridgeDatabase(QObject *parent = nullptr);
 
     QJsonObject getRoutesToUpload(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString);
-    QJsonArray getRoutesToUpdate();
+    QJsonArray getRoutesToUpdate(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString);
+    QJsonObject getAssignmentsToUpdate(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString);
     QJsonArray getLocationsToUpdate();
     QJsonObject getLocationsToUpload(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString);
     QJsonArray getDriversToUpdate();
@@ -70,6 +71,8 @@ private:
 
     bool okToInsertJsonArray(const QString &tableName, const QString &whatMethod);
     bool okToInsertSQLData(const QString &tableName, const QString &whatMethod);
+
+    QJsonObject assembleUploadRouteFromQuery(const QMap<QString, QVariantList> &sql);
 };
 
 #endif // BRIDGEDATABASE_H

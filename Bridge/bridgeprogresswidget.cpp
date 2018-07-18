@@ -20,6 +20,11 @@ BridgeProgressWidget::~BridgeProgressWidget()
 void BridgeProgressWidget::writeMessageTextWidget(const QString &message)
 {
     QString contents = ui->operationHistoryTextBrowser->toPlainText();
+
+    //Prevent the widget from keeling over and dying.
+    if(contents.size() > 200000)
+        contents.remove(100000,(contents.size() - 1));
+
     contents.prepend(QString(QDateTime::currentDateTime().toString(Qt::ISODate) + "  " + message + "\n\n"));
     ui->operationHistoryTextBrowser->setText(contents);
 }

@@ -32,6 +32,8 @@ public:
     void uploadARoute(const QString &key, const QJsonObject &routeJson);
     void assignDriverToRoute(const QString &key, const QJsonObject &routeDriverAssignmentJson);
     void assignEquipmentToRoute(const QString &key, const QJsonObject &routeEquipmentAssignmentJson);
+    void deleteDriverAssignment(const QString &key, const int entityID);
+    void deleteEquipmentAssignment(const QString &key, const int entityID);
     void geocodeLocation(const QJsonObject &locationJson);
     void uploadALocation(const QString &key, const QJsonObject &locationJson);
 
@@ -74,6 +76,9 @@ private:
     void makeGMPostRequest(const QString &requestKey,
                            const QString &serverAddrTail,
                            const QByteArray &postData);
+
+    void makeGMDeleteRequest(const QString &requestKey,
+                             const QString &serverAddrTail);
 
     QNetworkRequest makeGMNetworkRequest(const QString &serverAddrTail);
 
