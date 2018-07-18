@@ -26,7 +26,7 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
 
 void Bridge::startBridge()
 {
-    bridgeTimer->start(60000);
+    bridgeTimer->start(600000);
     qDebug() << bridgeTimer->isSingleShot();
     bridgeDate = QDate::currentDate();
     beginGathering();
