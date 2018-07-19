@@ -11,6 +11,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->mrsConfigGrid->addWidget(mrsConfig_);
     ui->as400ConfigGrid->addWidget(as400Config_);
     ui->mrsDataConfigGrid->addWidget(mrsDataConfig_);
+    ui->bridgeConfigGrid->addWidget(bridgeConfig_);
+    ui->dlmrsConfigGrid->addWidget(dlmrsConfig_);
 }
 
 MainWindow::~MainWindow()

@@ -26,6 +26,7 @@ public slots:
     void handleGMResponse(const QString &key, const QJsonValue &val);
     void handleRouteQueryResults(const QMap<QString, QVariantList> &sql);
     void handleMRSDailyScheduleSQL(const QMap<QString, QVariantList> &sql);
+    void handleDLMRSDailyScheduleSQL(const QMap<QString, QVariantList> &sql);
     void handleGMLocationInfo(const QJsonArray &array);
     void handleAllGreenmileOrgInfoResults(const QJsonArray &array);
     void handleRouteComparisonInfo(const QJsonArray &array);
@@ -33,7 +34,8 @@ public slots:
 
 private:
     GMConnection *gmConn = new GMConnection(this);
-    MRSConnection *mrsConn = new MRSConnection(this);
+    MRSConnection *mrsConn = new MRSConnection("mrsconnection.db", this);
+    MRSConnection *dlmrsConn = new MRSConnection("dlmrsconnection.db", this);
     AS400 *as400Conn = new AS400(this);
     MRSDataConnection *mrsDataConn = new MRSDataConnection(this);
     BridgeDatabase *bridgeDB = new BridgeDatabase(this); 
@@ -50,7 +52,6 @@ private:
     void applyGeocodeResponseToLocation(const QString &key, const QJsonObject &obj);
     void handleGMDriverInfo(const QJsonArray &drivers);
     void handleGMEquipmentInfo(const QJsonArray &array);
-
 
     //TEMP
     QTimer *bridgeTimer = new QTimer(this);

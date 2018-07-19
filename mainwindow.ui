@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>657</width>
+    <width>1239</width>
     <height>438</height>
    </rect>
   </property>
@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout_2">
     <item row="0" column="0">
-     <widget class="QTabWidget" name="as400ConfigTab">
+     <widget class="QTabWidget" name="configTab">
       <property name="currentIndex">
        <number>0</number>
       </property>
@@ -27,6 +27,16 @@
        <layout class="QGridLayout" name="gridLayout_5">
         <item row="0" column="0">
          <layout class="QGridLayout" name="bridgeProgressGridLayout"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="bridgeConfigTab">
+       <attribute name="title">
+        <string>Bridge Config</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_8">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="bridgeConfigGrid"/>
         </item>
        </layout>
       </widget>
@@ -50,6 +60,16 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="dlmrsConfigTab">
+       <attribute name="title">
+        <string>Late Master Route Config</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_9">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="dlmrsConfigGrid"/>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="mrsDataConfigTab">
        <attribute name="title">
         <string>Master Route Data Config</string>
@@ -60,7 +80,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="as400ConfigTab_2">
+      <widget class="QWidget" name="as400ConfigTab">
        <attribute name="title">
         <string>AS400 Config</string>
        </attribute>
@@ -79,7 +99,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>657</width>
+     <width>1239</width>
      <height>20</height>
     </rect>
    </property>

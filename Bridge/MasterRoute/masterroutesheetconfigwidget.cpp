@@ -1,10 +1,14 @@
 #include "masterroutesheetconfigwidget.h"
 #include "ui_masterroutesheetconfigwidget.h"
 
-MasterRouteSheetConfigWidget::MasterRouteSheetConfigWidget(QWidget *parent) :
+MasterRouteSheetConfigWidget::MasterRouteSheetConfigWidget(const QString &datbaseName, QWidget *parent) :
     QWidget(parent),
     ui(new Ui::MasterRouteSheetConfigWidget)
 {
+    //mrsconnection.db
+    dbPath_ =  qApp->applicationDirPath() + "/" + datbaseName;
+    qDebug() << dbPath_;
+
     ui->setupUi(this);
 
     connect(ui->saveSettingsPushButton, &QPushButton::pressed,
@@ -36,6 +40,11 @@ MasterRouteSheetConfigWidget::~MasterRouteSheetConfigWidget()
 void MasterRouteSheetConfigWidget::saveUItoSettings()
 {
     QJsonArray redirectURIs;
+    jsonSettings_["organization_key"] = QJsonValue(ui->organizationLineEdit->text());
+    jsonSettings_["date_format"] = QJsonValue(ui->dateFormatLineEdit->text());
+    jsonSettings_["driver_offset"] = QJsonValue(ui->driverOffsetSpinBox->value());
+    jsonSettings_["truck_offset"] = QJsonValue(ui->truckOffsetSpinBox->value());
+    jsonSettings_["trailer_offset"] = QJsonValue(ui->trailerOffsetSpinBox->value());
     jsonSettings_["auth_uri"] = QJsonValue(ui->authURILineEdit->text());
     jsonSettings_["client_id"] = QJsonValue(ui->clientIDLineEdit->text());
     jsonSettings_["client_secret"] = QJsonValue(ui->clientSecretLineEdit->text());
@@ -107,6 +116,12 @@ bool MasterRouteSheetConfigWidget::noSettingsNullOrUndefined(const QJsonObject &
 void MasterRouteSheetConfigWidget::applySettingsToUI()
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    ui->organizationLineEdit->setText(jsonSettings_["organization_key"].toString());
+    ui->dateFormatLineEdit->setText(jsonSettings_["date_format"].toString());
+    ui->driverOffsetSpinBox->setValue(jsonSettings_["driver_offset"].toInt());
+    ui->truckOffsetSpinBox->setValue(jsonSettings_["truck_offset"].toInt());
+    ui->trailerOffsetSpinBox->setValue(jsonSettings_["trailer_offset"].toInt());
+
     ui->clientIDLineEdit->setText(jsonSettings_["client_id"].toString());
     ui->clientSecretLineEdit->setText(jsonSettings_["client_secret"].toString());
     ui->googleSheetsBaseAddrLineEdit->setText(jsonSettings_["base_url"].toString());

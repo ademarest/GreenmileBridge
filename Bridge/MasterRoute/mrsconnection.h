@@ -11,8 +11,9 @@ class MRSConnection : public QObject
 {
     Q_OBJECT
 public:
-    explicit MRSConnection(QObject *parent = nullptr);
+    explicit MRSConnection(const QString &databaseName, QObject *parent = nullptr);
     void requestRouteKeysForDate(const QString &organizationKey, const QDate &date);
+    void requestRouteKeysFromSheet(const QString &organizationKey, const QString &sheetName);
 
 signals:
     void debugMessage(const QString &debug);
@@ -36,8 +37,13 @@ private:
     QMap<QString,QVariantList> mrsDailyScheduleJsonToSQL(const QJsonObject &data);
 
     JsonSettings *settings_ = new JsonSettings(this);
-    QString dbPath_ = qApp->applicationDirPath() + "/mrsconnection.db";
-    QJsonObject jsonSettings_   {{"client_id", QJsonValue()},
+    QString dbPath_;
+    QJsonObject jsonSettings_  {{"organization_key", QJsonValue("SEATTLE")},
+                                {"date_format", QJsonValue("d-MMM-yyyy")},
+                                {"driver_offset", QJsonValue(1)},
+                                {"truck_offset", QJsonValue(2)},
+                                {"trailer_offset", QJsonValue(3)},
+                                {"client_id", QJsonValue()},
                                 {"auth_uri", QJsonValue()},
                                 {"token_uri", QJsonValue()},
                                 {"auth_provider_x509_cert_url", QJsonValue()},

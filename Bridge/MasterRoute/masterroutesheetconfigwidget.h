@@ -15,7 +15,9 @@ class MasterRouteSheetConfigWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit MasterRouteSheetConfigWidget(QWidget *parent = 0);
+    explicit MasterRouteSheetConfigWidget(const QString &datbaseName,
+                                          QWidget *parent = 0);
+
     ~MasterRouteSheetConfigWidget();
 
 private slots:
@@ -28,8 +30,13 @@ private:
     Ui::MasterRouteSheetConfigWidget *ui;
 
     JsonSettings *settings_ = new JsonSettings(this);
-    QString dbPath_ = qApp->applicationDirPath() + "/mrsconnection.db";
-    QJsonObject jsonSettings_  {{"client_id", QJsonValue("Client ID")},
+    QString dbPath_;
+    QJsonObject jsonSettings_  {{"organization_key", QJsonValue("SEATTLE")},
+                                {"date_format", QJsonValue("d-MMM-yyyy")},
+                                {"driver_offset", QJsonValue(1)},
+                                {"truck_offset", QJsonValue(2)},
+                                {"trailer_offset", QJsonValue(3)},
+                                {"client_id", QJsonValue("Client ID")},
                                 {"auth_uri", QJsonValue("Authentication URI")},
                                 {"token_uri", QJsonValue("Token URI")},
                                 {"auth_provider_x509_cert_url", QJsonValue("x509 Certificate URL")},

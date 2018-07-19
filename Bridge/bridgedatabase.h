@@ -10,16 +10,41 @@ class BridgeDatabase : public QObject
 public:
     explicit BridgeDatabase(QObject *parent = nullptr);
 
-    QJsonObject getRoutesToUpload(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString);
-    QJsonArray getRoutesToUpdate(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString);
-    QJsonObject getAssignmentsToUpdate(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString);
+    QJsonObject getRoutesToUpload(const QString &assignmentTableName,
+                                  const QString &organizationKey,
+                                  const QDate &date,
+                                  const QString &minRouteString = QString(),
+                                  const QString &maxRouteString = QString());
+
+    QJsonArray getRoutesToUpdate(const QString &assignmentTableName,
+                                 const QString &organizationKey,
+                                 const QDate &date,
+                                 const QString &minRouteString = QString(),
+                                 const QString &maxRouteString = QString());
+
+    QJsonObject getAssignmentsToUpdate(const QString &assignmentTableName,
+                                       const QString &organizationKey,
+                                       const QDate &date,
+                                       const QString &minRouteString = QString(),
+                                       const QString &maxRouteString = QString());
+
     QJsonArray getLocationsToUpdate();
-    QJsonObject getLocationsToUpload(const QString &organizationKey, const QDate &date, const QString &minRouteString, const QString &maxRouteString);
+
+    QJsonObject getLocationsToUpload(const QString &assignmentTableName,
+                                     const QString &organizationKey,
+                                     const QDate &date,
+                                     const QString &minRouteString = QString(),
+                                     const QString &maxRouteString = QString());
+
     QJsonArray getDriversToUpdate();
+
     QJsonArray getDriversToUpload();
+
     QJsonArray getEquipmentToUpdate();
+
     QJsonArray getEquipmentToUpload();
 
+    void enforceTableSanity(QStringList primaryKeyList, const QString &primaryTable, const QString &secondaryTable);
     bool truncateATable(const QString &tableName);
     bool populateAS400LocationOverrideTimeWindows();
 

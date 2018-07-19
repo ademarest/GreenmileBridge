@@ -16,6 +16,16 @@ void MRSDataConnection::requestValuesFromAGoogleSheet(const QString &requestKey,
     startOAuth2Request(key);
 }
 
+void MRSDataConnection::loadSettings()
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+}
+
+void MRSDataConnection::saveSettings()
+{
+    settings_->saveSettings(QFile(dbPath_), jsonSettings_);
+}
+
 void MRSDataConnection::handleNetworkReply(QNetworkReply *reply)
 {
     QString key = reply->objectName();

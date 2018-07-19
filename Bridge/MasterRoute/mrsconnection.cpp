@@ -1,14 +1,27 @@
 #include "mrsconnection.h"
 
-MRSConnection::MRSConnection(QObject *parent) : QObject(parent)
+MRSConnection::MRSConnection(const QString &databaseName, QObject *parent) : QObject(parent)
 {
+    //mrsconnection.db
+    dbPath_ = qApp->applicationDirPath() + "/" + databaseName;
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 }
 
 void MRSConnection::requestRouteKeysForDate(const QString &organizationKey, const QDate &date)
 {
-    QString key = organizationKey + ":routeKeys";
+    QString key = organizationKey + ":routeKeys:" + date.toString("dddd");
     QUrl address = jsonSettings_["base_url"].toString() + date.toString("dddd");
+    networkRequestInfo_[key]["address"] = address;
+    networkRequestInfo_[key]["request_type"] = "get";
+
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    startOAuth2Request(key);
+}
+
+void MRSConnection::requestRouteKeysFromSheet(const QString &organizationKey, const QString &sheetName)
+{
+    QString key = organizationKey + ":routeKeys:" + sheetName;
+    QUrl address = jsonSettings_["base_url"].toString() + sheetName;
     networkRequestInfo_[key]["address"] = address;
     networkRequestInfo_[key]["request_type"] = "get";
 
@@ -233,20 +246,17 @@ void MRSConnection::sendNetworkRequest()
 QMap<QString, QVariantList> MRSConnection::mrsDailyScheduleJsonToSQL(const QJsonObject &data)
 {
     QMap<QString, QVariantList> sqlData;
-    QDate date;
     bool foundDate = false;
-    QString dateFormat = "d-MMM-yyyy";
-    QString orgKey = data["organization:key"].toString();
+    QDate date;
     QString routeKey;
-    int driverOffset = 1;
-    int truckOffset = 2;
-    int trailerOffset = 3;
+    QString dateFormat  = jsonSettings_["date_format"].toString(); //"d-MMM-yyyy" by default;
+    QString orgKey      = jsonSettings_["organization_key"].toString();
+    int driverOffset    = jsonSettings_["driver_offset"].toInt();
+    int truckOffset     = jsonSettings_["truck_offset"].toInt();
+    int trailerOffset   = jsonSettings_["trailer_offset"].toInt();
 
-    //implement offset math
-    //qDebug() << sheetData;
     QJsonArray rows = data["values"].toArray();
 
-    //find MRS date;
     for(auto rowArr:rows)
     {
         if(foundDate)
@@ -281,17 +291,24 @@ QMap<QString, QVariantList> MRSConnection::mrsDailyScheduleJsonToSQL(const QJson
                 sqlData["route:date"].append(QVariant(date));
                 sqlData["organization:key"].append(QVariant(orgKey));
 
-                if(i+driverOffset < row.size() && !row[i+driverOffset].toString().simplified().isEmpty())
+                if(i+driverOffset < row.size()
+                        && !row[i+driverOffset].toString().simplified().isEmpty()
+                        && driverOffset != 0)
                     sqlData["driver:name"].append(QVariant(row[i+driverOffset].toString().simplified()));
                 else
                     sqlData["driver:name"].append(QVariant());
 
-                if(i+truckOffset < row.size() && !row[i+truckOffset].toString().simplified().isEmpty())
+                if(i+truckOffset < row.size()
+                        && !row[i+truckOffset].toString().simplified().isEmpty()
+                        && truckOffset != 0)
                     sqlData["truck:key"].append(QVariant(row[i+truckOffset].toString().simplified()));
                 else
                     sqlData["truck:key"].append(QVariant());
 
-                if(i+trailerOffset < row.size() && !row[i+trailerOffset].toString().simplified().isEmpty())
+                if(i+trailerOffset < row.size()
+                        && !row[i+trailerOffset].toString().simplified().isEmpty()
+                        && trailerOffset != 0)
+
                     sqlData["trailer:key"].append(QVariant(row[i+trailerOffset].toString().simplified()));
                 else
                     sqlData["trailer:key"].append(QVariant());

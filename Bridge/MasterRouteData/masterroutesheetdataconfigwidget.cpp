@@ -141,3 +141,14 @@ QJsonObject MasterRouteSheetDataConfigWidget::makeJsonFromFile(const QString &js
     jsonCredentialFile.close();
     return QJsonObject(QJsonDocument::fromJson(credentials).object());
 }
+
+void MasterRouteSheetDataConfigWidget::loadSettings()
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+}
+
+void MasterRouteSheetDataConfigWidget::saveSettings()
+{
+    settings_->saveSettings(QFile(dbPath_), jsonSettings_);
+}
+

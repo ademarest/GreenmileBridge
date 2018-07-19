@@ -62,6 +62,30 @@ void GMConnection::requestAllOrganizationInfo()
     makeGMPostRequest(key, serverAddrTail, postData);
 }
 
+void GMConnection::requestAllStopTypeInfo()
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString key = "allOrganizationInfo";
+    QString serverAddrTail =    "/Organization/restrictions?criteria"
+                                "={\"filters\":[\"*\"]}";
+
+    QByteArray postData = QString("{}").toLocal8Bit();
+
+    makeGMPostRequest(key, serverAddrTail, postData);
+}
+
+void GMConnection::requestAllLocationTypeInfo()
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString key = "allOrganizationInfo";
+    QString serverAddrTail =    "/Organization/restrictions?criteria"
+                                "={\"filters\":[\"*\"]}";
+
+    QByteArray postData = QString("{}").toLocal8Bit();
+
+    makeGMPostRequest(key, serverAddrTail, postData);
+}
+
 void GMConnection::requestRouteComparisonInfo(const QDate &date)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);

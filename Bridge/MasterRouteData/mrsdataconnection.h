@@ -23,6 +23,8 @@ signals:
     void data(const QString &key, const QJsonObject &data);
 
 public slots:
+    void loadSettings();
+    void saveSettings();
 
 private slots:
     void handleNetworkReply(QNetworkReply *reply);

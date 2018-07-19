@@ -10,6 +10,7 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
     connect(as400Conn, &AS400::debugMessage, this, &Bridge::statusMessage);
 
     connect(mrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &Bridge::handleMRSDailyScheduleSQL);
+    connect(dlmrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &Bridge::handleDLMRSDailyScheduleSQL);
 
     connect(mrsDataConn, &MRSDataConnection::data, this, &Bridge::routeMRSDataToFunction);
 
@@ -44,6 +45,8 @@ void Bridge::beginGathering()
     dataGatheringJobs_.insert("mrsDailyAssignments");
     mrsConn->requestRouteKeysForDate("SEATTLE", bridgeDate);
 
+    dataGatheringJobs_.insert("dlmrsDailyAssignments");
+    dlmrsConn->requestRouteKeysFromSheet("SEATTLE", "Today");
 
     dataGatheringJobs_.insert("routeStartTimes");
     mrsDataConn->requestValuesFromAGoogleSheet("routeStartTimes", "routeStartTimes");
@@ -81,111 +84,128 @@ void Bridge::beginGathering()
 
 void Bridge::beginAnalysis()
 {
+    QStringList assignmentTables = {"mrsDailyAssignments", "dlmrsDailyAssignments"};
     qDebug() << "BA";
-    if(!dataGatheringJobs_.isEmpty())
-        return;
+    //`route:key` || `route:date` || `organization:key`
+    QStringList pkList {"route:key", "route:date", "organization:key"};
 
-    qDebug() << "AA";
-    QJsonObject locationsToUpload = bridgeDB->getLocationsToUpload("SEATTLE", bridgeDate, "D", "U");
-    qDebug() << locationsToUpload;
-    for(auto key:locationsToUpload.keys())
+    bridgeDB->enforceTableSanity(pkList, "dlmrsDailyAssignments", "mrsDailyAssignments");
+    for(auto table:assignmentTables)
     {
-        dataBucket_["geocode:" + key] = locationsToUpload[key].toObject();
+        QString minDelim;
+        QString maxDelim;
 
-
-        while(gmConn->isProcessingNetworkRequests())
-            qApp->processEvents();
-
-
-        gmConn->geocodeLocation(dataBucket_["geocode:" + key].toObject());
-    }
-
-    while(gmConn->isProcessingNetworkRequests())
-        qApp->processEvents();
-
-    qDebug() << "done geocoding!";
-    qDebug() << "testing upload route...";
-    QJsonObject routeUploadObj = bridgeDB->getRoutesToUpload("SEATTLE", bridgeDate, "D", "U");
-    for(auto key:routeUploadObj.keys())
-    {
-        dataBucket_[key] = routeUploadObj[key].toObject();
-
-
-        while(gmConn->isProcessingNetworkRequests())
-            qApp->processEvents();
-
-        if(key.split(":").first() == "routeUpload")
+        if(table == "mrsDailyAssignments")
         {
-            gmConn->uploadARoute(key, dataBucket_[key].toObject());
+            minDelim = "D";
+            maxDelim = "U";
         }
 
-        //gmConn->geocodeLocation(dataBucket_["geocode:" + key].toObject());
-    }
+        if(!dataGatheringJobs_.isEmpty())
+            return;
 
-    while(gmConn->isProcessingNetworkRequests())
-        qApp->processEvents();
-
-    QJsonObject reassignmentResultObj = bridgeDB->getAssignmentsToUpdate("SEATTLE", bridgeDate, "D", "U");
-    for(auto key:reassignmentResultObj.keys())
-    {
-
-        QStringList splitKey = key.split(":");
-
-        if(!splitKey.isEmpty())
-            splitKey.removeFirst();
-
-        QString routeDriverAssignmentKey = "routeDriverAssignment:" + splitKey.join(":");
-        QString routeEquipmentAssignmentKey = "routeEquipmentAssignment:" + splitKey.join(":");
-        QString routeDriverAssigmentDeletionKey = "routeDriverAssigmentDeletion:" + splitKey.join(":");
-        QString routeEquipmentAssignmentDeletionKey = "routeEquipmentAssignmentDeletion:" + splitKey.join(":");
-
-        QJsonObject reassignmentObj = reassignmentResultObj[key].toObject();
-        qDebug() << reassignmentObj;
-        QJsonObject routeDriverAssignmentObj;
-        QJsonObject routeEquipmentAssignmentObj;
-
-        while(gmConn->isProcessingNetworkRequests())
-            qApp->processEvents();
-
-        qDebug() << "The wtf zone";
-        qDebug() << reassignmentObj["driverAssignments:0:id"].toString();
-        qDebug() << reassignmentObj["driverAssignments:0:id"];
-
-        if(reassignmentObj["driverAssignments:0:id"].type() == QJsonValue::Double)
+        qDebug() << "AA";
+        QJsonObject locationsToUpload = bridgeDB->getLocationsToUpload(table, "SEATTLE", bridgeDate, minDelim, maxDelim);
+        qDebug() << "locations to upload" << locationsToUpload;
+        for(auto key:locationsToUpload.keys())
         {
-            qDebug() << "deleting" << reassignmentObj["driverAssignments:0:id"];
-            gmConn->deleteDriverAssignment(routeDriverAssigmentDeletionKey, reassignmentObj["driverAssignments:0:id"].toInt());
-        }
-        if(reassignmentObj["equipmentAssignments:0:id"].type() == QJsonValue::Double)
-        {
-            qDebug() << "deleting" << reassignmentObj["equipmentAssignments:0:id"];
-            gmConn->deleteEquipmentAssignment(routeEquipmentAssignmentDeletionKey, reassignmentObj["equipmentAssignments:0:id"].toInt());
+            dataBucket_["geocode:" + key] = locationsToUpload[key].toObject();
+
+
+            while(gmConn->isProcessingNetworkRequests())
+                qApp->processEvents();
+
+
+            gmConn->geocodeLocation(dataBucket_["geocode:" + key].toObject());
         }
 
         while(gmConn->isProcessingNetworkRequests())
             qApp->processEvents();
 
-        routeDriverAssignmentObj["route"] = QJsonObject{{"id", reassignmentObj["id"]}};
+        qDebug() << "done geocoding!";
+        qDebug() << "testing upload route...";
+        QJsonObject routeUploadObj = bridgeDB->getRoutesToUpload(table, "SEATTLE", bridgeDate, minDelim, maxDelim);
+        for(auto key:routeUploadObj.keys())
+        {
+            dataBucket_[key] = routeUploadObj[key].toObject();
+
+
+            while(gmConn->isProcessingNetworkRequests())
+                qApp->processEvents();
+
+            if(key.split(":").first() == "routeUpload")
+            {
+                gmConn->uploadARoute(key, dataBucket_[key].toObject());
+            }
+
+            //gmConn->geocodeLocation(dataBucket_["geocode:" + key].toObject());
+        }
+
+        while(gmConn->isProcessingNetworkRequests())
+            qApp->processEvents();
+
+        QJsonObject reassignmentResultObj = bridgeDB->getAssignmentsToUpdate(table, "SEATTLE", bridgeDate, minDelim, maxDelim);
+        for(auto key:reassignmentResultObj.keys())
+        {
+
+            QStringList splitKey = key.split(":");
+
+            if(!splitKey.isEmpty())
+                splitKey.removeFirst();
+
+            QString routeDriverAssignmentKey = "routeDriverAssignment:" + splitKey.join(":");
+            QString routeEquipmentAssignmentKey = "routeEquipmentAssignment:" + splitKey.join(":");
+            QString routeDriverAssigmentDeletionKey = "routeDriverAssigmentDeletion:" + splitKey.join(":");
+            QString routeEquipmentAssignmentDeletionKey = "routeEquipmentAssignmentDeletion:" + splitKey.join(":");
+
+            QJsonObject reassignmentObj = reassignmentResultObj[key].toObject();
+            qDebug() << reassignmentObj;
+            QJsonObject routeDriverAssignmentObj;
+            QJsonObject routeEquipmentAssignmentObj;
+
+            while(gmConn->isProcessingNetworkRequests())
+                qApp->processEvents();
+
+            qDebug() << "The wtf zone";
+            qDebug() << reassignmentObj["driverAssignments:0:id"].toString();
+            qDebug() << reassignmentObj["driverAssignments:0:id"];
+
+            if(reassignmentObj["driverAssignments:0:id"].type() == QJsonValue::Double)
+            {
+                qDebug() << "deleting" << reassignmentObj["driverAssignments:0:id"];
+                gmConn->deleteDriverAssignment(routeDriverAssigmentDeletionKey, reassignmentObj["driverAssignments:0:id"].toInt());
+            }
+            if(reassignmentObj["equipmentAssignments:0:id"].type() == QJsonValue::Double)
+            {
+                qDebug() << "deleting" << reassignmentObj["equipmentAssignments:0:id"];
+                gmConn->deleteEquipmentAssignment(routeEquipmentAssignmentDeletionKey, reassignmentObj["equipmentAssignments:0:id"].toInt());
+            }
+
+            while(gmConn->isProcessingNetworkRequests())
+                qApp->processEvents();
+
+            routeDriverAssignmentObj["route"] = QJsonObject{{"id", reassignmentObj["id"]}};
         routeDriverAssignmentObj["driver"] = QJsonObject{{"id", reassignmentObj["driverAssignments:0:driver:id"]}};
-        qDebug() << routeDriverAssignmentObj;
-        gmConn->assignDriverToRoute(routeDriverAssignmentKey, routeDriverAssignmentObj);
-        //---------------------------------------------------------------------
-        //Equipment time
-        //---------------------------------------------------------------------
-        routeEquipmentAssignmentObj["route"] = QJsonObject{{"id", reassignmentObj["id"]}};
-        routeEquipmentAssignmentObj["equipment"] = QJsonObject{{"id", reassignmentObj["equipmentAssignments:0:equipment:id"]}};
-        routeEquipmentAssignmentObj["principal"] = QJsonValue(true);
-        qDebug() << routeEquipmentAssignmentObj;
-        gmConn->assignEquipmentToRoute(routeEquipmentAssignmentKey, routeEquipmentAssignmentObj);
-        //gmConn->geocodeLocation(dataBucket_["geocode:" + key].toObject());
-    }
+    qDebug() << routeDriverAssignmentObj;
+    gmConn->assignDriverToRoute(routeDriverAssignmentKey, routeDriverAssignmentObj);
+    //---------------------------------------------------------------------
+    //Equipment time
+    //---------------------------------------------------------------------
+    routeEquipmentAssignmentObj["route"] = QJsonObject{{"id", reassignmentObj["id"]}};
+routeEquipmentAssignmentObj["equipment"] = QJsonObject{{"id", reassignmentObj["equipmentAssignments:0:equipment:id"]}};
+routeEquipmentAssignmentObj["principal"] = QJsonValue(true);
+qDebug() << routeEquipmentAssignmentObj;
+gmConn->assignEquipmentToRoute(routeEquipmentAssignmentKey, routeEquipmentAssignmentObj);
+//gmConn->geocodeLocation(dataBucket_["geocode:" + key].toObject());
+}
 
-    while(gmConn->isProcessingNetworkRequests())
-        qApp->processEvents();
+while(gmConn->isProcessingNetworkRequests())
+qApp->processEvents();
 
 
-    qDebug() << "am done, phew.";
-    bridgeInProgress = false;
+}
+qDebug() << "am done, phew.";
+bridgeInProgress = false;
 }
 
 void Bridge::handleGMResponse(const QString &key, const QJsonValue &val)
@@ -219,28 +239,28 @@ void Bridge::handleGMResponse(const QString &key, const QJsonValue &val)
 
 
         routeDriverAssignmentObj["route"] = QJsonObject{{"id", response["id"]}};
-        routeDriverAssignmentObj["driver"] = dataBucket_[driverAssignmentKey];
-        gmConn->assignDriverToRoute(driverAssignmentKey, routeDriverAssignmentObj);
-        //---------------------------------------------------------------------
-        //Equipment time
-        //---------------------------------------------------------------------
-        keyList[0] = "equipmentAssignment";
-        QString equipmentAssignmentKey = keyList.join(":");
+    routeDriverAssignmentObj["driver"] = dataBucket_[driverAssignmentKey];
+    gmConn->assignDriverToRoute(driverAssignmentKey, routeDriverAssignmentObj);
+    //---------------------------------------------------------------------
+    //Equipment time
+    //---------------------------------------------------------------------
+    keyList[0] = "equipmentAssignment";
+    QString equipmentAssignmentKey = keyList.join(":");
 
-        routeEquipmentAssignmentObj["route"] = QJsonObject{{"id", response["id"]}};
-        routeEquipmentAssignmentObj["equipment"] = dataBucket_[equipmentAssignmentKey];
-        routeEquipmentAssignmentObj["principal"] = QJsonValue(true);
+    routeEquipmentAssignmentObj["route"] = QJsonObject{{"id", response["id"]}};
+routeEquipmentAssignmentObj["equipment"] = dataBucket_[equipmentAssignmentKey];
+routeEquipmentAssignmentObj["principal"] = QJsonValue(true);
 
-        gmConn->assignEquipmentToRoute(equipmentAssignmentKey, routeEquipmentAssignmentObj);
-    }
-    if(key == "gmDrivers")
-    {
-        handleGMDriverInfo(val.toArray());
-    }
-    if(key == "gmEquipment")
-    {
-        handleGMEquipmentInfo(val.toArray());
-    }
+gmConn->assignEquipmentToRoute(equipmentAssignmentKey, routeEquipmentAssignmentObj);
+}
+if(key == "gmDrivers")
+{
+    handleGMDriverInfo(val.toArray());
+}
+if(key == "gmEquipment")
+{
+    handleGMEquipmentInfo(val.toArray());
+}
 }
 
 void Bridge::applyGeocodeResponseToLocation(const QString &key, const QJsonObject &obj)
@@ -390,6 +410,26 @@ void Bridge::handleMRSDailyScheduleSQL(const QMap<QString, QVariantList> &sql)
     dataGatheringJobs_.remove("mrsDailyAssignments");
     beginAnalysis();
 }
+
+void Bridge::handleDLMRSDailyScheduleSQL(const QMap<QString, QVariantList> &sql)
+{
+    QString tableName = "dlmrsDailyAssignments";
+    QString creationQuery = "CREATE TABLE `dlmrsDailyAssignments` "
+                            "(`route:key` TEXT NOT NULL, "
+                            "`route:date` TEXT NOT NULL, "
+                            "`organization:key` TEXT NOT NULL, "
+                            "`driver:name` TEXT, "
+                            "`truck:key` TEXT, "
+                            "`trailer:key` TEXT, "
+                            "PRIMARY KEY(`route:key`, `route:date`, `organization:key`))";
+
+    bridgeDB->addSQLInfo(tableName, creationQuery);
+    bridgeDB->SQLDataInsert(tableName, sql);
+
+    dataGatheringJobs_.remove(tableName);
+    beginAnalysis();
+}
+
 
 void Bridge::handleGMLocationInfo(const QJsonArray &array)
 {
@@ -663,6 +703,8 @@ void Bridge::handleMRSDataPowerUnits(const QJsonObject &data)
     dataGatheringJobs_.remove("powerUnits");
     beginAnalysis();
 }
+
+
 
 QMap<QString, QVariantList> Bridge::googleDataToSQL(bool hasHeader, const QStringList dataOrder, const QJsonObject &data)
 {

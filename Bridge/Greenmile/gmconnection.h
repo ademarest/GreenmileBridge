@@ -26,6 +26,8 @@ public:
     void requestLocationKeys();
     void requestLocationInfo();
     void requestAllOrganizationInfo();
+    void requestAllStopTypeInfo();
+    void requestAllLocationTypeInfo();
     void requestRouteComparisonInfo(const QDate &date);
     void requestDriverInfo();
     void requestEquipmentInfo();

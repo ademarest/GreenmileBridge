@@ -18,6 +18,10 @@ public:
     explicit MasterRouteSheetDataConfigWidget(QWidget *parent = 0);
     ~MasterRouteSheetDataConfigWidget();
 
+public slots:
+    void loadSettings();
+    void saveSettings();
+
 private slots:
     void saveUItoSettings();
     void loadSettingsFromFile();
