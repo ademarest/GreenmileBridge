@@ -1,26 +1,16 @@
-#include "mrsconnection.h"
+#include "googlesheetsconnection.h"
 
-MRSConnection::MRSConnection(const QString &databaseName, QObject *parent) : QObject(parent)
+GoogleSheetsConnection::GoogleSheetsConnection(const QString &databaseName, QObject *parent) : QObject(parent)
 {
-    //mrsconnection.db
+    Q_ASSERT(!databaseName.isNull() && !databaseName.isEmpty());
+
     dbPath_ = qApp->applicationDirPath() + "/" + databaseName;
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 }
 
-void MRSConnection::requestRouteKeysForDate(const QString &organizationKey, const QDate &date)
+void GoogleSheetsConnection::requestValuesFromAGoogleSheet(const QString &requestKey, const QString &sheetName)
 {
-    QString key = organizationKey + ":routeKeys:" + date.toString("dddd");
-    QUrl address = jsonSettings_["base_url"].toString() + date.toString("dddd");
-    networkRequestInfo_[key]["address"] = address;
-    networkRequestInfo_[key]["request_type"] = "get";
-
-    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    startOAuth2Request(key);
-}
-
-void MRSConnection::requestRouteKeysFromSheet(const QString &organizationKey, const QString &sheetName)
-{
-    QString key = organizationKey + ":routeKeys:" + sheetName;
+    QString key = requestKey;
     QUrl address = jsonSettings_["base_url"].toString() + sheetName;
     networkRequestInfo_[key]["address"] = address;
     networkRequestInfo_[key]["request_type"] = "get";
@@ -29,7 +19,34 @@ void MRSConnection::requestRouteKeysFromSheet(const QString &organizationKey, co
     startOAuth2Request(key);
 }
 
-void MRSConnection::handleNetworkReply(QNetworkReply *reply)
+void GoogleSheetsConnection::changeDatabaseName(const QString &databaseName)
+{
+    Q_ASSERT(!databaseName.isNull() && !databaseName.isEmpty());
+    dbPath_ = qApp->applicationDirPath() + "/" + databaseName;
+}
+
+void GoogleSheetsConnection::loadSettings()
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+}
+
+void GoogleSheetsConnection::saveSettings()
+{
+    settings_->saveSettings(QFile(dbPath_), jsonSettings_);
+}
+
+QString GoogleSheetsConnection::databaseName()
+{
+    QStringList dbPath_Split = dbPath_.split("/");
+
+    if(dbPath_Split.isEmpty())
+        return QString();
+
+    QString databaseName = dbPath_Split.last();
+    return databaseName;
+}
+
+void GoogleSheetsConnection::handleNetworkReply(QNetworkReply *reply)
 {
     QString key = reply->objectName();
 
@@ -45,9 +62,7 @@ void MRSConnection::handleNetworkReply(QNetworkReply *reply)
         else
         {
             emit statusMessage("Google sheets retrieved, there's " + QString::number(json["values"].toArray().size()) + " rows in the sheet.");
-            json["organization:key"] = QJsonValue(key.split(":").first());
-            emit mrsDailyScheduleSQL(mrsDailyScheduleJsonToSQL(json));
-            emit routeSheetData(json);
+            emit data(key, json);
         }
     }
     networkOAuth2Flows_[key]->deleteLater();
@@ -55,12 +70,14 @@ void MRSConnection::handleNetworkReply(QNetworkReply *reply)
     networkOAuth2Timers_[key]->deleteLater();
     networkTimers_[key]->deleteLater();
     networkReplies_[key]->deleteLater();
+    listenerTimers_[key]->deleteLater();
 
     networkRequestInfo_.remove(key);
     networkRequestsInProgress_.remove(key);
+    manualGrantInProgress_ = false;
 }
 
-void MRSConnection::oauth2RequestTimedOut()
+void GoogleSheetsConnection::oauth2RequestTimedOut()
 {
     QString key = sender()->objectName();
     emit statusMessage("OAuth2 authentication request for " + key + " has timed out.");
@@ -69,12 +86,14 @@ void MRSConnection::oauth2RequestTimedOut()
     networkOAuth2ReplyHandlers_[key]->deleteLater();
     networkOAuth2Timers_[key]->deleteLater();
     networkTimers_[key]->deleteLater();
+    listenerTimers_[key]->deleteLater();
 
     networkRequestInfo_.remove(key);
     networkRequestsInProgress_.remove(key);
+    manualGrantInProgress_ = false;
 }
 
-void MRSConnection::startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal)
+void GoogleSheetsConnection::startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal)
 {
     //bytesTotal == 0 means the request was aborted.
     //Handle compiler warning;
@@ -94,7 +113,7 @@ void MRSConnection::startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal)
     timer->start(jsonSettings_["request_timeout"].toInt() * 1000);
 }
 
-void MRSConnection::startOAuth2GrantTimer(const QString &key)
+void GoogleSheetsConnection::startOAuth2GrantTimer(const QString &key)
 {
     //bytesTotal == 0 means the request was aborted.
     QTimer* timer = networkOAuth2Timers_[key];
@@ -102,7 +121,7 @@ void MRSConnection::startOAuth2GrantTimer(const QString &key)
     timer->start(jsonSettings_["oauth2_user_timeout"].toInt() * 1000);
 }
 
-void MRSConnection::requestTimedOut()
+void GoogleSheetsConnection::requestTimedOut()
 {
     QString key = sender()->objectName();
     emit statusMessage("Network request for Google Sheets " + key + " has timed out.");
@@ -112,22 +131,25 @@ void MRSConnection::requestTimedOut()
     networkReplies_[key]->abort();
 }
 
-void MRSConnection::buildOAuth2(const QString &key)
+void GoogleSheetsConnection::buildOAuth2(const QString &key)
 {
+    listenerTimers_[key] = new QTimer(this);
+    listenerTimers_[key]->setObjectName(key);
+    connect(listenerTimers_[key], &QTimer::timeout, this, &GoogleSheetsConnection::checkListenerStatus);
+
     networkOAuth2Timers_[key] = new QTimer(this);
     networkOAuth2Timers_[key]->setObjectName(key);
-    connect(networkOAuth2Timers_[key], &QTimer::timeout, this, &MRSConnection::oauth2RequestTimedOut);
+    connect(networkOAuth2Timers_[key], &QTimer::timeout, this, &GoogleSheetsConnection::oauth2RequestTimedOut);
 
     networkTimers_[key] = new QTimer(this);
     networkTimers_[key]->setObjectName(key);
-    connect(networkTimers_[key], &QTimer::timeout, this, &MRSConnection::requestTimedOut);
+    connect(networkTimers_[key], &QTimer::timeout, this, &GoogleSheetsConnection::requestTimedOut);
 
     networkOAuth2Flows_[key] = new QOAuth2AuthorizationCodeFlow(this);
     networkOAuth2Flows_[key]->setObjectName(key);
-    connect(networkOAuth2Flows_[key], &QOAuth2AuthorizationCodeFlow::granted, this, &MRSConnection::sendNetworkRequest);
-    connect(networkOAuth2Flows_[key], &QOAuth2AuthorizationCodeFlow::finished, this, &MRSConnection::handleNetworkReply);
+    connect(networkOAuth2Flows_[key], &QOAuth2AuthorizationCodeFlow::granted, this, &GoogleSheetsConnection::sendNetworkRequest);
+    connect(networkOAuth2Flows_[key], &QOAuth2AuthorizationCodeFlow::finished, this, &GoogleSheetsConnection::handleNetworkReply);
     connect(networkOAuth2Flows_[key], &QOAuth2AuthorizationCodeFlow::authorizeWithBrowser,&QDesktopServices::openUrl);
-
     networkOAuth2Flows_[key]->setScope(jsonSettings_["api_scope"].toString());
 
     const auto redirectUris = jsonSettings_["redirect_uris"].toArray();
@@ -161,12 +183,30 @@ void MRSConnection::buildOAuth2(const QString &key)
     });
 
     networkOAuth2ReplyHandlers_[key] = new QOAuthHttpServerReplyHandler(port, this);
-    while(!networkOAuth2ReplyHandlers_[key]->isListening())
+    listenerTimers_[key]->start(500);
+}
+
+void GoogleSheetsConnection::checkListenerStatus()
+{
+    QString key = sender()->objectName();
+
+    if(networkOAuth2ReplyHandlers_[key]->isListening())
     {
-        qApp->processEvents();
+        listenerTimers_[key]->stop();
+        proceedToGrantStage(key);
+    }
+    else
+    {
+        const auto redirectUris = jsonSettings_["redirect_uris"].toArray();
+        const QUrl redirectUri(redirectUris[0].toString()); // Get the first URI
+        const auto port = static_cast<quint16>(redirectUri.port()); // Get the port
         delete networkOAuth2ReplyHandlers_[key];
         networkOAuth2ReplyHandlers_[key] = new QOAuthHttpServerReplyHandler(port, this);
     }
+}
+
+void GoogleSheetsConnection::proceedToGrantStage(const QString &key)
+{
     networkOAuth2Flows_[key]->setReplyHandler(networkOAuth2ReplyHandlers_[key]);
 
     if(jsonSettings_["refresh_token"].toString().isEmpty())
@@ -190,7 +230,7 @@ void MRSConnection::buildOAuth2(const QString &key)
     }
 }
 
-void MRSConnection::startOAuth2Request(const QString &key)
+void GoogleSheetsConnection::startOAuth2Request(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 
@@ -206,7 +246,7 @@ void MRSConnection::startOAuth2Request(const QString &key)
     buildOAuth2(key);
 }
 
-void MRSConnection::saveOAuth2TokensToDB(const QString &key)
+void GoogleSheetsConnection::saveOAuth2TokensToDB(const QString &key)
 {
     jsonSettings_["token"] = networkOAuth2Flows_[key]->token();
     jsonSettings_["expiration_at"] = networkOAuth2Flows_[key]->expirationAt().toString(Qt::ISODateWithMs);
@@ -219,7 +259,7 @@ void MRSConnection::saveOAuth2TokensToDB(const QString &key)
     settings_->saveSettings(QFile(dbPath_), jsonSettings_);
 }
 
-void MRSConnection::sendNetworkRequest()
+void GoogleSheetsConnection::sendNetworkRequest()
 {
     QString key         = sender()->objectName();
     QString requestType = networkRequestInfo_[key]["request_type"].toString();
@@ -236,85 +276,11 @@ void MRSConnection::sendNetworkRequest()
         networkReplies_[key]->setObjectName(key);
     }
 
-    connect(networkReplies_ [key],  &QNetworkReply::downloadProgress,  this, &MRSConnection::downloadProgess);
-    connect(networkReplies_ [key],  &QNetworkReply::downloadProgress,  this, &MRSConnection::startNetworkTimer);
+    connect(networkReplies_ [key],  &QNetworkReply::downloadProgress,  this, &GoogleSheetsConnection::downloadProgess);
+    connect(networkReplies_ [key],  &QNetworkReply::downloadProgress,  this, &GoogleSheetsConnection::startNetworkTimer);
 
     networkTimers_[key]->stop();
     networkTimers_[key]->start(jsonSettings_["request_timeout"].toInt() * 1000);
 }
 
-QMap<QString, QVariantList> MRSConnection::mrsDailyScheduleJsonToSQL(const QJsonObject &data)
-{
-    QMap<QString, QVariantList> sqlData;
-    bool foundDate = false;
-    QDate date;
-    QString routeKey;
-    QString dateFormat  = jsonSettings_["date_format"].toString(); //"d-MMM-yyyy" by default;
-    QString orgKey      = jsonSettings_["organization_key"].toString();
-    int driverOffset    = jsonSettings_["driver_offset"].toInt();
-    int truckOffset     = jsonSettings_["truck_offset"].toInt();
-    int trailerOffset   = jsonSettings_["trailer_offset"].toInt();
-    int routeKeyLength  = 5;
 
-    QJsonArray rows = data["values"].toArray();
-
-    for(auto rowArr:rows)
-    {
-        if(foundDate)
-            break;
-
-        QJsonArray row = rowArr.toArray();
-        for(int i = 0; i<row.size(); ++i)
-        {
-            QString value = row[i].toString();
-            QDate dateTest = QDate::fromString(value, dateFormat);
-            if(dateTest.isValid() && !dateTest.isNull())
-            {
-                foundDate = true;
-                date = dateTest;
-                break;
-            }
-        }
-    }
-
-    for(auto rowArr:rows)
-    {
-        QJsonArray row = rowArr.toArray();
-        for(int i = 0; i<row.size(); ++i)
-        {
-            QString value = row[i].toString();
-            QRegularExpression routeRegExp("^[A-Z]-[A-Z,0-9]{3}");
-            QRegularExpressionMatch match = routeRegExp.match(value);
-            if(match.hasMatch() && (value.size() == routeKeyLength))
-            {
-                routeKey = match.captured(0);
-                sqlData["route:key"].append(QVariant(routeKey));
-                sqlData["route:date"].append(QVariant(date));
-                sqlData["organization:key"].append(QVariant(orgKey));
-
-                if(i+driverOffset < row.size()
-                        && !row[i+driverOffset].toString().simplified().isEmpty()
-                        && driverOffset != 0)
-                    sqlData["driver:name"].append(QVariant(row[i+driverOffset].toString().simplified()));
-                else
-                    sqlData["driver:name"].append(QVariant());
-
-                if(i+truckOffset < row.size()
-                        && !row[i+truckOffset].toString().simplified().isEmpty()
-                        && truckOffset != 0)
-                    sqlData["truck:key"].append(QVariant(row[i+truckOffset].toString().simplified()));
-                else
-                    sqlData["truck:key"].append(QVariant());
-
-                if(i+trailerOffset < row.size()
-                        && !row[i+trailerOffset].toString().simplified().isEmpty()
-                        && trailerOffset != 0)
-
-                    sqlData["trailer:key"].append(QVariant(row[i+trailerOffset].toString().simplified()));
-                else
-                    sqlData["trailer:key"].append(QVariant());
-            }
-        }
-    }
-    return sqlData;
-}

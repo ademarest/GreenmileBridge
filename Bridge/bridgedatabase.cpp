@@ -2,6 +2,7 @@
 
 BridgeDatabase::BridgeDatabase(QObject *parent) : QObject(parent)
 {
+
 }
 
 bool BridgeDatabase::populateAS400LocationOverrideTimeWindows()
@@ -163,9 +164,9 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
     QMap<QString, QJsonObject> equipment;
 
     qDebug() << "sql empty check";
-    qDebug() << sql;
+    //qDebug() << sql;
     bool startsPrevDay  = false;
-    bool reverseOrder   = false;
+    bool runsBackwards   = false;
     if(!sql.empty())
     {
         for(int i = 0; i < sql.first().size(); ++i)
@@ -265,16 +266,52 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
 
     for(auto routeKey:route.keys())
     {
-        route[routeKey]["origin"] = origin[routeKey];
-        route[routeKey]["destination"] = destination[routeKey];
+        QString dayOfWeek = QDate::fromString(route[routeKey]["date"].toString(), Qt::ISODate).toString("dddd").toLower();
+        QString overrideQuery = "SELECT DISTINCT `gmOrigin`.`id` as `origin`, `gmDestination`.`id` as `destination`, CASE WHEN `rteOver`.`"+dayOfWeek+":backwards` = 'FALSE' THEN 0 ELSE 1 END as `backwards` FROM routeOverrides `rteOver` LEFT JOIN gmLocations `gmOrigin` ON `gmOrigin`.`key` = `rteOver`.`"+dayOfWeek+":origin` LEFT JOIN gmLocations `gmDestination` ON `gmDestination`.`key` = `rteOver`.`"+dayOfWeek+":destination` LEFT JOIN gmOrganizations ON gmOrganizations.`key` = `rteOver`.`organization:key` WHERE gmOrganizations.`id` = "+QString::number(organization[routeKey]["id"].toInt())+" AND `rteOver`.`route:key` = '"+routeKey+"'";
+        QMap<QString, QVariantList> sql = executeQuery(overrideQuery);
+        if(!sql.isEmpty())
+        {
+            for(auto overrideKey:sql.keys())
+            {
+                if(overrideKey == "backwards")
+                    runsBackwards = sql[overrideKey].first().toBool();
+
+                if(overrideKey == "origin")
+                {
+                    origin[routeKey]["id"] = QJsonValue(sql[overrideKey].first().toInt());
+                    route[routeKey]["origin"] = origin[routeKey];
+
+                }
+
+                if(overrideKey == "destination")
+                {
+                    destination[routeKey]["id"] = QJsonValue(sql[overrideKey].first().toInt());
+                    route[routeKey]["destination"] = destination[routeKey];
+                }
+            }
+        }
+        else
+        {
+            route[routeKey]["origin"] = origin[routeKey];
+            route[routeKey]["destination"] = destination[routeKey];
+        }
+
         route[routeKey]["organization"] = organization[routeKey];
         route[routeKey]["hasHelper"] = QJsonValue(false);
         route[routeKey]["lastStopIsDestination"] = QJsonValue(false);
         QJsonArray stopArr = route[routeKey]["stops"].toArray();
-        for(auto stopKey:stops[routeKey].keys())
+
+        if(runsBackwards)
         {
-            stopArr.append(stops[routeKey][stopKey]);
+            for(auto stopKey:stops[routeKey].keys())
+                stopArr.prepend(stops[routeKey][stopKey]);
         }
+        else
+        {
+            for(auto stopKey:stops[routeKey].keys())
+                stopArr.append(stops[routeKey][stopKey]);
+        }
+
         route[routeKey]["stops"] = QJsonValue(stopArr);
 
         QString routeCompoundKey;
@@ -283,7 +320,7 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
         QStringList genericKeyList;
         genericKeyList  << routeKey
                         << QString::number(route[routeKey]["organization"].toObject()["id"].toInt())
-                << route[routeKey]["date"].toString();
+                        << route[routeKey]["date"].toString();
 
 
         routeCompoundKey = "routeUpload:" + genericKeyList.join(":");
@@ -291,12 +328,12 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
         equipmentCompoundKey = "equipmentAssignment:" + genericKeyList.join(":");
 
 
-        qDebug() << route[routeKey];
+        //qDebug() << route[routeKey];
         returnObj[routeCompoundKey] = route[routeKey];
         returnObj[driverCompoundKey] = driver[routeKey];
         returnObj[equipmentCompoundKey] = equipment[routeKey];
     }
-    qDebug() << returnObj;
+    //qDebug() << returnObj;
     return returnObj;
 }
 

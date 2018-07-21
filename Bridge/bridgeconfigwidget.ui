@@ -14,6 +14,26 @@
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="8" column="0">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="9" column="0">
+    <widget class="QPushButton" name="saveSettingsPushButton">
+     <property name="text">
+      <string>Save Settings</string>
+     </property>
+    </widget>
+   </item>
    <item row="1" column="0">
     <widget class="QComboBox" name="organizationComboBox"/>
    </item>
@@ -24,13 +44,6 @@
     <widget class="QLabel" name="organizationLabel">
      <property name="text">
       <string>Organization</string>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="0">
-    <widget class="QPushButton" name="saveSettingsPushButton">
-     <property name="text">
-      <string>Save Settings</string>
      </property>
     </widget>
    </item>
@@ -51,18 +64,15 @@
    <item row="3" column="0">
     <widget class="QComboBox" name="stopTypeComboBox"/>
    </item>
+   <item row="7" column="0">
+    <widget class="QSpinBox" name="bridgeIntervalSpinBox"/>
+   </item>
    <item row="6" column="0">
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
+    <widget class="QLabel" name="bridgeIntervalLabel">
+     <property name="text">
+      <string>Bridge Interval (seconds)</string>
      </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
+    </widget>
    </item>
   </layout>
  </widget>

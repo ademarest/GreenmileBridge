@@ -3,6 +3,8 @@
 GMConnection::GMConnection(QObject *parent) : QObject(parent)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    checkQueueTimer->start(1000);
+    connect(checkQueueTimer, &QTimer::timeout, this, &GMConnection::processConnectionQueue);
 }
 
 GMConnection::GMConnection(const QString &serverAddress, const QString &username, const QString &password, QObject *parent) : QObject(parent)
@@ -11,6 +13,8 @@ GMConnection::GMConnection(const QString &serverAddress, const QString &username
     jsonSettings_["username"]      = QJsonValue(username);
     jsonSettings_["password"]      = QJsonValue(password);
     settings_->saveSettings(QFile(dbPath_), jsonSettings_);
+    checkQueueTimer->start(1000);
+    connect(checkQueueTimer, &QTimer::timeout, this, &GMConnection::processConnectionQueue);
 }
 
 void GMConnection::requestRouteKeysForDate(const QDate &date)
@@ -23,7 +27,7 @@ void GMConnection::requestRouteKeysForDate(const QDate &date)
 
     QByteArray postData = QString("{\"attr\":\"date\", \"eq\":\"" + date.toString(Qt::ISODate) + "\"}").toLocal8Bit();
 
-    makeGMPostRequest(key, serverAddrTail, postData);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
 void GMConnection::requestLocationKeys()
@@ -36,7 +40,7 @@ void GMConnection::requestLocationKeys()
 
     QByteArray postData = QString("{}").toLocal8Bit();
 
-    makeGMPostRequest(key, serverAddrTail, postData);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
 void GMConnection::requestLocationInfo()
@@ -47,7 +51,7 @@ void GMConnection::requestLocationInfo()
 
     QByteArray postData = QString("{}").toLocal8Bit();
 
-    makeGMPostRequest(key, serverAddrTail, postData);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
 void GMConnection::requestAllOrganizationInfo()
@@ -59,7 +63,7 @@ void GMConnection::requestAllOrganizationInfo()
 
     QByteArray postData = QString("{}").toLocal8Bit();
 
-    makeGMPostRequest(key, serverAddrTail, postData);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
 void GMConnection::requestAllStopTypeInfo()
@@ -71,7 +75,7 @@ void GMConnection::requestAllStopTypeInfo()
 
     QByteArray postData = QString("{}").toLocal8Bit();
 
-    makeGMPostRequest(key, serverAddrTail, postData);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
 void GMConnection::requestAllLocationTypeInfo()
@@ -83,7 +87,7 @@ void GMConnection::requestAllLocationTypeInfo()
 
     QByteArray postData = QString("{}").toLocal8Bit();
 
-    makeGMPostRequest(key, serverAddrTail, postData);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
 void GMConnection::requestRouteComparisonInfo(const QDate &date)
@@ -99,7 +103,7 @@ void GMConnection::requestRouteComparisonInfo(const QDate &date)
 
     QByteArray postData = QString("{\"attr\":\"date\", \"eq\":\"" + date.toString(Qt::ISODate) + "\"}").toLocal8Bit();
 
-    makeGMPostRequest(key, serverAddrTail, postData);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
 void GMConnection::requestDriverInfo()
@@ -110,7 +114,7 @@ void GMConnection::requestDriverInfo()
 
     QByteArray postData = QString("{}").toLocal8Bit();
 
-    makeGMPostRequest(key, serverAddrTail, postData);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
 void GMConnection::requestEquipmentInfo()
@@ -121,18 +125,17 @@ void GMConnection::requestEquipmentInfo()
 
     QByteArray postData = QString("{}").toLocal8Bit();
 
-    makeGMPostRequest(key, serverAddrTail, postData);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
 void GMConnection::uploadARoute(const QString &key, const QJsonObject &routeJson)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    //QString key = routeJson["key"].toString();
     QString serverAddrTail = "/Route?resequence=false&calculatePlanning=true";
 
     QByteArray postData = QJsonDocument(routeJson).toJson(QJsonDocument::Compact);
 
-    makeGMPostRequest(key, serverAddrTail, postData);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
 void GMConnection::assignDriverToRoute(const QString &key, const QJsonObject &routeDriverAssignmentJson)
@@ -143,7 +146,7 @@ void GMConnection::assignDriverToRoute(const QString &key, const QJsonObject &ro
 
     QByteArray postData = QJsonDocument(routeDriverAssignmentJson).toJson(QJsonDocument::Compact);
 
-    makeGMPostRequest(key, serverAddrTail, postData);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
 void GMConnection::assignEquipmentToRoute(const QString &key, const QJsonObject &routeEquipmentAssignmentJson)
@@ -154,7 +157,7 @@ void GMConnection::assignEquipmentToRoute(const QString &key, const QJsonObject 
 
     QByteArray postData = QJsonDocument(routeEquipmentAssignmentJson).toJson(QJsonDocument::Compact);
 
-    makeGMPostRequest(key, serverAddrTail, postData);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
 void GMConnection::deleteDriverAssignment(const QString &key, const int entityID)
@@ -162,7 +165,7 @@ void GMConnection::deleteDriverAssignment(const QString &key, const int entityID
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
     QString serverAddrTail = "/RouteDriverAssignment/" + QString::number(entityID);
     qDebug() << serverAddrTail;
-    makeGMDeleteRequest(key, serverAddrTail);
+    addToConnectionQueue(QNetworkAccessManager::Operation::DeleteOperation, key, serverAddrTail);
 }
 
 void GMConnection::deleteEquipmentAssignment(const QString &key, const int entityID)
@@ -170,7 +173,7 @@ void GMConnection::deleteEquipmentAssignment(const QString &key, const int entit
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
     QString serverAddrTail = "/RouteEquipmentAssignment/" + QString::number(entityID);
     qDebug() << serverAddrTail;
-    makeGMDeleteRequest(key, serverAddrTail);
+    addToConnectionQueue(QNetworkAccessManager::Operation::DeleteOperation, key, serverAddrTail);
 }
 
 void GMConnection::geocodeLocation(const QJsonObject &locationJson)
@@ -187,7 +190,7 @@ void GMConnection::geocodeLocation(const QJsonObject &locationJson)
 
     QByteArray postData = QJsonDocument(geocodeObj).toJson(QJsonDocument::Compact);
     qDebug() << key << serverAddrTail << postData;
-    makeGMPostRequest(key, serverAddrTail, postData);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
 void GMConnection::uploadALocation(const QString &key, const QJsonObject &locationJson)
@@ -198,87 +201,99 @@ void GMConnection::uploadALocation(const QString &key, const QJsonObject &locati
 
     QByteArray postData = QJsonDocument(locationJson).toJson(QJsonDocument::Compact);
 
-    makeGMPostRequest(key, serverAddrTail, postData);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation, key, serverAddrTail, postData);
+}
+
+void GMConnection::addToConnectionQueue(const QNetworkAccessManager::Operation requestType,
+                                        const QString &requestKey,
+                                        const QString &serverAddrTail,
+                                        const QByteArray &data)
+{
+    QVariantMap requestInfo {{"requestType", requestType},
+                             {"requestKey", requestKey},
+                             {"serverAddrTail", serverAddrTail},
+                             {"data", data}};
+
+    connectionQueue_.enqueue(requestInfo);
+}
+
+void GMConnection::processConnectionQueue()
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    for(int i = 0; i < connectionQueue_.size(); i++)
+    {
+        QVariantMap requestMap  = connectionQueue_.dequeue();
+        int requestType         = requestMap["requestType"].toInt();
+        QString requestKey      = requestMap["requestKey"].toString();
+        QString serverAddrTail  = requestMap["serverAddrTail"].toString();
+        QByteArray data         = requestMap["data"].toByteArray();
+
+        if(networkRequestsInProgress_.contains(requestKey))
+        {
+            emit errorMessage("Net request " + requestKey + " already in progress. The request will retry when the current request has completed.");
+            qDebug() << "Net request " << requestKey << " already in progress. The request will retry when the current request has completed.";
+            connectionQueue_.enqueue(requestMap);
+            continue;
+        }
+
+        QNetworkRequest request = makeGMNetworkRequest(serverAddrTail);
+
+        networkTimers_[requestKey] = new QTimer(this);
+        networkTimers_[requestKey]->setObjectName(requestKey);
+
+        networkManagers_[requestKey] = new QNetworkAccessManager(this);
+        networkManagers_[requestKey]->setObjectName(requestKey);
+
+        switch(requestType)
+        {
+            case QNetworkAccessManager::Operation::HeadOperation :
+                emit debugMessage("HeadOperation not implemented yet.");
+                break;
+            case QNetworkAccessManager::Operation::GetOperation :
+                emit debugMessage("GetOperation not implemented yet.");
+                break;
+            case QNetworkAccessManager::Operation::PutOperation :
+                emit debugMessage("PutOperation not implemented yet.");
+                break;
+            case QNetworkAccessManager::Operation::PostOperation :
+                qDebug() << "post request";
+                networkReplies_[requestKey] = networkManagers_[requestKey]->post(request,data);
+                break;
+            case QNetworkAccessManager::Operation::DeleteOperation :
+                qDebug() << "delete request";
+                networkReplies_[requestKey] = networkManagers_[requestKey]->deleteResource(request);
+                break;
+            case QNetworkAccessManager::Operation::CustomOperation :
+                emit debugMessage("CustomOperation not implemented yet.");
+                break;
+            case QNetworkAccessManager::Operation::UnknownOperation :
+                emit debugMessage("UnknownOperation not implemented yet.");
+                break;
+        }
+
+        networkReplies_[requestKey]->setObjectName(requestKey);
+
+        connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::downloadProgess);
+        connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::startNetworkTimer);
+        connect(networkManagers_[requestKey],   &QNetworkAccessManager::finished,   this, &GMConnection::handleNetworkReply);
+        connect(networkTimers_  [requestKey],   &QTimer::timeout,                   this, &GMConnection::requestTimedOut);
+
+        networkRequestsInProgress_.insert(requestKey);
+
+        networkTimers_[requestKey]->stop();
+        networkTimers_[requestKey]->start(jsonSettings_["requestTimeoutSec"].toInt() * 1000);
+        //Keeps from the DDOS bear away from GM.
+        usleep(250000);
+    }
 }
 
 bool GMConnection::isProcessingNetworkRequests()
 {
-    if(networkRequestsInProgress_.isEmpty())
+    usleep(100);
+    if(networkRequestsInProgress_.isEmpty() &&  connectionQueue_.isEmpty())
         return false;
     else
         return true;
-}
-
-void GMConnection::makeGMPostRequest(const QString &requestKey,
-                                     const QString &serverAddrTail,
-                                     const QByteArray &postData)
-{
-    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-
-    if(networkRequestsInProgress_.contains(requestKey))
-    {
-        emit statusMessage("Net request "
-                           + requestKey
-                           + " already in progress."
-                             " Try again when the current request has completed.");
-        return;
-    }
-
-    QNetworkRequest request = makeGMNetworkRequest(serverAddrTail);
-
-    networkTimers_[requestKey] = new QTimer(this);
-    networkTimers_[requestKey]->setObjectName(requestKey);
-
-    networkManagers_[requestKey] = new QNetworkAccessManager(this);
-    networkManagers_[requestKey]->setObjectName(requestKey);
-
-    networkReplies_[requestKey] = networkManagers_[requestKey]->post(request,postData);
-    networkReplies_[requestKey]->setObjectName(requestKey);
-
-    connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::downloadProgess);
-    connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::startNetworkTimer);
-    connect(networkManagers_[requestKey],   &QNetworkAccessManager::finished,   this, &GMConnection::handleNetworkReply);
-    connect(networkTimers_  [requestKey],   &QTimer::timeout,                   this, &GMConnection::requestTimedOut);
-
-    networkRequestsInProgress_.insert(requestKey);
-
-    networkTimers_[requestKey]->stop();
-    networkTimers_[requestKey]->start(jsonSettings_["requestTimeoutSec"].toInt() * 1000);
-}
-
-void GMConnection::makeGMDeleteRequest(const QString &requestKey, const QString &serverAddrTail)
-{
-    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-
-    if(networkRequestsInProgress_.contains(requestKey))
-    {
-        emit statusMessage("Net request "
-                           + requestKey
-                           + " already in progress."
-                             " Try again when the current request has completed.");
-        return;
-    }
-
-    QNetworkRequest request = makeGMNetworkRequest(serverAddrTail);
-
-    networkTimers_[requestKey] = new QTimer(this);
-    networkTimers_[requestKey]->setObjectName(requestKey);
-
-    networkManagers_[requestKey] = new QNetworkAccessManager(this);
-    networkManagers_[requestKey]->setObjectName(requestKey);
-
-    networkReplies_[requestKey] = networkManagers_[requestKey]->deleteResource(request);
-    networkReplies_[requestKey]->setObjectName(requestKey);
-
-    connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::downloadProgess);
-    connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::startNetworkTimer);
-    connect(networkManagers_[requestKey],   &QNetworkAccessManager::finished,   this, &GMConnection::handleNetworkReply);
-    connect(networkTimers_  [requestKey],   &QTimer::timeout,                   this, &GMConnection::requestTimedOut);
-
-    networkRequestsInProgress_.insert(requestKey);
-
-    networkTimers_[requestKey]->stop();
-    networkTimers_[requestKey]->start(jsonSettings_["requestTimeoutSec"].toInt() * 1000);
 }
 
 void GMConnection::handleNetworkReply(QNetworkReply *reply)
@@ -288,7 +303,7 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
     QJsonArray json;
     QJsonObject jObj;
     QJsonDocument jDoc;
-
+    qDebug() << "handleNetworkReply";
     if(reply->error() != QNetworkReply::NoError)
     {
         emit errorMessage(reply->errorString());

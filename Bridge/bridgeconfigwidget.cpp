@@ -7,16 +7,23 @@ BridgeConfigWidget::BridgeConfigWidget(QWidget *parent) :
 {
     ui->setupUi(this);
     connect(gmConn, &GMConnection::gmNetworkResponse, this, &BridgeConfigWidget::handleGMResponse);
-    gmConn->requestAllOrganizationInfo();
+    init();
 }
+
 
 BridgeConfigWidget::~BridgeConfigWidget()
 {
     delete ui;
 }
 
+void BridgeConfigWidget::init()
+{
+    gmConn->requestAllOrganizationInfo();
+}
+
 void BridgeConfigWidget::handleGMResponse(const QString &key, const QJsonValue &jVal)
 {
+    qDebug() << key;
     if(key == "allOrganizationInfo")
     {
         populateOrganizations(jVal);

@@ -21,6 +21,7 @@ private slots:
 
 private:
     Ui::BridgeConfigWidget *ui;
+    void init();
     GMConnection *gmConn = new GMConnection(this);
     void populateOrganizations(const QJsonValue &jVal);
 };

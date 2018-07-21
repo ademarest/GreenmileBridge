@@ -4,6 +4,7 @@
 #include "JsonSettings/jsonsettings.h"
 #include <QObject>
 #include <QtNetwork>
+#include <unistd.h>
 
 class GMConnection : public QObject
 {
@@ -58,6 +59,7 @@ signals:
 public slots:
 
 private slots:
+    void processConnectionQueue();
     void handleNetworkReply(QNetworkReply *reply);
     void startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal);
     void requestTimedOut();
@@ -65,6 +67,13 @@ private slots:
 
 private:
     QSet<QString> activeConnections_;
+
+    void addToConnectionQueue(const QNetworkAccessManager::Operation requestType,
+                              const QString &requestKey,
+                              const QString &serverAddrTail,
+                              const QByteArray &data = QByteArray());
+
+    QTimer *checkQueueTimer         = new QTimer(this);
     QString dbPath_                 = qApp->applicationDirPath() + "/gmconnection.db";
     JsonSettings *settings_         = new JsonSettings(this);
     QJsonObject jsonSettings_ {{"serverAddress",        QJsonValue("https://charliesproduce.greenmile.com")},
@@ -75,20 +84,14 @@ private:
     QNetworkAccessManager *qnam_    = new QNetworkAccessManager(this);
     QTimer *routeKeyResponseTimer_  = new QTimer(this);
 
-    void makeGMPostRequest(const QString &requestKey,
-                           const QString &serverAddrTail,
-                           const QByteArray &postData);
-
-    void makeGMDeleteRequest(const QString &requestKey,
-                             const QString &serverAddrTail);
-
     QNetworkRequest makeGMNetworkRequest(const QString &serverAddrTail);
 
     //Test code loading up all network information
-    QMap<QString, QNetworkAccessManager*> networkManagers_  = {{"routeKeys", Q_NULLPTR}};
-    QMap<QString, QNetworkReply*> networkReplies_           = {{"routeKeys", Q_NULLPTR}};
-    QMap<QString, QTimer*> networkTimers_                   = {{"routeKeys", Q_NULLPTR}};
+    QMap<QString, QNetworkAccessManager*> networkManagers_;
+    QMap<QString, QNetworkReply*> networkReplies_;
+    QMap<QString, QTimer*> networkTimers_;
     QSet<QString> networkRequestsInProgress_;
+    QQueue<QVariantMap> connectionQueue_;
 };
 
 #endif // GMCONNECTION_H
