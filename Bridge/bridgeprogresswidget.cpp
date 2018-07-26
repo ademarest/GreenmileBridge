@@ -6,9 +6,8 @@ BridgeProgressWidget::BridgeProgressWidget(QWidget *parent) :
     ui(new Ui::BridgeProgressWidget)
 {
     ui->setupUi(this);
-    connect(ui->bridgeButton, &QPushButton::pressed, bridge_, &Bridge::startBridge);
+    connect(ui->bridgeButton, &QPushButton::pressed, this, &BridgeProgressWidget::addToBridgeQueue);
     connect(bridge_, &Bridge::statusMessage, this, &BridgeProgressWidget::writeMessageTextWidget);
-    connect(bridge_, &Bridge::downloadProgess, this, &BridgeProgressWidget::updateProgressBarStatus);
     connect(bridge_, &Bridge::errorMessage, this, &BridgeProgressWidget::writeMessageTextWidget);
 }
 
@@ -40,4 +39,10 @@ void BridgeProgressWidget::updateProgressBarStatus(qint64 bytesReceived, qint64 
         netStatus = 0;
 
     ui->currentOperationProgressBar->setValue(netStatus);
+}
+
+void BridgeProgressWidget::addToBridgeQueue()
+{
+    bridge_->addRequest("today", QDate::currentDate());
+    bridge_->addRequest("tomorrow", QDate::currentDate().addDays(1));
 }

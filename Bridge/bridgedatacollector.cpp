@@ -145,8 +145,8 @@ void BridgeDataCollector::handleJobCompletion(const QString &key)
     emit progress(activeJobs_.size(), totalJobs_);
     if(!hasActiveJobs())
     {
+        emit finished(currentKey_);
         currentKey_.clear();
-        emit finished();
     }
 }
 

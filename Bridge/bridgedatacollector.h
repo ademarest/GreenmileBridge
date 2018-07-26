@@ -15,12 +15,11 @@ class BridgeDataCollector : public QObject
 public:
     explicit BridgeDataCollector(QObject *parent = nullptr);
     bool hasActiveJobs();
-
     void addRequest(const QString &key, const QDate date);
     void removeRequest(const QString &key);
 
 signals:
-    void finished();
+    void finished(const QString &key);
     void progress(const int remainingJobs, const int totalJobs);
     void statusMessage(const QString &dbg);
     void debugMessage(const QString &dbg);
@@ -34,7 +33,6 @@ public slots:
 
 private:
     QQueue<QPair<QString, QDate>> gatheringQueue;
-
     QSet<QString> activeJobs_;
 
     void prepDatabases();

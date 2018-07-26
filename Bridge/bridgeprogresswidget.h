@@ -21,6 +21,9 @@ public slots:
     void writeMessageTextWidget(const QString &message);
     void updateProgressBarStatus(qint64 bytesReceived, qint64 bytesTotal);
 
+private slots:
+    void addToBridgeQueue();
+
 private:
     Ui::BridgeProgressWidget *ui;
     Bridge *bridge_ = new Bridge(this);

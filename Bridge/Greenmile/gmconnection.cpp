@@ -126,7 +126,7 @@ void GMConnection::uploadARoute(const QString &key, const QJsonObject &routeJson
     QString serverAddrTail = "/Route?resequence=false&calculatePlanning=true";
 
     QByteArray postData = QJsonDocument(routeJson).toJson(QJsonDocument::Compact);
-
+    qDebug() << routeJson;
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 

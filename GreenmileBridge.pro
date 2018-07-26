@@ -38,10 +38,10 @@ SOURCES += \
     Bridge/bridgedatabase.cpp \
     Bridge/MasterRouteData/masterroutesheetdataconfigwidget.cpp \
     Bridge/MasterRouteData/mrsdataconnection.cpp \
-    Bridge/Netcode/oauth2broker.cpp \
     Bridge/bridgeconfigwidget.cpp \
     Bridge/GoogleSheets/googlesheetsconnection.cpp \
-    Bridge/bridgedatacollector.cpp
+    Bridge/bridgedatacollector.cpp \
+    Bridge/BridgeServices/locationgeocode.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -57,10 +57,10 @@ HEADERS += \
     Bridge/bridgedatabase.h \
     Bridge/MasterRouteData/masterroutesheetdataconfigwidget.h \
     Bridge/MasterRouteData/mrsdataconnection.h \
-    Bridge/Netcode/oauth2broker.h \
     Bridge/bridgeconfigwidget.h \
     Bridge/GoogleSheets/googlesheetsconnection.h \
-    Bridge/bridgedatacollector.h
+    Bridge/bridgedatacollector.h \
+    Bridge/BridgeServices/locationgeocode.h
 
 FORMS += \
         mainwindow.ui \
