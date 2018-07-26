@@ -2,86 +2,28 @@
 
 Bridge::Bridge(QObject *parent) : QObject(parent)
 {
-    connect(bridgeDB, &BridgeDatabase::debugMessage, this, &Bridge::statusMessage);
-    connect(bridgeDB, &BridgeDatabase::errorMessage, this, &Bridge::statusMessage);
     connect(bridgeDB, &BridgeDatabase::statusMessage, this, &Bridge::statusMessage);
-
-    connect(as400Conn, &AS400::greenmileRouteInfoResults, this, &Bridge::handleRouteQueryResults);
-    connect(as400Conn, &AS400::debugMessage, this, &Bridge::statusMessage);
-
-    connect(mrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &Bridge::handleMRSDailyScheduleSQL);
-    connect(dlmrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &Bridge::handleDLMRSDailyScheduleSQL);
-
-    connect(mrsDataConn, &GoogleSheetsConnection::data, this, &Bridge::routeMRSDataToFunction);
-
-    connect(gmConn, &GMConnection::allOrganizationInfo, this, &Bridge::handleAllGreenmileOrgInfoResults);
-    connect(gmConn, &GMConnection::routeComparisonInfo, this, &Bridge::handleRouteComparisonInfo);
-    connect(gmConn, &GMConnection::gmLocationInfo, this, &Bridge::handleGMLocationInfo);
-    connect(gmConn, &GMConnection::gmNetworkResponse, this, &Bridge::handleGMResponse);
-
-
     connect(bridgeTimer, &QTimer::timeout, this, &Bridge::startBridge);
+    connect(gmConn, &GMConnection::gmNetworkResponse, this, &Bridge::handleGMResponse);
+    connect(gmConn, &GMConnection::statusMessage, this, &Bridge::statusMessage);
+    connect(dataCollector, &BridgeDataCollector::finished, this, &Bridge::beginAnalysis);
+    connect(this, &Bridge::finished, this, &Bridge::changeToFinishedState);
 }
 
 
 void Bridge::startBridge()
 {
     bridgeTimer->start(600000);
-    qDebug() << bridgeTimer->isSingleShot();
-    bridgeDate = QDate::currentDate();
-    beginGathering();
-    while(bridgeInProgress)
-        qApp->processEvents();
-    bridgeDate = QDate::currentDate().addDays(1);
-    beginGathering();
-}
+    qDebug() << "Is bridge timer single shot? " <<  bridgeTimer->isSingleShot();
 
-void Bridge::beginGathering()
-{
-    bridgeInProgress = true;
-    dataBucket_ = QJsonObject();
-    dataGatheringJobs_.insert("mrsDailyAssignments");
-    mrsConn->requestRouteKeysForDate("SEATTLE", bridgeDate);
+    bridgeQueue.enqueue(QDate::currentDate().addDays(1));
 
-    dataGatheringJobs_.insert("dlmrsDailyAssignments");
-    dlmrsConn->requestRouteKeysFromSheet("SEATTLE", "Today");
-
-    dataGatheringJobs_.insert("routeStartTimes");
-    mrsDataConn->requestValuesFromAGoogleSheet("routeStartTimes", "routeStartTimes");
-
-    dataGatheringJobs_.insert("drivers");
-    mrsDataConn->requestValuesFromAGoogleSheet("drivers", "drivers");
-
-    dataGatheringJobs_.insert("powerUnits");
-    mrsDataConn->requestValuesFromAGoogleSheet("powerUnits", "powerUnits");
-
-    dataGatheringJobs_.insert("as400RouteQuery");
-    as400Conn->getRouteDataForGreenmile(bridgeDate, 10000);
-
-    dataGatheringJobs_.insert("gmOrganizations");
-    gmConn->requestAllOrganizationInfo();
-
-    dataGatheringJobs_.insert("gmRoutes");
-    gmConn->requestRouteComparisonInfo(bridgeDate);
-
-    dataGatheringJobs_.insert("gmDrivers");
-    gmConn->requestDriverInfo();
-
-    dataGatheringJobs_.insert("gmEquipment");
-    gmConn->requestEquipmentInfo();
-
-    dataGatheringJobs_.insert("gmLocations");
-    gmConn->requestLocationInfo();
-
-    dataGatheringJobs_.insert("routeOverrides");
-    mrsDataConn->requestValuesFromAGoogleSheet("routeOverrides", "routeOverrides");
+    dataCollector->addRequest("first", QDate::currentDate());
+    //bridgeDate = QDate::currentDate().addDays(1);
 }
 
 void Bridge::beginAnalysis()
 {
-    if(!dataGatheringJobs_.isEmpty())
-        return;
-
     QStringList assignmentTables = {"mrsDailyAssignments", "dlmrsDailyAssignments"};
     QStringList pkList {"route:key", "route:date", "organization:key"};
 
@@ -102,9 +44,20 @@ void Bridge::beginAnalysis()
         fixRouteAssignments(table, "SEATTLE", bridgeDate, minDelim, maxDelim);
     }
 
-    while(gmConn->isProcessingNetworkRequests())
-        qApp->processEvents();
+    if(dataBucket_.isEmpty())
+    {
+        qDebug() << "bridge finished! nothing to do.";
+        emit finished();
+    }
+}
+
+void Bridge::changeToFinishedState()
+{
     bridgeInProgress = false;
+    if(bridgeQueue.isEmpty())
+        return;
+    else
+        dataCollector->addRequest("another!", bridgeQueue.dequeue());
 }
 
 void Bridge::uploadLocations(  const QString &table,
@@ -117,7 +70,7 @@ void Bridge::uploadLocations(  const QString &table,
     for(auto key:locationsToUpload.keys())
     {
         dataBucket_["geocode:" + key] = locationsToUpload[key].toObject();
-        gmConn->geocodeLocation(dataBucket_["geocode:" + key].toObject());
+        gmConn->geocodeLocation(key, dataBucket_["geocode:" + key].toObject());
     }
 }
 
@@ -148,11 +101,8 @@ void Bridge::fixRouteAssignments(const QString &table,
                                  const QString &maxDelim)
 {
     QJsonObject reassignmentResultObj = bridgeDB->getAssignmentsToUpdate(table, organizationKey, bridgeDate, minDelim, maxDelim);
-    for(auto key:reassignmentResultObj.keys())
-    {
-        fixDriverAssignments(reassignmentResultObj);
-        fixEquipmentAssignments(reassignmentResultObj);
-    }
+    fixDriverAssignments(reassignmentResultObj);
+    fixEquipmentAssignments(reassignmentResultObj);
 }
 
 void Bridge::fixDriverAssignments(const QJsonObject &reassignmentResultObj)
@@ -179,6 +129,8 @@ void Bridge::fixDriverAssignments(const QJsonObject &reassignmentResultObj)
 
         routeDriverAssignmentObj["route"] = QJsonObject{{"id", reassignmentObj["id"]}};
         routeDriverAssignmentObj["driver"] = QJsonObject{{"id", reassignmentObj["driverAssignments:0:driver:id"]}};
+        qDebug() << "route driver reassignment obj" <<  routeDriverAssignmentObj;
+        dataBucket_[routeDriverAssignmentKey] = routeDriverAssignmentObj;
         gmConn->assignDriverToRoute(routeDriverAssignmentKey, routeDriverAssignmentObj);
     }
 }
@@ -207,7 +159,8 @@ void Bridge::fixEquipmentAssignments(const QJsonObject &reassignmentResultObj)
         routeEquipmentAssignmentObj["route"]        = QJsonObject{{"id", reassignmentObj["id"]}};
         routeEquipmentAssignmentObj["equipment"]    = QJsonObject{{"id", reassignmentObj["equipmentAssignments:0:equipment:id"]}};
         routeEquipmentAssignmentObj["principal"]    = QJsonValue(true);
-        qDebug() << routeEquipmentAssignmentObj;
+        qDebug() << "route reassignment obj" <<  routeEquipmentAssignmentObj;
+        dataBucket_[routeEquipmentAssignmentKey] = routeEquipmentAssignmentObj;
         gmConn->assignEquipmentToRoute(routeEquipmentAssignmentKey, routeEquipmentAssignmentObj);
     }
 }
@@ -223,12 +176,12 @@ void Bridge::handleGMResponse(const QString &key, const QJsonValue &val)
         keyList[0] = "uploadLocation";
         QString uploadLocationKey = keyList.join(":");
         gmConn->uploadALocation(uploadLocationKey, dataBucket_[key].toObject());
-        dataBucket_.remove(key);
+        handleJobCompletion(key);
     }
     if(key.split(":").first() == "uploadLocation")
     {
         qDebug() << key << "uploaded!";
-        dataBucket_.remove(key);
+        handleJobCompletion(key);
     }
     if(key.split(":").first() == "routeUpload")
     {
@@ -237,7 +190,7 @@ void Bridge::handleGMResponse(const QString &key, const QJsonValue &val)
         QJsonObject routeDriverAssignmentObj;
         QJsonObject routeEquipmentAssignmentObj;
         QStringList keyList  = key.split(":");
-        keyList[0] = "driverAssignment";
+        keyList[0] = "routeDriverAssignment";
         QString driverAssignmentKey = keyList.join(":");
 
         QJsonObject routeAsnObj {{"id", response["id"]}};
@@ -252,7 +205,7 @@ void Bridge::handleGMResponse(const QString &key, const QJsonValue &val)
         //---------------------------------------------------------------------
         //Equipment time
         //---------------------------------------------------------------------
-        keyList[0] = "equipmentAssignment";
+        keyList[0] = "routeEquipmentAssignment";
         QString equipmentAssignmentKey = keyList.join(":");
         QJsonObject equipmentAsnId {{"id", response["id"]}};
         routeEquipmentAssignmentObj["route"] = equipmentAsnId;
@@ -266,14 +219,18 @@ void Bridge::handleGMResponse(const QString &key, const QJsonValue &val)
         qDebug() << routeDriverAssignmentObj;
         qDebug() << routeEquipmentAssignmentObj;
         gmConn->assignEquipmentToRoute(equipmentAssignmentKey, routeEquipmentAssignmentObj);
+
+        handleJobCompletion(key);
     }
-    if(key == "gmDrivers")
+    if(key.split(":").first() == "routeDriverAssignment")
     {
-        handleGMDriverInfo(val.toArray());
+        qDebug() << "routeDriverAssignment" <<  dataBucket_[key];
+        handleJobCompletion(key);
     }
-    if(key == "gmEquipment")
+    if(key.split(":").first() == "routeEquipmentAssignment")
     {
-        handleGMEquipmentInfo(val.toArray());
+        qDebug() << "routeDriverAssignment" << dataBucket_[key];
+        handleJobCompletion(key);
     }
 }
 
@@ -294,533 +251,25 @@ void Bridge::applyGeocodeResponseToLocation(const QString &key, const QJsonObjec
     qDebug() << dataBucket_[key];
 }
 
-
-void Bridge::handleGMDriverInfo(const QJsonArray &drivers)
+void Bridge::handleJobCompletion(const QString &key)
 {
-    emit statusMessage("GM driver response recieved.");
-
-    QString gmDriverTableName    = "gmDrivers";
-
-    QString gmDriverCreationQuery = "CREATE TABLE `gmDrivers` "
-                                    "(`id` INTEGER NOT NULL UNIQUE, "
-                                    "`login` TEXT, "
-                                    "`enabled` TEXT, "
-                                    "`organization:id` INTEGER, "
-                                    "`organization:key` TEXT, "
-                                    "`key` TEXT, "
-                                    "`name` TEXT, "
-                                    "`unitSystem` TEXT, "
-                                    "`driverType` TEXT, "
-                                    "PRIMARY KEY(`id`))";
-
-    QStringList gmDriverExpectedKeys {"id",
-                                      "login",
-                                      "enabled",
-                                      "organization:id",
-                                      "organization:key",
-                                      "key",
-                                      "name",
-                                      "unitSystem",
-                                      "driverType"};
-
-    bridgeDB->truncateATable(gmDriverTableName);
-    bridgeDB->addJsonArrayInfo(gmDriverTableName, gmDriverCreationQuery, gmDriverExpectedKeys);
-    bridgeDB->JSONArrayInsert(gmDriverTableName, drivers);
-
-    dataGatheringJobs_.remove(gmDriverTableName);
-    beginAnalysis();
-}
-
-void Bridge::handleGMEquipmentInfo(const QJsonArray &array)
-{
-    emit statusMessage("GM equipment response recieved.");
-
-    QString tableName    = "gmEquipment";
-
-    QString creationQuery = "CREATE TABLE `gmEquipment` "
-                            "(`id` INTEGER NOT NULL UNIQUE, "
-                            "`key` TEXT, "
-                            "`description` TEXT, "
-                            "`equipmentType:id` INTEGER, "
-                            "`equipmentType:key` TEXT, "
-                            "`organization:id` INTEGER, "
-                            "`organization:key` TEXT, "
-                            "`gpsUnitId` TEXT, "
-                            "`enabled` TEXT, "
-                            "PRIMARY KEY(`id`))";
-
-    QStringList expectedKeys {"id",
-                              "key",
-                              "description",
-                              "equipmentType:id",
-                              "equipmentType:key",
-                              "organization:id",
-                              "organization:key",
-                              "gpsUnitId",
-                              "enabled"};
-
-    bridgeDB->truncateATable(tableName);
-    bridgeDB->addJsonArrayInfo(tableName, creationQuery, expectedKeys);
-    bridgeDB->JSONArrayInsert(tableName, array);
-
-    dataGatheringJobs_.remove(tableName);
-    beginAnalysis();
-}
-
-void Bridge::handleRouteQueryResults(const QMap<QString, QVariantList> &sql)
-{
-    emit statusMessage("Route info retrieved from AS400. There's " + QString::number(sql["route:key"].size()) + " stops for all Charlie's divisions" + QStringList(sql.keys()).join(", "));
-
-    QString as400RouteQueryTableName    = "as400RouteQuery";
-    QString as400RouteQueryCreationQuery = "CREATE TABLE `as400RouteQuery` "
-                                           "(`driver:key` TEXT, "
-                                           "`equipment:key` TEXT, "
-                                           "`location:addressLine1` TEXT, "
-                                           "`location:addressLine2` TEXT, "
-                                           "`location:city` TEXT, "
-                                           "`location:deliveryDays` TEXT, "
-                                           "`location:description` TEXT, "
-                                           "`location:key` TEXT, "
-                                           "`location:state` TEXT, "
-                                           "`location:zipCode` TEXT, "
-                                           "`locationOverrideTimeWindows:closeTime` TEXT, "
-                                           "`locationOverrideTimeWindows:openTime` TEXT, "
-                                           "`locationOverrideTimeWindows:tw1Close` TEXT, "
-                                           "`locationOverrideTimeWindows:tw1Open` TEXT, "
-                                           "`locationOverrideTimeWindows:tw2Close` TEXT, "
-                                           "`locationOverrideTimeWindows:tw2Open` TEXT, "
-                                           "`order:cube` NUMERIC, "
-                                           "`order:number` TEXT NOT NULL UNIQUE, "
-                                           "`order:pieces` NUMERIC, "
-                                           "`order:weight` NUMERIC, "
-                                           "`organization:key` TEXT, "
-                                           "`route:date` TEXT, "
-                                           "`route:key` TEXT, "
-                                           "`stop:baseLineSequenceNum` INT, "
-                                           "PRIMARY KEY(`order:number`))";
-
-    bridgeDB->truncateATable(as400RouteQueryTableName);
-    bridgeDB->addSQLInfo(as400RouteQueryTableName, as400RouteQueryCreationQuery);
-    bridgeDB->SQLDataInsert("as400RouteQuery", sql);
-    dataGatheringJobs_.remove("as400RouteQuery");
-    beginAnalysis();
-}
-
-void Bridge::handleMRSDailyScheduleSQL(const QMap<QString, QVariantList> &sql)
-{
-    QString mrsDailyAssignmentTableName = "mrsDailyAssignments";
-    QString mrsDailyAssignmentCreationQuery = "CREATE TABLE `mrsDailyAssignments` "
-                                              "(`route:key` TEXT NOT NULL, "
-                                              "`route:date` TEXT NOT NULL, "
-                                              "`organization:key` TEXT NOT NULL, "
-                                              "`driver:name` TEXT, "
-                                              "`truck:key` TEXT, "
-                                              "`trailer:key` TEXT, "
-                                              "PRIMARY KEY(`route:key`, `route:date`, `organization:key`))";
-
-    bridgeDB->addSQLInfo(mrsDailyAssignmentTableName, mrsDailyAssignmentCreationQuery);
-    bridgeDB->SQLDataInsert("mrsDailyAssignments", sql);
-
-    dataGatheringJobs_.remove("mrsDailyAssignments");
-    beginAnalysis();
-}
-
-void Bridge::handleDLMRSDailyScheduleSQL(const QMap<QString, QVariantList> &sql)
-{
-    QString tableName = "dlmrsDailyAssignments";
-    QString creationQuery = "CREATE TABLE `dlmrsDailyAssignments` "
-                            "(`route:key` TEXT NOT NULL, "
-                            "`route:date` TEXT NOT NULL, "
-                            "`organization:key` TEXT NOT NULL, "
-                            "`driver:name` TEXT, "
-                            "`truck:key` TEXT, "
-                            "`trailer:key` TEXT, "
-                            "PRIMARY KEY(`route:key`, `route:date`, `organization:key`))";
-
-    bridgeDB->addSQLInfo(tableName, creationQuery);
-    bridgeDB->SQLDataInsert(tableName, sql);
-
-    dataGatheringJobs_.remove(tableName);
-    beginAnalysis();
-}
-
-
-void Bridge::handleGMLocationInfo(const QJsonArray &array)
-{
-    emit statusMessage("Locations info retrieved from Greenmile. There are "
-                       + QString::number(array.size())
-                       + " locations.");
-
-    QString gmLocationInfoTableName     = "gmLocations";
-
-    QString gmLocationInfoCreationQuery = "CREATE TABLE `gmLocations` "
-                                          "(`id` INTEGER NOT NULL UNIQUE, "
-                                          "`key` TEXT, "
-                                          "`description` TEXT, "
-                                          "`addressLine1` TEXT, "
-                                          "`addressLine2` TEXT, "
-                                          "`city` TEXT, "
-                                          "`state` TEXT, "
-                                          "`zipCode` TEXT, "
-                                          "`latitude` NUMERIC, "
-                                          "`longitude` NUMERIC, "
-                                          "`geocodingQuality` TEXT, "
-                                          "`deliveryDays` TEXT, "
-                                          "`enabled` TEXT, "
-                                          "`hasGeofence` TEXT, "
-                                          "`organization:id` INTEGER, "
-                                          "`organization:key` TEXT, "
-                                          "`locationOverrideTimeWindows:0:id` INTEGER, "
-                                          "`locationType:id` INTEGER, "
-                                          "`locationType:key` TEXT, "
-                                          "PRIMARY KEY(`id`))";
-
-    QStringList gmLocationInfoExpectedKeys {"id",
-                                            "key",
-                                            "description",
-                                            "addressLine1",
-                                            "addressLine2",
-                                            "city",
-                                            "state",
-                                            "zipCode",
-                                            "latitude",
-                                            "longitude",
-                                            "geocodingQuality",
-                                            "deliveryDays",
-                                            "enabled",
-                                            "hasGeofence",
-                                            "organization:id",
-                                            "organization:key",
-                                            "locationOverrideTimeWindows:0:id",
-                                            "locationType:id",
-                                            "locationType:key"};
-
-    bridgeDB->truncateATable(gmLocationInfoTableName);
-    bridgeDB->addJsonArrayInfo(gmLocationInfoTableName, gmLocationInfoCreationQuery, gmLocationInfoExpectedKeys);
-    bridgeDB->JSONArrayInsert("gmLocations", array);
-
-    dataGatheringJobs_.remove("gmLocations");
-    beginAnalysis();
-}
-
-void Bridge::handleAllGreenmileOrgInfoResults(const QJsonArray &array)
-{
-    emit statusMessage("Organization info retrieved from Greenmile. There's "
-                       + QString::number(array.size())
-                       + " organizations for all Charlie's divisions.");
-
-    QString gmOrganizationTableName     = "gmOrganizations";
-
-
-    QString gmOrganizationCreationQuery = "CREATE TABLE `gmOrganizations` "
-                                          "(`key` TEXT, "
-                                          "`description` TEXT, "
-                                          "`id` INTEGER NOT NULL UNIQUE, "
-                                          "`unitSystem` TEXT, "
-                                          "PRIMARY KEY(`id`))";
-
-    QStringList gmOrganizationExpectedKeys {"id",
-                                            "key",
-                                            "unitSystem",
-                                            "description"};
-
-    bridgeDB->truncateATable(gmOrganizationTableName);
-    bridgeDB->addJsonArrayInfo(gmOrganizationTableName, gmOrganizationCreationQuery, gmOrganizationExpectedKeys);
-    bridgeDB->JSONArrayInsert("gmOrganizations", array);
-
-    dataGatheringJobs_.remove("gmOrganizations");
-    beginAnalysis();
-}
-
-void Bridge::handleRouteComparisonInfo(const QJsonArray &array)
-{
-    emit statusMessage("Today's route comarison result recieved from Greenmile. There are "
-                       + QString::number(array.size())
-                       + " routes uploaded for "
-                       + bridgeDate.toString(Qt::ISODate)
-                       + ".");
-
-    QString gmRouteQueryTableName       = "gmRoutes";
-
-    QString gmRouteQueryCreationQuery = "CREATE TABLE `gmRoutes` "
-                                        "(`date` TEXT, "
-                                        "`driverAssignments` TEXT, "
-                                        "`driverAssignments:0:id` INTEGER, "
-                                        "`driverAssignments:0:driver:id` INTEGER, "
-                                        "`driverAssignments:0:driver:key` TEXT, "
-                                        "`driversName` TEXT, "
-                                        "`equipmentAssignments` TEXT, "
-                                        "`equipmentAssignments:0:id` INTEGER, "
-                                        "`equipmentAssignments:0:equipment:id` INTEGER, "
-                                        "`equipmentAssignments:0:equipment:key` TEXT, "
-                                        "`id` INTEGER NOT NULL UNIQUE, "
-                                        "`key` TEXT, "
-                                        "`organization` TEXT, "
-                                        "`organization:key` TEXT, "
-                                        "`organization:id` INTEGER, "
-                                        "`stops` TEXT, "
-                                        "`totalStops` NUMERIC, "
-                                        "`status` TEXT, "
-                                        "`baselineSize1` NUMERIC, "
-                                        "`baselineSize2` NUMERIC, "
-                                        "`baselineSize3` NUMERIC, "
-                                        "PRIMARY KEY(`id`))";
-
-    QStringList gmRouteQueryExpectedKeys {"date",
-                                          "driverAssignments:0:id",
-                                          "driverAssignments:0:driver:id",
-                                          "driverAssignments:0:driver:key",
-                                          "driverAssignments",
-                                          "driversName",
-                                          "equipmentAssignments:0:id",
-                                          "equipmentAssignments:0:equipment:id",
-                                          "equipmentAssignments:0:equipment:key",
-                                          "equipmentAssignments",
-                                          "id",
-                                          "key",
-                                          "organization:key",
-                                          "organization:id",
-                                          "organization",
-                                          "stops",
-                                          "totalStops",
-                                          "status",
-                                          "baselineSize1",
-                                          "baselineSize2",
-                                          "baselineSize3"};
-
-    bridgeDB->truncateATable(gmRouteQueryTableName);
-    bridgeDB->addJsonArrayInfo(gmRouteQueryTableName, gmRouteQueryCreationQuery, gmRouteQueryExpectedKeys);
-    bridgeDB->JSONArrayInsert("gmRoutes", array);
-
-    dataGatheringJobs_.remove("gmRoutes");
-    beginAnalysis();
-}
-
-void Bridge::routeMRSDataToFunction(const QString &key, const QJsonObject &data)
-{
-    emit statusMessage("MRS Data for " + key + " retrieved.");
-    if(key == "routeStartTimes")
-        handleMRSDataRouteStartTimes(data);
-    if(key == "drivers")
-        handleMRSDataDrivers(data);
-    if(key == "powerUnits")
-        handleMRSDataPowerUnits(data);
-    if(key == "routeOverrides")
-        handleMRSDataRouteOverrides(data);
-}
-
-
-void Bridge::handleMRSDataRouteStartTimes(const QJsonObject &data)
-{
-    QMap<QString, QVariantList> sql;
-    QString sheetName       = "routeStartTimes";
-    //ROUTE	AVG STARTS PREV	AVG START TIME	MON	STARTS PREV DAY MON	TUE	STARTS PREV DAY TUE	WED	STARTS PREV DAY WED	THU	STARTS PREV DAY THU	FRI	STARTS PREV DAY FRI	SAT	STARTS PREV DAY SAT	SUN	STARTS PREV DAY SUN
-    QString creationQuery = "CREATE TABLE `routeStartTimes` "
-                            "(`route` TEXT NOT NULL UNIQUE, "
-                            "`avgStartsPrev` TEXT, "
-                            "`avgStartTime` TEXT, "
-                            "`mondayStartTime` TEXT, "
-                            "`mondayStartsPrevDay` TEXT, "
-                            "`tuesdayStartTime` TEXT, "
-                            "`tuesdayStartsPrevDay` TEXT, "
-                            "`wednesdayStartTime` TEXT, "
-                            "`wednesdayStartsPrevDay` TEXT, "
-                            "`thursdayStartTime` TEXT, "
-                            "`thursdayStartsPrevDay` TEXT, "
-                            "`fridayStartTime` TEXT, "
-                            "`fridayStartsPrevDay` TEXT, "
-                            "`saturdayStartTime` TEXT, "
-                            "`saturdayStartsPrevDay` TEXT, "
-                            "`sundayStartTime` TEXT, "
-                            "`sundayStartsPrevDay` TEXT, "
-                            "PRIMARY KEY(`route`))";
-
-    QStringList dataOrder {"route",
-                           "avgStartsPrev",
-                           "avgStartTime",
-                           "mondayStartTime",
-                           "mondayStartsPrevDay",
-                           "tuesdayStartTime",
-                           "tuesdayStartsPrevDay",
-                           "wednesdayStartTime",
-                           "wednesdayStartsPrevDay",
-                           "thursdayStartTime",
-                           "thursdayStartsPrevDay",
-                           "fridayStartTime",
-                           "fridayStartsPrevDay",
-                           "saturdayStartTime",
-                           "saturdayStartsPrevDay",
-                           "sundayStartTime",
-                           "sundayStartsPrevDay"};
-
-    sql = googleDataToSQL(true, dataOrder, data);
-
-    bridgeDB->truncateATable(sheetName);
-    bridgeDB->addSQLInfo(sheetName, creationQuery);
-    bridgeDB->SQLDataInsert(sheetName, sql);
-
-    dataGatheringJobs_.remove("routeStartTimes");
-    beginAnalysis();
-}
-
-void Bridge::handleMRSDataDrivers(const QJsonObject &data)
-{
-    QMap<QString, QVariantList> sql;
-    QString sheetName       = "drivers";
-    QString creationQuery = "CREATE TABLE `drivers` "
-                            "(`employeeNumber` TEXT NOT NULL UNIQUE, "
-                            "`employeeName` TEXT, "
-                            "`eld` TEXT, "
-                            "`class` TEXT, "
-                            "PRIMARY KEY(`employeeNumber`))";
-
-    QStringList dataOrder {"employeeNumber",
-                           "employeeName",
-                           "eld",
-                           "class"};
-
-    bridgeDB->truncateATable(sheetName);
-    sql = googleDataToSQL(true, dataOrder, data);
-    bridgeDB->addSQLInfo(sheetName, creationQuery);
-    bridgeDB->SQLDataInsert(sheetName, sql);
-
-    dataGatheringJobs_.remove("drivers");
-    beginAnalysis();
-}
-
-void Bridge::handleMRSDataRouteOverrides(const QJsonObject &data)
-{
-    /*route:key	monday:origin	monday:destination	monday:backwards
-     * tuesday:origin	tuesday:destination	tuesday:backwards
-     * wednesday:origin	wednesday:destination	wednesday:backwards
-     * thursday:origin	thursday:destination	thursday:backwards
-     * friday:origin	friday:destination	friday:backwards
-     * saturday:origin	saturday:destination	saturday:backwards
-     * sunday:origin	sunday:destination	sunday:backwards
-     */
-
-
-    QMap<QString, QVariantList> sql;
-    QString sheetName       = "routeOverrides";
-    QString creationQuery = "CREATE TABLE `routeOverrides` "
-                            "(`route:key` TEXT NOT NULL UNIQUE, "
-                            "`organization:key` TEXT, "
-                            "`monday:origin` TEXT, "
-                            "`monday:destination` TEXT, "
-                            "`monday:backwards` TEXT, "
-                            "`tuesday:origin` TEXT, "
-                            "`tuesday:destination` TEXT, "
-                            "`tuesday:backwards` TEXT, "
-                            "`wednesday:origin` TEXT, "
-                            "`wednesday:destination` TEXT, "
-                            "`wednesday:backwards` TEXT, "
-                            "`thursday:origin` TEXT, "
-                            "`thursday:destination` TEXT, "
-                            "`thursday:backwards` TEXT, "
-                            "`friday:origin` TEXT, "
-                            "`friday:destination` TEXT, "
-                            "`friday:backwards` TEXT, "
-                            "`saturday:origin` TEXT, "
-                            "`saturday:destination` TEXT, "
-                            "`saturday:backwards` TEXT, "
-                            "`sunday:origin` TEXT, "
-                            "`sunday:destination` TEXT, "
-                            "`sunday:backwards` TEXT, "
-                            "PRIMARY KEY(`route:key`))";
-
-    QStringList dataOrder {"route:key",
-                           "organization:key",
-                           "monday:origin",
-                           "monday:destination",
-                           "monday:backwards",
-                           "tuesday:origin",
-                           "tuesday:destination",
-                           "tuesday:backwards",
-                           "wednesday:origin",
-                           "wednesday:destination",
-                           "wednesday:backwards",
-                           "thursday:origin",
-                           "thursday:destination",
-                           "thursday:backwards",
-                           "friday:origin",
-                           "friday:destination",
-                           "friday:backwards",
-                           "saturday:origin",
-                           "saturday:destination",
-                           "saturday:backwards",
-                           "sunday:origin",
-                           "sunday:destination",
-                           "sunday:backwards"};
-
-    bridgeDB->truncateATable(sheetName);
-    sql = googleDataToSQL(true, dataOrder, data);
-    bridgeDB->addSQLInfo(sheetName, creationQuery);
-    bridgeDB->SQLDataInsert(sheetName, sql);
-
-    dataGatheringJobs_.remove("routeOverrides");
-    beginAnalysis();
-}
-
-void Bridge::handleMRSDataPowerUnits(const QJsonObject &data)
-{
-    QMap<QString, QVariantList> sql;
-    QString sheetName       = "powerUnits";
-
-    QString creationQuery = "CREATE TABLE `powerUnits` "
-                            "(`number` TEXT NOT NULL UNIQUE, "
-                            "`type` TEXT, "
-                            "`gpsUnitCode` TEXT, "
-                            "`gpsType` TEXT, "
-                            "`cube` TEXT, "
-                            "`weight` TEXT, "
-                            "`liftGate` TEXT, "
-                            "PRIMARY KEY(`number`))";
-
-    QStringList dataOrder {"number",
-                           "type",
-                           "gpsUnitCode",
-                           "gpsType",
-                           "cube",
-                           "weight",
-                           "liftGate"};
-
-    bridgeDB->truncateATable(sheetName);
-    sql = googleDataToSQL(true, dataOrder, data);
-    bridgeDB->addSQLInfo(sheetName, creationQuery);
-    bridgeDB->SQLDataInsert(sheetName, sql);
-
-    dataGatheringJobs_.remove("powerUnits");
-    beginAnalysis();
-}
-
-
-
-QMap<QString, QVariantList> Bridge::googleDataToSQL(bool hasHeader, const QStringList dataOrder, const QJsonObject &data)
-{
-    QMap<QString, QVariantList> sql;
-    QJsonArray array;
-    QJsonArray row;
-    array = data["values"].toArray();
-    for(auto valArr:array)
+    dataBucket_.remove(key);
+    qDebug() << "job completion" <<  dataBucket_.keys() << key << dataBucket_.size();
+    if(!hasActiveJobs())
     {
-        if(hasHeader)
-        {
-            hasHeader = false;
-            continue;
-        }
-
-        row = valArr.toArray();
-        for(int i = 0; i < dataOrder.size(); ++i)
-        {
-            if(row.size() <= i)
-                sql[dataOrder[i]].append(QVariant());
-
-            else if(row[i].toString().isEmpty())
-                sql[dataOrder[i]].append(QVariant());
-
-            else
-                sql[dataOrder[i]].append(row[i].toVariant());
-        }
+        qDebug() << "bridge finished!";
+        emit finished();
     }
-    return sql;
+    else
+    {
+        qDebug() << "bucket keys" << dataBucket_.keys();
+    }
+}
+
+bool Bridge::hasActiveJobs()
+{
+    if(dataBucket_.isEmpty())
+        return false;
+    else
+        return true;
 }

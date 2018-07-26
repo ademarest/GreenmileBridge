@@ -17,10 +17,10 @@ GMConnection::GMConnection(const QString &serverAddress, const QString &username
     connect(checkQueueTimer, &QTimer::timeout, this, &GMConnection::processConnectionQueue);
 }
 
-void GMConnection::requestRouteKeysForDate(const QDate &date)
+void GMConnection::requestRouteKeysForDate(const QString &key, const QDate &date)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString key = "routeKey";
+
     QString serverAddrTail =    "/Route/restrictions?criteria"
                                 "={\"filters\":[\"id\","
                                 " \"key\"]}";
@@ -30,10 +30,9 @@ void GMConnection::requestRouteKeysForDate(const QDate &date)
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
-void GMConnection::requestLocationKeys()
+void GMConnection::requestLocationKeys(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString key = "locationKey";
     QString serverAddrTail =    "/Location/restrictions?criteria"
                                 "={\"filters\":[\"id\","
                                 " \"key\", \"organization.id\", \"organization.key\"]}";
@@ -43,10 +42,9 @@ void GMConnection::requestLocationKeys()
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
-void GMConnection::requestLocationInfo()
+void GMConnection::requestLocationInfo(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString key = "locationInfo";
     QString serverAddrTail = "/Location/restrictions?criteria={\"filters\":[\"*\", \"locationOverrideTimeWindows.id\", \"locationType.id\", \"locationType.key\", \"organization.id\", \"organization.key\"]}";
 
     QByteArray postData = QString("{}").toLocal8Bit();
@@ -54,10 +52,9 @@ void GMConnection::requestLocationInfo()
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
-void GMConnection::requestAllOrganizationInfo()
+void GMConnection::requestAllOrganizationInfo(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString key = "allOrganizationInfo";
     QString serverAddrTail =    "/Organization/restrictions?criteria"
                                 "={\"filters\":[\"*\"]}";
 
@@ -66,10 +63,9 @@ void GMConnection::requestAllOrganizationInfo()
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
-void GMConnection::requestAllStopTypeInfo()
+void GMConnection::requestAllStopTypeInfo(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString key = "allOrganizationInfo";
     QString serverAddrTail =    "/Organization/restrictions?criteria"
                                 "={\"filters\":[\"*\"]}";
 
@@ -78,10 +74,9 @@ void GMConnection::requestAllStopTypeInfo()
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
-void GMConnection::requestAllLocationTypeInfo()
+void GMConnection::requestAllLocationTypeInfo(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString key = "allOrganizationInfo";
     QString serverAddrTail =    "/Organization/restrictions?criteria"
                                 "={\"filters\":[\"*\"]}";
 
@@ -90,10 +85,9 @@ void GMConnection::requestAllLocationTypeInfo()
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
-void GMConnection::requestRouteComparisonInfo(const QDate &date)
+void GMConnection::requestRouteComparisonInfo(const QString &key, const QDate &date)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString key = "routeComparisonInfo";
     QString serverAddrTail = "/Route/restrictions?criteria={\"filters\":[\"*\","
                              " \"organization.key\","
                              " \"equipmentAssignments.equipment.*\","
@@ -106,10 +100,9 @@ void GMConnection::requestRouteComparisonInfo(const QDate &date)
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
-void GMConnection::requestDriverInfo()
+void GMConnection::requestDriverInfo(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString key = "gmDrivers";
     QString serverAddrTail = "/Driver/restrictions?criteria={\"filters\":[\"*\", \"organization.*\"]}";
 
     QByteArray postData = QString("{}").toLocal8Bit();
@@ -117,10 +110,9 @@ void GMConnection::requestDriverInfo()
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
-void GMConnection::requestEquipmentInfo()
+void GMConnection::requestEquipmentInfo(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString key = "gmEquipment";
     QString serverAddrTail = "/Equipment/restrictions?criteria={\"filters\":[\"*\", \"organization.*\", \"equipmentType.*\"]}";
 
     QByteArray postData = QString("{}").toLocal8Bit();
@@ -176,10 +168,9 @@ void GMConnection::deleteEquipmentAssignment(const QString &key, const int entit
     addToConnectionQueue(QNetworkAccessManager::Operation::DeleteOperation, key, serverAddrTail);
 }
 
-void GMConnection::geocodeLocation(const QJsonObject &locationJson)
+void GMConnection::geocodeLocation(const QString &key, const QJsonObject &locationJson)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString key = "geocode:"+locationJson["key"].toString();
     QString serverAddrTail = "/Geocode";
 
     QJsonObject geocodeObj;
@@ -222,6 +213,14 @@ void GMConnection::processConnectionQueue()
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
     for(int i = 0; i < connectionQueue_.size(); i++)
     {
+        if(connectionQueue_.isEmpty())
+        {
+            emit debugMessage("GMConnection::processConnectionQueue(): "
+                              "Greenmile connection queue is empty. "
+                              "Will not attempt to dequeue.");
+            return;
+        }
+
         QVariantMap requestMap  = connectionQueue_.dequeue();
         int requestType         = requestMap["requestType"].toInt();
         QString requestKey      = requestMap["requestKey"].toString();
@@ -256,11 +255,11 @@ void GMConnection::processConnectionQueue()
                 emit debugMessage("PutOperation not implemented yet.");
                 break;
             case QNetworkAccessManager::Operation::PostOperation :
-                qDebug() << "post request";
+                qDebug() << "post request" << requestKey;
                 networkReplies_[requestKey] = networkManagers_[requestKey]->post(request,data);
                 break;
             case QNetworkAccessManager::Operation::DeleteOperation :
-                qDebug() << "delete request";
+                qDebug() << "delete request" << requestKey;
                 networkReplies_[requestKey] = networkManagers_[requestKey]->deleteResource(request);
                 break;
             case QNetworkAccessManager::Operation::CustomOperation :
@@ -289,7 +288,6 @@ void GMConnection::processConnectionQueue()
 
 bool GMConnection::isProcessingNetworkRequests()
 {
-    usleep(100);
     if(networkRequestsInProgress_.isEmpty() &&  connectionQueue_.isEmpty())
         return false;
     else
@@ -303,18 +301,19 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
     QJsonArray json;
     QJsonObject jObj;
     QJsonDocument jDoc;
-    qDebug() << "handleNetworkReply";
     if(reply->error() != QNetworkReply::NoError)
     {
+        emit statusMessage(key + " finished with errors. " + reply->errorString());
         emit errorMessage(reply->errorString());
         qDebug() << reply->error();
     }
     if(reply->isOpen())
     {
         replyValid = true;
+        emit statusMessage(key + " finished. No errors.");
+
         jDoc = QJsonDocument::fromJson(reply->readAll());
     }
-
     networkRequestsInProgress_.remove(key);
     networkTimers_[key]->stop();
     networkTimers_[key]->deleteLater();
@@ -335,21 +334,11 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
             jObj = jDoc.object();
             emit gmNetworkResponse(key, jObj);
         }
-        if(json.isEmpty())
-        {
-            emit statusMessage("Empty result set for " + key + ". Check network connections.");
-            emit statusMessage(reply->errorString());
-        }
-        if(key == "routeKey")
-            emit routeKeysForDate(json);
-        if(key == "locationKey")
-            emit locationKeys(json);
-        if(key == "allOrganizationInfo")
-            emit allOrganizationInfo(json);
-        if(key == "routeComparisonInfo")
-            emit routeComparisonInfo(json);
-        if(key == "locationInfo")
-            emit gmLocationInfo(json);
+//        if(json.isEmpty())
+//        {
+//            emit statusMessage("Empty result set for " + key + ". Check network connections.");
+//            emit statusMessage(reply->errorString());
+//        }
     }    
 }
 

@@ -23,21 +23,21 @@ public:
     QString getServerAddress() const;
     QString getUsername() const;
 
-    void requestRouteKeysForDate(const QDate &date);
-    void requestLocationKeys();
-    void requestLocationInfo();
-    void requestAllOrganizationInfo();
-    void requestAllStopTypeInfo();
-    void requestAllLocationTypeInfo();
-    void requestRouteComparisonInfo(const QDate &date);
-    void requestDriverInfo();
-    void requestEquipmentInfo();
+    void requestRouteKeysForDate(const QString &key, const QDate &date);
+    void requestLocationKeys(const QString &key);
+    void requestLocationInfo(const QString &key);
+    void requestAllOrganizationInfo(const QString &key);
+    void requestAllStopTypeInfo(const QString &key);
+    void requestAllLocationTypeInfo(const QString &key);
+    void requestRouteComparisonInfo(const QString &key, const QDate &date);
+    void requestDriverInfo(const QString &key);
+    void requestEquipmentInfo(const QString &key);
     void uploadARoute(const QString &key, const QJsonObject &routeJson);
     void assignDriverToRoute(const QString &key, const QJsonObject &routeDriverAssignmentJson);
     void assignEquipmentToRoute(const QString &key, const QJsonObject &routeEquipmentAssignmentJson);
     void deleteDriverAssignment(const QString &key, const int entityID);
     void deleteEquipmentAssignment(const QString &key, const int entityID);
-    void geocodeLocation(const QJsonObject &locationJson);
+    void geocodeLocation(const QString &key, const QJsonObject &locationJson);
     void uploadALocation(const QString &key, const QJsonObject &locationJson);
 
     bool isProcessingNetworkRequests();
@@ -49,12 +49,6 @@ signals:
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
 
     void gmNetworkResponse(const QString &key, const QJsonValue &obj);
-
-    void routeKeysForDate(QJsonArray array);
-    void routeComparisonInfo(QJsonArray array);
-    void locationKeys(QJsonArray array);
-    void allOrganizationInfo(QJsonArray array);
-    void gmLocationInfo(QJsonArray array);
 
 public slots:
 

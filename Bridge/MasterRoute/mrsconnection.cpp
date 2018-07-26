@@ -2,22 +2,19 @@
 
 MRSConnection::MRSConnection(const QString &databaseName, QObject *parent) : QObject(parent)
 {
-    //mrsconnection.db
     dbPath_ = qApp->applicationDirPath() + "/" + databaseName;
     googleSheets_ = new GoogleSheetsConnection(databaseName, this);
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
     connect(googleSheets_, &GoogleSheetsConnection::data, this, &MRSConnection::handleNetworkReply);
 }
 
-void MRSConnection::requestRouteKeysForDate(const QString &organizationKey, const QDate &date)
+void MRSConnection::requestAssignments(const QString &key, const QDate &date)
 {
-    QString key = organizationKey + ":routeKeys:" + date.toString("dddd");
     googleSheets_->requestValuesFromAGoogleSheet(key, date.toString("dddd"));
 }
 
-void MRSConnection::requestRouteKeysFromSheet(const QString &organizationKey, const QString &sheetName)
+void MRSConnection::requestAssignments(const QString &key, const QString &sheetName)
 {
-    QString key = organizationKey + ":routeKeys:" + sheetName;
     googleSheets_->requestValuesFromAGoogleSheet(key, sheetName);
 }
 
@@ -29,7 +26,7 @@ void MRSConnection::handleNetworkReply(const QString &key, const QJsonObject &da
     {
         emit statusMessage("Google sheets retrieved for " + key + ".");
         data["organization:key"] = QJsonValue(key.split(":").first());
-        emit mrsDailyScheduleSQL(mrsDailyScheduleJsonToSQL(data));
+        emit mrsDailyScheduleSQL(key, mrsDailyScheduleJsonToSQL(data));
     }
 }
 

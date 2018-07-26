@@ -13,6 +13,7 @@ class GoogleSheetsConnection : public QObject
     Q_OBJECT
 public:
     explicit GoogleSheetsConnection(const QString &databaseName, QObject *parent = nullptr);
+    QMap<QString, QVariantList> googleDataToSQL(bool hasHeader, const QStringList dataOrder, const QJsonObject &data);
     void requestValuesFromAGoogleSheet(const QString &requestKey, const QString &sheetName);
     void changeDatabaseName(const QString &databaseName);
     QString databaseName();

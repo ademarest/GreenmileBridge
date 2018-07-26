@@ -40,7 +40,8 @@ SOURCES += \
     Bridge/MasterRouteData/mrsdataconnection.cpp \
     Bridge/Netcode/oauth2broker.cpp \
     Bridge/bridgeconfigwidget.cpp \
-    Bridge/GoogleSheets/googlesheetsconnection.cpp
+    Bridge/GoogleSheets/googlesheetsconnection.cpp \
+    Bridge/bridgedatacollector.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -58,7 +59,8 @@ HEADERS += \
     Bridge/MasterRouteData/mrsdataconnection.h \
     Bridge/Netcode/oauth2broker.h \
     Bridge/bridgeconfigwidget.h \
-    Bridge/GoogleSheets/googlesheetsconnection.h
+    Bridge/GoogleSheets/googlesheetsconnection.h \
+    Bridge/bridgedatacollector.h
 
 FORMS += \
         mainwindow.ui \

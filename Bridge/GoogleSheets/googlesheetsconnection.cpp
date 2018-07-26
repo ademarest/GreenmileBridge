@@ -8,6 +8,37 @@ GoogleSheetsConnection::GoogleSheetsConnection(const QString &databaseName, QObj
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 }
 
+
+QMap<QString, QVariantList> GoogleSheetsConnection::googleDataToSQL(bool hasHeader, const QStringList dataOrder, const QJsonObject &data)
+{
+    QMap<QString, QVariantList> sql;
+    QJsonArray array;
+    QJsonArray row;
+    array = data["values"].toArray();
+    for(auto valArr:array)
+    {
+        if(hasHeader)
+        {
+            hasHeader = false;
+            continue;
+        }
+
+        row = valArr.toArray();
+        for(int i = 0; i < dataOrder.size(); ++i)
+        {
+            if(row.size() <= i)
+                sql[dataOrder[i]].append(QVariant());
+
+            else if(row[i].toString().isEmpty())
+                sql[dataOrder[i]].append(QVariant());
+
+            else
+                sql[dataOrder[i]].append(row[i].toVariant());
+        }
+    }
+    return sql;
+}
+
 void GoogleSheetsConnection::requestValuesFromAGoogleSheet(const QString &requestKey, const QString &sheetName)
 {
     QString key = requestKey;

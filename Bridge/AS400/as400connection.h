@@ -5,8 +5,6 @@
 #include <QObject>
 #include <QtSql>
 
-enum AS400QueryType {GreenmileRouteInfo, Invoice, CustomerChain, OpenOrderHeader, OpenOrderDetail};
-
 class AS400 : public QObject
 {
     Q_OBJECT
@@ -20,37 +18,30 @@ public:
 
     void init();
 
-    bool getCustomerChains(const int chunkSize);
+    bool getCustomerChains(const QString &key, const int chunkSize);
 
-    bool getInvoiceData(const QDate &minDate,
+    bool getInvoiceData(const QString &key, const QDate &minDate,
                         const QDate &maxDate,
                         const int chunkSize);
 
-    bool getOpenOrderHeaders(const int chunkSize);
+    bool getOpenOrderHeaders(const QString &key, const int chunkSize);
 
-    bool getOpenOrderDetails(const int chunkSize);
+    bool getOpenOrderDetails(const QString &key, const int chunkSize);
 
-    bool getCustomerData();
+    bool getCustomerData(const QString &key);
 
-    bool getRouteDataForGreenmile(const QDate &date, const int chunkSize);
+    bool getRouteDataForGreenmile(const QString &key, const QDate &date, const int chunkSize);
 
 
 signals:
-    void invoiceDataResults(QMap<QString,QVariantList> sqlResults);
-    void customerChainResults(QMap<QString,QVariantList> sqlResults);
-    void openOrderHeaderResults(bool needToTruncate, QMap<QString,QVariantList> sqlResults);
-    void openOrderDetailResults(bool needToTruncate, QMap<QString,QVariantList> sqlResults);
-    void customerDataResults(QMap<QString,QVariantList> sqlResults);
-    void routeAssignmentResults(QMap<QString,QVariantList> sqlResults);
-    void greenmileRouteInfoResults(QMap<QString,QVariantList> sqlResults);
+    void sqlResults(const QString &key, const QMap<QString,QVariantList> &sql);
     void debugMessage(QString dbg);
 
 private:
-    bool queryAS400(const AS400QueryType queryType, const QString &queryString, const int chunkSize);
-    void dispatchSqlResults(const bool isFirstRun,
-                            const AS400QueryType queryType,
-                            const QMap<QString, QVariantList> &sqlResults);
-    void processQuery(const AS400QueryType queryType, QSqlQuery &query, const int chunkSize);
+    bool queryAS400(const QString &key, const QString &queryString, const int chunkSize);
+
+    void processQuery(const QString &key, QSqlQuery &query, const int chunkSize);
+
     void inputAS400Settings();
 
     QString dbPath_ = qApp->applicationDirPath() + "/as400settings.db";

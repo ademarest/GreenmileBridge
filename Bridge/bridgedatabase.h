@@ -87,6 +87,7 @@ private:
 
     QStringList generateValueTuples(QMap<QString, QVariantList> invoiceResults);
     bool executeQueryAsBatch(QSqlDatabase &db, const QString &tableName, QMap<QString, QVariantList> sqlData);
+    bool executeQueryResiliantly(QSqlDatabase &db, const QString &tableName, QMap<QString, QVariantList> sqlData);
     bool executeQueryAsString(QSqlDatabase &db, const QString &tableName, QMap<QString, QVariantList> sqlData);
 
     //Private Variable Section

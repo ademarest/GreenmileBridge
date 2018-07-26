@@ -18,7 +18,7 @@ BridgeConfigWidget::~BridgeConfigWidget()
 
 void BridgeConfigWidget::init()
 {
-    gmConn->requestAllOrganizationInfo();
+    gmConn->requestAllOrganizationInfo("allOrganizationInfo");
 }
 
 void BridgeConfigWidget::handleGMResponse(const QString &key, const QJsonValue &jVal)

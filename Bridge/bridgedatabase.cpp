@@ -324,8 +324,8 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
 
 
         routeCompoundKey = "routeUpload:" + genericKeyList.join(":");
-        driverCompoundKey = "driverAssignment:" + genericKeyList.join(":");
-        equipmentCompoundKey = "equipmentAssignment:" + genericKeyList.join(":");
+        driverCompoundKey = "routeDriverAssignment:" + genericKeyList.join(":");
+        equipmentCompoundKey = "routeEquipmentAssignment:" + genericKeyList.join(":");
 
 
         //qDebug() << route[routeKey];
@@ -622,7 +622,7 @@ bool BridgeDatabase::writeToTable(const QString &tableName, QMap<QString, QVaria
             success = executeQueryAsString(db,tableName, invoiceResults);
             if(!success)
             {
-                success = executeQueryAsBatch(db,tableName, invoiceResults);
+                success = executeQueryResiliantly(db,tableName, invoiceResults);
             }
         }
         else
@@ -1011,3 +1011,45 @@ bool BridgeDatabase::executeQueryAsString(QSqlDatabase &db, const QString &table
     return success;
 }
 
+
+bool BridgeDatabase::executeQueryResiliantly(QSqlDatabase &db, const QString &tableName, QMap<QString, QVariantList> sqlData)
+{
+    bool success = true;
+    QSqlQuery query(db);
+    QStringList columnsToUpdate;
+    for(auto key:sqlData.keys())
+    {
+        QString keyTick = "`" + key + "`";
+        columnsToUpdate.append(keyTick);
+    }
+
+    emit statusMessage("Beginning resiliant INSERT for " + tableName);
+
+    for(int i = 0; i < sqlData.first().size(); ++i)
+    {
+        QMap<QString, QVariantList> singleSqlData;
+        for(auto key : sqlData.keys())
+        {
+            singleSqlData[key].append(sqlData[key][i]);
+        }
+
+        QString queryString = "INSERT OR REPLACE INTO " + tableName +" (";
+        QStringList valueTuples = generateValueTuples(singleSqlData);
+
+        queryString.append(columnsToUpdate.join(", ") + ") VALUES " + valueTuples.join(", "));
+        //emit statusMessage(QString("Query length for " + tableName + " is " + QString::number(queryString.size()) + " char."));
+        //emit statusMessage(QString("Inserting " + QString::number(sqlData.first().size()) + " records into " + tableName + "."));
+
+        db.driver()->beginTransaction();
+
+        if(!query.exec(queryString))
+        {
+            success = false;
+            emit errorMessage("Failed on query "  + queryString);
+            qDebug() << "Failed on query "  + queryString;
+        }
+
+        db.driver()->commitTransaction();
+    }
+    return success;
+}

@@ -19,7 +19,7 @@ void AS400::init()
     connect(&settings_, &JsonSettings::debugMessage, this, &AS400::debugMessage);
 }
 
-bool AS400::getInvoiceData(const QDate &minDate, const QDate &maxDate, const int chunkSize)
+bool AS400::getInvoiceData(const QString &key, const QDate &minDate, const QDate &maxDate, const int chunkSize)
 {
     QString queryString("SELECT invn AS \"invoiceNumber\","
                         "whsn AS \"warehouseNumber\", "
@@ -49,11 +49,11 @@ bool AS400::getInvoiceData(const QDate &minDate, const QDate &maxDate, const int
                         +"\' AND \'"
                         +maxDate.toString("yyyy-MM-dd")+"\'");
 
-    return queryAS400(AS400QueryType::Invoice, queryString, chunkSize);
+    return queryAS400(key, queryString, chunkSize);
 }
 
 
-bool AS400::getCustomerChains(const int chunkSize)
+bool AS400::getCustomerChains(const QString &key, const int chunkSize)
 {
     QString queryString = "SELECT CAST(BBSCMPN AS INT) AS \"companyNumber\", "
                           "CAST(BBSDIVN AS INT) AS \"divisionNumber\", "
@@ -62,10 +62,10 @@ bool AS400::getCustomerChains(const int chunkSize)
                           "BBSCTDC AS \"chainDescription\" "
                           "FROM PWRDTA.BBSCHNHP";
 
-    return queryAS400(AS400QueryType::CustomerChain, queryString,chunkSize);
+    return queryAS400(key, queryString,chunkSize);
 }
 
-bool AS400::getOpenOrderHeaders(const int chunkSize)
+bool AS400::getOpenOrderHeaders(const QString &key, const int chunkSize)
 {
     QString queryString = "SELECT oohcusn AS \"customerNumber\","
                           "oohornr AS \"orderNumber\","
@@ -88,10 +88,10 @@ bool AS400::getOpenOrderHeaders(const int chunkSize)
                           "oohqysa AS \"totalQtyShipped\" "
                           "FROM pwrdta.OOHORDHPS";
 
-    return queryAS400(AS400QueryType::OpenOrderHeader, queryString, chunkSize);
+    return queryAS400(key, queryString, chunkSize);
 }
 
-bool AS400::getOpenOrderDetails(const int chunkSize)
+bool AS400::getOpenOrderDetails(const QString &key, const int chunkSize)
 {
     QString queryString = "Select ooiornr AS \"orderNumber\","
                           "CAST(replace(ooiitmn,'-','') AS BIGINT) AS \"itemNumber\","
@@ -107,22 +107,23 @@ bool AS400::getOpenOrderDetails(const int chunkSize)
                           "ooiuwnr AS \"uow\" "
                           "FROM pwrdta.OOIORDDPS";
 
-    return queryAS400(AS400QueryType::OpenOrderDetail, queryString, chunkSize);
+    return queryAS400(key, queryString, chunkSize);
 }
 
-bool AS400::getCustomerData()
+bool AS400::getCustomerData(const QString &key)
 {
     bool success = false;
+    qDebug() << "Customer data under key " << key << "not implemented yet.";
     return success;
 }
 
-bool AS400::getRouteDataForGreenmile(const QDate &date, const int chunkSize)
+bool AS400::getRouteDataForGreenmile(const QString &key, const QDate &date, const int chunkSize)
 {
     QString queryString = "SELECT DISTINCT TRIM(companyInfo.L1NAME) AS \"organization:key\", TRIM(orderInfo.HHHRTEN) AS \"route:key\", stopInfo.\"stop:baseLineSequenceNum\" AS \"stop:baseLineSequenceNum\", DATE(TIMESTAMP_FORMAT(CHAR(orderInfo.HHHDTEI), 'YYYY-MM-DD')) AS \"route:date\", TRIM(orderInfo.HHHCUSN) || ' - ' || TRIM(orderInfo.HHHCNMB) || ' - ' || TRIM(orderInfo.HHHINVN) AS \"order:number\", orderInfo.HHHQYSA AS \"order:pieces\", orderInfo.HHHEXSH AS \"order:weight\", orderInfo.HHHEXCB AS \"order:cube\", TRIM(orderInfo.HHHCUSF) AS \"location:key\", CASE WHEN TRIM(customerInfo.FFDCNMB) = '' THEN NULL ELSE TRIM(customerInfo.FFDCNMB) END AS \"location:description\", CASE WHEN TRIM(customerInfo.FFDCA1B) = '' THEN NULL ELSE TRIM(customerInfo.FFDCA1B) END AS \"location:addressLine1\", CASE WHEN TRIM(customerInfo.FFDCA2B) = '' THEN NULL ELSE TRIM(customerInfo.FFDCA2B) END AS \"location:addressLine2\", CASE WHEN TRIM(customerInfo.FFDCTYB) = '' THEN NULL ELSE TRIM(customerInfo.FFDCTYB) END AS \"location:city\", CASE WHEN TRIM(customerInfo.FFDSTEB) = '' THEN NULL ELSE TRIM(customerInfo.FFDSTEB) END AS \"location:state\", CASE WHEN TRIM(customerInfo.FFDZPCB) = '' THEN NULL ELSE TRIM(customerInfo.FFDZPCB) END AS \"location:zipCode\", CASE WHEN customerWindows.JJCTSR1 = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCTSR1),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindows:tw1Open\", CASE WHEN customerWindows.JJCTSP1 = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCTSP1),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindows:tw1Close\", CASE WHEN customerWindows.JJCTSR2 = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCTSR2),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindows:tw2Open\", CASE WHEN customerWindows.JJCTSP2 = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCTSP2),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindows:tw2Close\", CASE WHEN customerWindows.JJCOPEN = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCOPEN),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindows:openTime\", CASE WHEN customerWindows.JJCCLOS = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCCLOS),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindows:closeTime\", CASE WHEN TRIM(LEADING ',' FROM deliveryDays.\"location:deliveryDays\") = '' THEN NULL ELSE TRIM(LEADING ',' FROM deliveryDays.\"location:deliveryDays\") END AS \"location:deliveryDays\", CASE WHEN TRIM(assignmentInfo.EERDRVN) = '' THEN NULL ELSE TRIM(assignmentInfo.EERDRVN) END AS \"driver:key\", CASE WHEN TRIM(assignmentInfo.EERTKNB) = '' THEN NULL ELSE TRIM(assignmentInfo.EERTKNB) END AS \"equipment:key\" FROM PWRDTA.HHHORDHL6 AS orderInfo INNER JOIN PWRUSER.CMPNLIST1 AS companyInfo ON companyInfo.L1LOC = TRIM(orderInfo.HHHCMPN) || TRIM(orderInfo.HHHDIVN) || TRIM (orderInfo.HHHDPTN) INNER JOIN (SELECT HHHCUSF AS \"location:key\",HHHRTEN AS \"route:key\",HHHDTEI AS \"route:date\",MAX(HHHSTPN) AS \"stop:baseLineSequenceNum\" FROM PWRDTA.HHHORDHL6 WHERE HHHDTEI = "+date.toString("yyyyMMdd")+" GROUP BY HHHCUSF, HHHRTEN, HHHDTEI) AS stopInfo ON TRIM(stopInfo.\"location:key\") = TRIM(orderInfo.HHHCUSF) AND TRIM(stopInfo.\"route:key\") = TRIM(orderInfo.HHHRTEN) AND TRIM(stopInfo.\"route:date\") = TRIM(orderInfo.HHHDTEI) INNER JOIN PWRDTA.FFDCSTBL0 AS customerInfo ON TRIM(customerInfo.FFDCUSN) = TRIM(orderInfo.HHHCUSF) LEFT JOIN PWRDTA.EERRTMAL0 AS assignmentInfo ON TRIM(orderInfo.HHHRTEN) || TRIM(orderInfo.HHHCMPN) || TRIM(orderInfo.HHHDIVN) || TRIM (orderInfo.HHHDPTN) = TRIM(assignmentInfo.EERRTEN) || TRIM(assignmentInfo.EERCMPN) || TRIM(assignmentInfo.EERDIVN) || TRIM (assignmentInfo.EERDPTN) LEFT JOIN (SELECT CASE WHEN LENGTH(TRIM(EETRTF1))>0 THEN ',M' ELSE '' END || CASE WHEN LENGTH(TRIM(EETRTF2))>0 THEN ',T' ELSE '' END || CASE WHEN LENGTH(TRIM(EETRTF3))>0 THEN ',W' ELSE '' END || CASE WHEN LENGTH(TRIM(EETRTF4))>0 THEN ',R' ELSE '' END || CASE WHEN LENGTH(TRIM(EETRTF5))>0 THEN ',F' ELSE '' END || CASE WHEN LENGTH(TRIM(EETRTF6))>0 THEN ',S' ELSE '' END || CASE WHEN LENGTH(TRIM(EETRTF7))>0 THEN ',U' ELSE '' END AS \"location:deliveryDays\", EETCUSN AS customerNumber FROM PWRDTA.EETRTEAL0) AS deliveryDays ON TRIM(orderInfo.HHHCUSN) = TRIM(deliveryDays.customerNumber) LEFT JOIN PWRDTA.JJCCSTRL0 AS customerWindows ON TRIM(customerWindows.JJCCUSN) = TRIM(orderInfo.HHHCUSF) WHERE orderInfo.HHHDTEI = "+date.toString("yyyyMMdd")+" AND orderInfo.HHHCRIN<>'Y'";
-    return queryAS400(AS400QueryType::GreenmileRouteInfo, queryString, chunkSize);
+    return queryAS400(key, queryString, chunkSize);
 }
 
-bool AS400::queryAS400(const AS400QueryType queryType, const QString &queryString, const int chunkSize)
+bool AS400::queryAS400(const QString &key, const QString &queryString, const int chunkSize)
 {
     bool success = false;
     QString connectString = "DRIVER={"
@@ -148,7 +149,7 @@ bool AS400::queryAS400(const AS400QueryType queryType, const QString &queryStrin
             if(query.exec(queryString))
             {
                 success = true;
-                processQuery(queryType, query, chunkSize);
+                processQuery(key, query, chunkSize);
             }
             else
             {
@@ -169,26 +170,23 @@ bool AS400::queryAS400(const AS400QueryType queryType, const QString &queryStrin
     return success;
 }
 
-void AS400::processQuery(const AS400QueryType queryType, QSqlQuery &query,const int chunkSize)
+void AS400::processQuery(const QString &key, QSqlQuery &query, const int chunkSize)
 {
     bool firstRun = true;
     int recordCounter = 0;
     QMap<QString,QVariantList> sqlData;
-    qDebug() << "as400 before while";
+
     while(query.next())
     {
-        if(recordCounter == chunkSize)
+        if(recordCounter == chunkSize && chunkSize != 0)
         {
             if(sqlData.isEmpty())
-            {
-                emit debugMessage("AS400 query returned an empty result set - not emitting result set.");
-                return;
-            }
+                emit debugMessage("AS400 query returned an empty result set.");
 
             //Count the amt of records. Explodes if chunk size is zero, etc.
             emit debugMessage(QString("Retrieved " +  QString::number(sqlData.first().size()) + " records from AS400."));
 
-            dispatchSqlResults(firstRun, queryType, sqlData);
+            emit sqlResults(key, sqlData);
             firstRun = false;
 
             for(auto key: sqlData.keys())
@@ -208,14 +206,10 @@ void AS400::processQuery(const AS400QueryType queryType, QSqlQuery &query,const 
 
     //Count the amt of records.
     if(sqlData.isEmpty())
-    {
-        emit debugMessage("AS400 query returned an empty result set - not emitting result set.");
-        return;
-    }
+        emit debugMessage("AS400 query returned an empty result set.");
 
     emit debugMessage(QString("Retrieved " +  QString::number(sqlData.first().size()) + " records from AS400."));
-
-    dispatchSqlResults(firstRun, queryType, sqlData);
+    emit sqlResults(key, sqlData);
 
     for(auto key: sqlData.keys())
         sqlData[key].clear();
@@ -224,30 +218,3 @@ void AS400::processQuery(const AS400QueryType queryType, QSqlQuery &query,const 
     return;
 }
 
-void AS400::dispatchSqlResults(const bool isFirstRun,
-                               const AS400QueryType queryType,
-                               const QMap<QString, QVariantList> &sqlResults)
-{
-    switch (queryType)
-    {
-    case AS400QueryType::GreenmileRouteInfo :
-        emit greenmileRouteInfoResults(sqlResults);
-        break;
-
-    case AS400QueryType::Invoice :
-        emit invoiceDataResults(sqlResults);
-        break;
-
-    case AS400QueryType::CustomerChain :
-        emit customerChainResults(sqlResults);
-        break;
-
-    case AS400QueryType::OpenOrderHeader :
-        emit openOrderHeaderResults(isFirstRun, sqlResults);
-        break;
-
-    case AS400QueryType::OpenOrderDetail :
-        emit openOrderDetailResults(isFirstRun, sqlResults);
-        break;
-    }
-}
