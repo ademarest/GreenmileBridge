@@ -1,15 +1,15 @@
-#ifndef LOCATIONGEOCODE_H
-#define LOCATIONGEOCODE_H
+#ifndef LOCATIONUPLOAD_H
+#define LOCATIONUPLOAD_H
 
 #include "Bridge/Greenmile/gmconnection.h"
 #include "Bridge/bridgedatabase.h"
 #include <QObject>
 
-class LocationGeocode : public QObject
+class LocationUpload : public QObject
 {
     Q_OBJECT
 public:
-    explicit LocationGeocode(QObject *parent = nullptr);
+    explicit LocationUpload(QObject *parent = nullptr);
     QJsonObject getResults();
 
 signals:
@@ -19,7 +19,7 @@ signals:
     void finished(const QString &key);
 
 public slots:
-    void GeocodeLocations(const QString &key, const QList<QVariantMap> &argList);
+    void UploadLocations(const QString &key, const QList<QVariantMap> &argList, const QJsonObject &geocodes);
 
 private slots:
     void handleGMResponse(const QString &key, const QJsonValue &response);
@@ -29,12 +29,13 @@ private:
     BridgeDatabase *bridgeDB_ = new BridgeDatabase(this);
 
     QString currentKey_;
-    QSet<QString> activeJobs_;
     QVariantMap currentRequest_;
+    QSet<QString> activeJobs_;
 
-    QJsonObject locationsToGeocode_;
-    QJsonObject geocodedLocations_;
-    void mergeLocationsToGeocode(const QJsonObject &locations);
+    QJsonObject locationsToUpload_;
+    QJsonObject uploadedLocations_;
+    void mergeLocationsToUpload(const QJsonObject &locations);
+    void applyGeocodesToLocations(const QJsonObject &geocodes);
 };
 
-#endif // LOCATIONGEOCODE_H
+#endif // LOCATIONUPLOAD_H

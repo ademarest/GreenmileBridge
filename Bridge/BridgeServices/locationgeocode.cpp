@@ -2,5 +2,58 @@
 
 LocationGeocode::LocationGeocode(QObject *parent) : QObject(parent)
 {
+    connect(gmConn_, &GMConnection::gmNetworkResponse, this, &LocationGeocode::handleGMResponse);
+}
 
+QJsonObject LocationGeocode::getResults()
+{
+    return geocodedLocations_;
+}
+
+void LocationGeocode::GeocodeLocations(const QString &key, const QList<QVariantMap> &argList)
+{
+
+    if(!activeJobs_.isEmpty())
+    {
+        errorMessage("Geocoding in progress. Try again once current request is finished.");
+        return;
+    }
+
+    currentKey_ = key;
+    geocodedLocations_.empty();
+    locationsToGeocode_.empty();
+
+    for(auto vMap:argList)
+    {
+        QString tableName = vMap["tableName"].toString();
+        QString organizationKey = vMap["organization:key"].toString();
+        QDate date = vMap["date"].toDate();
+        QString minRouteKey = vMap["minRouteKey"].toString();
+        QString maxRouteKey = vMap["minRouteKey"].toString();
+
+        mergeLocationsToGeocode(bridgeDB_->getLocationsToUpload(tableName, organizationKey, date, minRouteKey, maxRouteKey));
+    }
+
+    for(auto key:locationsToGeocode_.keys())
+    {
+        activeJobs_.insert(key);
+        gmConn_->geocodeLocation(key, locationsToGeocode_[key].toObject());
+    }
+}
+
+void LocationGeocode::handleGMResponse(const QString &key, const QJsonValue &response)
+{
+    activeJobs_.remove(key);
+    geocodedLocations_[key] = response;
+
+    if(activeJobs_.empty())
+        emit finished(currentKey_);
+}
+
+void LocationGeocode::mergeLocationsToGeocode(const QJsonObject &locations)
+{
+    for(auto key:locations.keys())
+    {
+        locationsToGeocode_[key] = locations[key];
+    }
 }

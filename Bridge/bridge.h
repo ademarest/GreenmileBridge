@@ -5,6 +5,8 @@
 #include <QtConcurrent/QtConcurrent>
 #include "Bridge/bridgedatabase.h"
 #include "Bridge/bridgedatacollector.h"
+#include "Bridge/BridgeServices/locationgeocode.h"
+#include "Bridge/BridgeServices/locationupload.h"
 #include "Greenmile/gmconnection.h"
 
 class Bridge : public QObject
@@ -13,7 +15,7 @@ class Bridge : public QObject
 public:
     explicit Bridge(QObject *parent = nullptr);
     bool hasActiveJobs();
-    void addRequest(const QString &key, const QDate date);
+    void addRequest(const QString &key);
     void removeRequest(const QString &key);
 
 signals:
@@ -39,15 +41,40 @@ private slots:
     void handleJobCompletion(const QString &key);
 
 private:
-    QQueue<QPair<QString, QDate>> requestQueue_;
+    //SETTINGS SUBSECTION
+    //void loadSettings();
+    //        QStringList pkList {"route:key", "route:date", "organization:key"};
+
+    QJsonObject settings_ {{"daysToUpload", QJsonValue(QJsonArray{QDate::currentDate().toString(Qt::ISODate), QDate::currentDate().addDays(1).toString(Qt::ISODate)})},
+                           {"scheduleTables", QJsonValue(QJsonArray{QJsonValue(QJsonObject{{"tableName", QJsonValue("dlmrsDailyAssignments")}}),
+                                                                    QJsonValue(QJsonObject{{"tableName", QJsonValue("mrsDailyAssignments")}, {"minRouteKey", "D"}, {"maxRouteKey", "U"}})})},
+                           {"organization:key", QJsonValue("SEATTLE")},
+                           {"schedulePrimaryKeys", QJsonValue(QJsonArray{"route:key", "route:date", "organization:key"})}};
+
+    //END SETTINGS SUBSECTION
+
+
+    QQueue<QVariantMap> requestQueue_;
+    QList<QVariantMap> argList_;
+    QVariantMap currentRequest_;
     QSet<QString> activeJobs_;
-    QString currentKey_;
+
+    //TIMER SUBSECTION
     QTimer *queueTimer = new QTimer(this);
     QTimer *bridgeTimer = new QTimer(this);
+    //END TIMER SUBSECTION
+
+    //BRIDGE MEMBER SUBSECTION
     BridgeDataCollector *dataCollector = new BridgeDataCollector(this);
+    BridgeDatabase *bridgeDB_ = new BridgeDatabase(this);
+    LocationGeocode *locationGeocode_ = new LocationGeocode(this);
+    LocationUpload *locationUpload_ = new LocationUpload(this);
+    //END BRIDGE MEMBER SUBSECTION
 
     void processQueue();
     void startBridge(const QString &key, const QDate &date);
+    void applyScheduleHierarchy();
+    void generateArgs();
 };
 
 //private:

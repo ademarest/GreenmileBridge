@@ -43,6 +43,6 @@ void BridgeProgressWidget::updateProgressBarStatus(qint64 bytesReceived, qint64 
 
 void BridgeProgressWidget::addToBridgeQueue()
 {
-    bridge_->addRequest("today", QDate::currentDate());
-    bridge_->addRequest("tomorrow", QDate::currentDate().addDays(1));
+    bridge_->addRequest("request");
+
 }

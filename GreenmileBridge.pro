@@ -41,7 +41,8 @@ SOURCES += \
     Bridge/bridgeconfigwidget.cpp \
     Bridge/GoogleSheets/googlesheetsconnection.cpp \
     Bridge/bridgedatacollector.cpp \
-    Bridge/BridgeServices/locationgeocode.cpp
+    Bridge/BridgeServices/locationgeocode.cpp \
+    Bridge/BridgeServices/locationupload.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -60,7 +61,8 @@ HEADERS += \
     Bridge/bridgeconfigwidget.h \
     Bridge/GoogleSheets/googlesheetsconnection.h \
     Bridge/bridgedatacollector.h \
-    Bridge/BridgeServices/locationgeocode.h
+    Bridge/BridgeServices/locationgeocode.h \
+    Bridge/BridgeServices/locationupload.h
 
 FORMS += \
         mainwindow.ui \

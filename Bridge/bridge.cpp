@@ -4,8 +4,11 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
 {
     connect(queueTimer, &QTimer::timeout, this, &Bridge::processQueue);
     connect(dataCollector, &BridgeDataCollector::finished, this, &Bridge::handleJobCompletion);
+    connect(locationGeocode_, &LocationGeocode::finished, this, &Bridge::handleJobCompletion);
+    connect(locationUpload_, &LocationUpload::finished, this, &Bridge::handleJobCompletion);
     queueTimer->start(1000);
 }
+
 
 bool Bridge::hasActiveJobs()
 {
@@ -15,11 +18,21 @@ bool Bridge::hasActiveJobs()
         return true;
 }
 
-void Bridge::addRequest(const QString &key, const QDate date)
+void Bridge::addRequest(const QString &key)
 {
     qDebug() << "START Bridge::addRequest.";
-    QPair<QString, QDate> gatheringRequest {key, date};
-    requestQueue_.enqueue(gatheringRequest);
+
+    QVariantMap request;
+
+    for(auto jVal : settings_["daysToUpload"].toArray())
+    {
+        request["key"] = key;
+        request["organization:key"] = settings_["organization:key"].toString();
+        request["date"] = QDate::fromString(jVal.toString(), Qt::ISODate);
+        request["scheduleTables"] = settings_["scheduleTables"].toArray();
+        request["schedulePrimaryKeys"] = settings_["schedulePrimaryKeys"].toArray();
+        requestQueue_.enqueue(request);
+    }
     qDebug() << "END Bridge::addRequest.";
 }
 
@@ -27,7 +40,7 @@ void Bridge::removeRequest(const QString &key)
 {
     qDebug() << "START Bridge::removeRequest.";
     for(int i = 0; i < requestQueue_.size(); i++)
-        if(requestQueue_[i].first == key)
+        if(requestQueue_[i]["key"] == key)
             requestQueue_.removeAt(i);
     qDebug() << "END Bridge::removeRequest.";
 }
@@ -39,40 +52,92 @@ void Bridge::processQueue()
     else
     {
         qDebug() << "START Bridge::processQueue.";
-        QPair<QString, QDate> job = requestQueue_.dequeue();
-        currentKey_ = job.first;
-        QString jobKey = "collectData:" + job.first;
+        currentRequest_ = requestQueue_.dequeue();
+        QString jobKey = "collectData:" + currentRequest_["key"].toString();
         activeJobs_.insert(jobKey);
-        startBridge(jobKey, job.second);
+        startBridge(jobKey, currentRequest_["date"].toDate());
         qDebug() << "END Bridge::processQueue.";
     }
 }
 
 void Bridge::startBridge(const QString &key, const QDate &date)
 {
+
     dataCollector->addRequest(key, date);
 }
 
 void Bridge::handleJobCompletion(const QString &key)
 {
+    qDebug() << settings_;
+    QStringList splitKey = key.split(":");
     activeJobs_.remove(key);
-    if(key.split(":").first() == "collectData")
+
+    if(splitKey.first() == "collectData")
     {
         emit statusMessage(key + " has been completed.");
-        emit statusMessage("Beginning Location Geocoding.");
+        applyScheduleHierarchy();
+        generateArgs();
+
+        QString jobKey = "geocodeLocations:" + currentRequest_["key"].toString();
+        activeJobs_.insert(jobKey);
+        locationGeocode_->GeocodeLocations(jobKey, argList_);
     }
-    if(key.split(":").first() == "geocodeLocations")
+
+    if(splitKey.first() == "geocodeLocations")
     {
         emit statusMessage(key + " has been completed.");
-        emit statusMessage("Beginning Location Upload.");
+
+        QString jobKey = "uploadLocations:" + currentRequest_["key"].toString();
+        activeJobs_.insert(jobKey);
+        locationUpload_->UploadLocations(jobKey, argList_, locationGeocode_->getResults());
     }
 
     if(!hasActiveJobs())
     {
-        emit finished(currentKey_);
-        qDebug() << "Finished job with key " << currentKey_;
-        currentKey_.clear();
+        emit finished(currentRequest_["key"].toString());
+        qDebug() << "Finished job with key " << currentRequest_["key"].toString();
+        currentRequest_.clear();
     }
+}
+
+void Bridge::applyScheduleHierarchy()
+{
+    QJsonArray scheduleTables = currentRequest_["scheduleTables"].toJsonArray();
+    QJsonArray schedulePrimaryKeysJson = currentRequest_["schedulePrimaryKeys"].toJsonArray();
+    QStringList schedulePrimaryKeys;
+    for(auto jVal:schedulePrimaryKeysJson)
+        schedulePrimaryKeys.append(jVal.toString());
+
+    if(scheduleTables.size() > 1)
+    {
+        for(int i = 0; i < scheduleTables.size()-1; ++i)
+        {
+            qDebug() << "Enforcing table sanity.";
+            qDebug() << "Primary table" << scheduleTables[i].toObject()["tableName"].toString();
+            qDebug() << "Secondary table" << scheduleTables[i+1].toObject()["tableName"].toString();
+            bridgeDB_->enforceTableSanity(schedulePrimaryKeys,
+                                          scheduleTables[i].toObject()["tableName"].toString(),
+                                          scheduleTables[i+1].toObject()["tableName"].toString());
+        }
+    }
+}
+
+void Bridge::generateArgs()
+{
+    argList_.clear();
+    for(auto jVal:currentRequest_["scheduleTables"].toJsonArray())
+    {
+        QJsonObject tableObj = jVal.toObject();
+
+        QVariantMap args;
+        args["minRouteKey"] = tableObj["minRouteKey"].toString();
+        args["maxRouteKey"] = tableObj["maxRouteKey"].toString();
+        args["tableName"]   = tableObj["tableName"].toString();
+        args["organization:key"] = currentRequest_["organization:key"].toString();
+        args["date"] = currentRequest_["date"].toDate();
+        argList_.append(args);
+    }
+    qDebug() << "Bridge::generateArgs result " << argList_;
 }
 
 //void Bridge::beginAnalysis(const QDate &date)
