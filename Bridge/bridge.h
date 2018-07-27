@@ -40,6 +40,10 @@ private slots:
 //    void beginAnalysis(const QDate &date);
     void handleJobCompletion(const QString &key);
 
+    void finishedDataCollection(const QString &key);
+    void finishedLocationGeocode(const QString& key, const QJsonObject &result);
+    void finishedLocationUpload(const QString &key, const QJsonObject &result);
+
 private:
     //SETTINGS SUBSECTION
     //void loadSettings();

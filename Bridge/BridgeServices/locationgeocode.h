@@ -10,13 +10,13 @@ class LocationGeocode : public QObject
     Q_OBJECT
 public:
     explicit LocationGeocode(QObject *parent = nullptr);
-    QJsonObject getResults();
+    //QJsonObject getResults();
 
 signals:
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
     void statusMessage(const QString &status);
-    void finished(const QString &key);
+    void finished(const QString &key, const QJsonObject &result);
 
 public slots:
     void GeocodeLocations(const QString &key, const QList<QVariantMap> &argList);
@@ -35,6 +35,7 @@ private:
     QJsonObject locationsToGeocode_;
     QJsonObject geocodedLocations_;
     void mergeLocationsToGeocode(const QJsonObject &locations);
+    void reset();
 };
 
 #endif // LOCATIONGEOCODE_H

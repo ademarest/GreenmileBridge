@@ -5,9 +5,21 @@ LocationGeocode::LocationGeocode(QObject *parent) : QObject(parent)
     connect(gmConn_, &GMConnection::gmNetworkResponse, this, &LocationGeocode::handleGMResponse);
 }
 
-QJsonObject LocationGeocode::getResults()
+
+void LocationGeocode::reset()
 {
-    return geocodedLocations_;
+    if(!activeJobs_.isEmpty())
+    {
+        errorMessage("Geocoding in progress. Try again once current request is finished.");
+        qDebug() << "Geocoding in progress. Try again once current request is finished.";
+        return;
+    }
+
+    currentKey_.clear();
+    activeJobs_.clear();
+    currentRequest_.clear();
+    locationsToGeocode_ = QJsonObject();
+    geocodedLocations_ = QJsonObject();
 }
 
 void LocationGeocode::GeocodeLocations(const QString &key, const QList<QVariantMap> &argList)
@@ -16,6 +28,7 @@ void LocationGeocode::GeocodeLocations(const QString &key, const QList<QVariantM
     if(!activeJobs_.isEmpty())
     {
         errorMessage("Geocoding in progress. Try again once current request is finished.");
+        qDebug() << "Geocoding in progress. Try again once current request is finished.";
         return;
     }
 
@@ -29,7 +42,7 @@ void LocationGeocode::GeocodeLocations(const QString &key, const QList<QVariantM
         QString organizationKey = vMap["organization:key"].toString();
         QDate date = vMap["date"].toDate();
         QString minRouteKey = vMap["minRouteKey"].toString();
-        QString maxRouteKey = vMap["minRouteKey"].toString();
+        QString maxRouteKey = vMap["maxRouteKey"].toString();
 
         mergeLocationsToGeocode(bridgeDB_->getLocationsToUpload(tableName, organizationKey, date, minRouteKey, maxRouteKey));
     }
@@ -39,6 +52,13 @@ void LocationGeocode::GeocodeLocations(const QString &key, const QList<QVariantM
         activeJobs_.insert(key);
         gmConn_->geocodeLocation(key, locationsToGeocode_[key].toObject());
     }
+
+    if(activeJobs_.empty())
+    {
+        emit finished(currentKey_, QJsonObject());
+        reset();
+    }
+
 }
 
 void LocationGeocode::handleGMResponse(const QString &key, const QJsonValue &response)
@@ -47,7 +67,10 @@ void LocationGeocode::handleGMResponse(const QString &key, const QJsonValue &res
     geocodedLocations_[key] = response;
 
     if(activeJobs_.empty())
-        emit finished(currentKey_);
+    {
+        emit finished(currentKey_, geocodedLocations_);
+        reset();
+    }
 }
 
 void LocationGeocode::mergeLocationsToGeocode(const QJsonObject &locations)

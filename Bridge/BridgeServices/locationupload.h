@@ -10,13 +10,13 @@ class LocationUpload : public QObject
     Q_OBJECT
 public:
     explicit LocationUpload(QObject *parent = nullptr);
-    QJsonObject getResults();
+    //QJsonObject getResults();
 
 signals:
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
     void statusMessage(const QString &status);
-    void finished(const QString &key);
+    void finished(const QString &key, const QJsonObject &result);
 
 public slots:
     void UploadLocations(const QString &key, const QList<QVariantMap> &argList, const QJsonObject &geocodes);
@@ -36,6 +36,8 @@ private:
     QJsonObject uploadedLocations_;
     void mergeLocationsToUpload(const QJsonObject &locations);
     void applyGeocodesToLocations(const QJsonObject &geocodes);
+    void reset();
+
 };
 
 #endif // LOCATIONUPLOAD_H

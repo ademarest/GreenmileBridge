@@ -296,7 +296,6 @@ bool GMConnection::isProcessingNetworkRequests()
 
 void GMConnection::handleNetworkReply(QNetworkReply *reply)
 {
-    bool replyValid = false;
     QString key = reply->objectName();
     QJsonArray json;
     QJsonObject jObj;
@@ -309,7 +308,6 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
     }
     if(reply->isOpen())
     {
-        replyValid = true;
         emit statusMessage(key + " finished. No errors.");
 
         jDoc = QJsonDocument::fromJson(reply->readAll());
@@ -320,26 +318,25 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
     networkManagers_[key]->deleteLater();
     networkReplies_[key]->deleteLater();
 
-    if(replyValid)
+
+    if(jDoc.isArray())
     {
-        if(jDoc.isArray())
-        {
-            qDebug() << "GM Response for " + key + " was an array.";
-            json = jDoc.array();
-            emit gmNetworkResponse(key, json);
-        }
-        if(jDoc.isObject())
-        {
-            qDebug() << "GM Response for " + key + " was an object.";
-            jObj = jDoc.object();
-            emit gmNetworkResponse(key, jObj);
-        }
-//        if(json.isEmpty())
-//        {
-//            emit statusMessage("Empty result set for " + key + ". Check network connections.");
-//            emit statusMessage(reply->errorString());
-//        }
-    }    
+        qDebug() << "GM Response for " + key + " was an array.";
+        json = jDoc.array();
+        emit gmNetworkResponse(key, json);
+    }
+    else if(jDoc.isObject())
+    {
+        qDebug() << "GM Response for " + key + " was an object.";
+        jObj = jDoc.object();
+        emit gmNetworkResponse(key, jObj);
+    }
+    else
+    {
+        qDebug() << "GM Response for " + key + " was an invalid.";
+        emit gmNetworkResponse(key, QJsonObject());
+    }
+
 }
 
 void GMConnection::startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal)

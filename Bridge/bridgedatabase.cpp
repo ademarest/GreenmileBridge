@@ -23,22 +23,22 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &assignmentTableN
         routeKeyBoundaries = QString();
 
     QJsonObject locationObj;
-    QString query = "SELECT "
+    QString query = "SELECT DISTINCT "
                     "as400RouteQuery.`location:key` as `key`,"
                     "as400RouteQuery.`location:addressLine1` as `addressLine1`,"
                     "as400RouteQuery.`location:addressLine2` as `addressLine2`,"
                     "as400RouteQuery.`location:city` as `city`,"
                     "as400RouteQuery.`location:deliveryDays` as `deliveryDays`,"
                     "as400RouteQuery.`location:description` as `description`,"
-                    "as400RouteQuery.`location:key` as `key`,"
                     "as400RouteQuery.`location:state` as `state`,"
                     "as400RouteQuery.`location:zipCode` as `zipCode` "
                     "FROM as400RouteQuery WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString(Qt::ISODate)+"\" AND `location:key` NOT IN (SELECT `key` FROM gmLocations) AND `route:key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString(Qt::ISODate)+"\" AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL"+routeKeyBoundaries+") GROUP BY as400RouteQuery.`location:key`";
 
     emit debugMessage(query);
+    //qDebug() << query;
     QMap<QString,QVariantList> sql = executeQuery(query, "Finding locations to upload");
-    qDebug() << "sql empty check";
-    qDebug() << sql;
+    //qDebug() << "sql empty check";
+    //qDebug() << sql;
     if(!sql.empty())
     {
         for(int i = 0; i < sql.first().size(); ++i)

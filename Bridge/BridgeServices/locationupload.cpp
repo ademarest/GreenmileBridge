@@ -5,16 +5,33 @@ LocationUpload::LocationUpload(QObject *parent) : QObject(parent)
     connect(gmConn_, &GMConnection::gmNetworkResponse, this, &LocationUpload::handleGMResponse);
 }
 
-QJsonObject LocationUpload::getResults()
+//QJsonObject LocationUpload::getResults()
+//{
+//    return uploadedLocations_;
+//}
+
+void LocationUpload::reset()
 {
-    return uploadedLocations_;
+    if(!activeJobs_.isEmpty())
+    {
+        errorMessage("Location upload in progress. Try again once current request is finished.");
+        qDebug() << "Location upload in progress. Try again once current request is finished.";
+        return;
+    }
+
+    currentKey_.clear();
+    activeJobs_.clear();
+    currentRequest_.clear();
+    locationsToUpload_ = QJsonObject();
+    uploadedLocations_ = QJsonObject();
 }
 
 void LocationUpload::UploadLocations(const QString &key, const QList<QVariantMap> &argList, const QJsonObject &geocodes)
 {
     if(!activeJobs_.isEmpty())
     {
-        errorMessage("Geocoding in progress. Try again once current request is finished.");
+        errorMessage("Location upload in progress. Try again once current request is finished.");
+        qDebug() << "Location upload in progress. Try again once current request is finished.";
         return;
     }
 
@@ -28,9 +45,10 @@ void LocationUpload::UploadLocations(const QString &key, const QList<QVariantMap
         QString organizationKey = vMap["organization:key"].toString();
         QDate date = vMap["date"].toDate();
         QString minRouteKey = vMap["minRouteKey"].toString();
-        QString maxRouteKey = vMap["minRouteKey"].toString();
+        QString maxRouteKey = vMap["maxRouteKey"].toString();
 
-        mergeLocationsToUpload(bridgeDB_->getLocationsToUpload(tableName, organizationKey, date, minRouteKey, maxRouteKey));
+        QJsonObject locations = bridgeDB_->getLocationsToUpload(tableName, organizationKey, date, minRouteKey, maxRouteKey);
+        mergeLocationsToUpload(locations);
     }
     applyGeocodesToLocations(geocodes);
 
@@ -38,6 +56,12 @@ void LocationUpload::UploadLocations(const QString &key, const QList<QVariantMap
     {
         activeJobs_.insert(key);
         gmConn_->uploadALocation(key, locationsToUpload_[key].toObject());
+    }
+
+    if(activeJobs_.empty())
+    {
+        emit finished(currentKey_, QJsonObject());
+        reset();
     }
 }
 
@@ -47,7 +71,10 @@ void LocationUpload::handleGMResponse(const QString &key, const QJsonValue &resp
     uploadedLocations_[key] = response;
 
     if(activeJobs_.empty())
-        emit finished(currentKey_);
+    {
+        emit finished(currentKey_, uploadedLocations_);
+        reset();
+    }
 }
 
 void LocationUpload::mergeLocationsToUpload(const QJsonObject &locations)
@@ -60,13 +87,13 @@ void LocationUpload::mergeLocationsToUpload(const QJsonObject &locations)
 
 void LocationUpload::applyGeocodesToLocations(const QJsonObject &geocodes)
 {
-    qDebug() << "geocode keys" << geocodes.keys();
-    qDebug() << "upload keys" << locationsToUpload_.keys();
-
     for(auto key:geocodes.keys())
     {
-        qDebug() << geocodes[key];
+
         QJsonObject jObj = locationsToUpload_[key].toObject();
+        //qDebug() << "location" << key << locationsToUpload_[key].toObject();
+        //qDebug() << "geocode" << key << geocodes[key];
+
         if(geocodes[key]["status"].toString() == "OK")
         {
             jObj["geocodingQuality"]    = QJsonValue("AUTO");
@@ -75,16 +102,8 @@ void LocationUpload::applyGeocodesToLocations(const QJsonObject &geocodes)
         }
         else
         {
-            jObj["geocodingQuality"]    = QJsonValue("UNSUCCESSFUL");
+            jObj["geocodingQuality"]    = QJsonValue("UNSUCCESSFULL");
         }
-
         locationsToUpload_[key] = jObj;
-        qDebug() << "geocoded location" << locationsToUpload_[key].toObject();
     }
 }
-
-
-//void Bridge::applyGeocodeResponseToLocation(const QString &key, const QJsonObject &obj)
-//{
-
-//}
