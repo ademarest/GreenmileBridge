@@ -7,6 +7,8 @@
 #include "Bridge/bridgedatacollector.h"
 #include "Bridge/BridgeServices/locationgeocode.h"
 #include "Bridge/BridgeServices/locationupload.h"
+#include "Bridge/BridgeServices/routeupload.h"
+#include "Bridge/BridgeServices/routeassignmentcorrection.h"
 #include "Greenmile/gmconnection.h"
 
 class Bridge : public QObject
@@ -43,6 +45,8 @@ private slots:
     void finishedDataCollection(const QString &key);
     void finishedLocationGeocode(const QString& key, const QJsonObject &result);
     void finishedLocationUpload(const QString &key, const QJsonObject &result);
+    void finishedRouteUpload(const QString &key, const QJsonObject &result);
+    void finishedRouteAssignmentCorrections(const QString &key, const QJsonObject &result);
 
 private:
     //SETTINGS SUBSECTION
@@ -73,10 +77,13 @@ private:
     BridgeDatabase *bridgeDB_ = new BridgeDatabase(this);
     LocationGeocode *locationGeocode_ = new LocationGeocode(this);
     LocationUpload *locationUpload_ = new LocationUpload(this);
+    RouteUpload *routeUpload_ = new RouteUpload(this);
+    RouteAssignmentCorrection *routeAssignmentCorrection_ = new RouteAssignmentCorrection(this);
     //END BRIDGE MEMBER SUBSECTION
 
+    void startOnTimer();
     void processQueue();
-    void startBridge(const QString &key, const QDate &date);
+    void startDataCollection(const QString &key, const QDate &date);
     void applyScheduleHierarchy();
     void generateArgs();
 };

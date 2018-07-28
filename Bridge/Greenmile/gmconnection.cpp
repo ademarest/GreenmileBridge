@@ -152,18 +152,18 @@ void GMConnection::assignEquipmentToRoute(const QString &key, const QJsonObject 
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
-void GMConnection::deleteDriverAssignment(const QString &key, const int entityID)
+void GMConnection::deleteDriverAssignment(const QString &key, const QString &entityID)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString serverAddrTail = "/RouteDriverAssignment/" + QString::number(entityID);
+    QString serverAddrTail = "/RouteDriverAssignment/" + entityID;
     qDebug() << serverAddrTail;
     addToConnectionQueue(QNetworkAccessManager::Operation::DeleteOperation, key, serverAddrTail);
 }
 
-void GMConnection::deleteEquipmentAssignment(const QString &key, const int entityID)
+void GMConnection::deleteEquipmentAssignment(const QString &key, const QString &entityID)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString serverAddrTail = "/RouteEquipmentAssignment/" + QString::number(entityID);
+    QString serverAddrTail = "/RouteEquipmentAssignment/" + entityID;
     qDebug() << serverAddrTail;
     addToConnectionQueue(QNetworkAccessManager::Operation::DeleteOperation, key, serverAddrTail);
 }

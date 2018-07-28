@@ -49,6 +49,7 @@ void BridgeDataCollector::processQueue()
     {
         QPair<QString, QDate> job = gatheringQueue.dequeue();
         currentKey_ = job.first;
+        emit statusMessage("Starting data collection for " + currentKey_ + ".");
         beginGathering(job.second);
     }
 }
@@ -101,7 +102,7 @@ void BridgeDataCollector::prepDatabases()
 
 void BridgeDataCollector::handleSQLResponse(const QString &key, const QMap<QString, QVariantList> &sql)
 {
-    emit statusMessage(key + " moved has moved through the response handler.");
+    emit debugMessage(key + " moved has moved through the response handler.");
 
     if(key == "mrsDailyAssignments")
         handleRSAssignments(key, sql);
@@ -115,7 +116,7 @@ void BridgeDataCollector::handleSQLResponse(const QString &key, const QMap<QStri
 
 void BridgeDataCollector::handleJsonResponse(const QString &key, const QJsonValue &jVal)
 {
-    emit statusMessage(key + " moved has moved through the response handler.");
+    emit debugMessage(key + " moved has moved through the response handler.");
 
     if(key == "routeStartTimes")
         handleRSRouteStartTimes(jVal.toObject());
@@ -143,8 +144,11 @@ void BridgeDataCollector::handleJobCompletion(const QString &key)
 {
     activeJobs_.remove(key);
     emit progress(activeJobs_.size(), totalJobs_);
+    qDebug() << activeJobs_.size() << "out of " << totalJobs_ << " data collection jobs remaining.";
+    qDebug() << activeJobs_;
     if(!hasActiveJobs())
     {
+        emit statusMessage("Completed data collection for " + key + ".");
         emit finished(currentKey_);
         currentKey_.clear();
     }

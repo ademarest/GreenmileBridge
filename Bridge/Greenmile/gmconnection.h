@@ -35,8 +35,10 @@ public:
     void uploadARoute(const QString &key, const QJsonObject &routeJson);
     void assignDriverToRoute(const QString &key, const QJsonObject &routeDriverAssignmentJson);
     void assignEquipmentToRoute(const QString &key, const QJsonObject &routeEquipmentAssignmentJson);
-    void deleteDriverAssignment(const QString &key, const int entityID);
-    void deleteEquipmentAssignment(const QString &key, const int entityID);
+
+    void deleteDriverAssignment(const QString &key, const QString &entityID);
+    void deleteEquipmentAssignment(const QString &key, const QString &entityID);
+
     void geocodeLocation(const QString &key, const QJsonObject &locationJson);
     void uploadALocation(const QString &key, const QJsonObject &locationJson);
 

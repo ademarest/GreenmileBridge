@@ -6,6 +6,7 @@ AS400ConfigWidget::AS400ConfigWidget(QWidget *parent) :
     ui(new Ui::AS400ConfigWidget)
 {
     ui->setupUi(this);
+    connect(ui->commitSettings, &QPushButton::pressed, this, &AS400ConfigWidget::saveUItoSettings);
     applySettingsToUI();
 }
 

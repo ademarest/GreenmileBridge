@@ -36,6 +36,7 @@ public:
 signals:
     void sqlResults(const QString &key, const QMap<QString,QVariantList> &sql);
     void debugMessage(QString dbg);
+    void errorMessage(QString error);
 
 private:
     bool queryAS400(const QString &key, const QString &queryString, const int chunkSize);

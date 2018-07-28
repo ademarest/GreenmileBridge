@@ -3,6 +3,14 @@
 LocationGeocode::LocationGeocode(QObject *parent) : QObject(parent)
 {
     connect(gmConn_, &GMConnection::gmNetworkResponse, this, &LocationGeocode::handleGMResponse);
+
+    connect(gmConn_, &GMConnection::statusMessage, this, &LocationGeocode::statusMessage);
+    connect(gmConn_, &GMConnection::errorMessage, this, &LocationGeocode::errorMessage);
+    connect(gmConn_, &GMConnection::debugMessage, this, &LocationGeocode::debugMessage);
+
+    //connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &LocationGeocode::statusMessage);
+    connect(bridgeDB_, &BridgeDatabase::errorMessage, this, &LocationGeocode::errorMessage);
+    connect(bridgeDB_, &BridgeDatabase::debugMessage, this, &LocationGeocode::debugMessage);
 }
 
 

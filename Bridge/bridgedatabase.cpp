@@ -124,6 +124,7 @@ QJsonObject BridgeDatabase::getAssignmentsToUpdate(const QString &assignmentTabl
     QString query = "SELECT gmr.`key`, gmr.`date`, gmr.`organization:id`, gmr.`id`, gmr.`driverAssignments:0:id`, gmDrv.`id` AS `driverAssignments:0:driver:id`, gmEqp.`id` AS `equipmentAssignments:0:equipment:id` , gmr.`equipmentAssignments:0:id` FROM gmRoutes AS gmr LEFT JOIN "+assignmentTableName+" AS mrsda ON mrsda.`route:key` || mrsda.`route:date` || mrsda.`organization:key` = gmr.`key` || gmr.`date` || gmr.`organization:key` LEFT JOIN drivers AS mrsdrv ON mrsda.`driver:name` = mrsdrv.`employeeName` LEFT JOIN gmDrivers AS gmDrv ON mrsdrv.`employeeNumber` = gmDrv.`key` LEFT JOIN gmEquipment AS gmEqp ON gmEqp.`key` = mrsda.`truck:key` WHERE gmr.`status` != 'COMPLETED' AND gmr.`key` IN (SELECT `route:key` FROM (SELECT DISTINCT routeQuery.`route:key`, routeQuery.`route:date`, gmOrg.`id` as `organization:id`, `gmDriverInfo`.`key` as `driver:id`, `gmEquipmentInfo`.`key` as `equipment:id` FROM as400RouteQuery `routeQuery` LEFT JOIN gmOrganizations `gmOrg` ON gmOrg.`key` = routeQuery.`organization:key` LEFT JOIN "+assignmentTableName+" `dailyAssignment` ON `routeQuery`.`route:key` = `dailyAssignment`.`route:key` AND `routeQuery`.`route:date` = `dailyAssignment`.`route:date`AND `routeQuery`.`organization:key` = `dailyAssignment`.`organization:key` LEFT JOIN drivers `mrsDataDrivers` ON `dailyAssignment`.`driver:name` = `mrsDataDrivers`.`employeeName` LEFT JOIN gmDrivers `gmDriverInfo` ON `gmDriverInfo`.`login` = `mrsDataDrivers`.`employeeNumber` LEFT JOIN gmEquipment `gmEquipmentInfo` ON `gmEquipmentInfo`.`key` = `dailyAssignment`.`truck:key` LEFT JOIN routeStartTimes `rst` ON `rst`.`route` = `routeQuery`.`route:key` LEFT JOIN gmLocations `gmLoc` ON `gmLoc`.`key` = `routeQuery`.`organization:key` LEFT JOIN gmLocations `gmLocID` ON `gmLocID`.`key` = `routeQuery`.`location:key`WHERE `routeQuery`.`organization:key` = \""+organizationKey+"\" AND `routeQuery`.`route:date` = \""+date.toString("yyyy-MM-dd")+"\" AND `routeQuery`.`route:key` IN (SELECT `key` FROM gmRoutes WHERE `organization:key` = \""+organizationKey+"\" AND `date` = \""+date.toString("yyyy-MM-dd")+"\") AND `routeQuery`.`route:key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString("yyyy-MM-dd") +"\""+ routeKeyBoundaries+") EXCEPT SELECT DISTINCT `key`, `date`, `organization:id`, `driverAssignments:0:driver:key`, `equipmentAssignments:0:equipment:key` FROM gmRoutes WHERE `organization:key` = '"+organizationKey+"' AND `date` = '"+date.toString("yyyy-MM-dd")+"'))";
 
     emit debugMessage(query);
+    qDebug() << "BridgeDatabase::getAssignmentsToUpdate query " << query;
     QMap<QString, QVariantList> sql = executeQuery(query, "Getting truck and driver assignment corrections.");
     QJsonObject returnObj;
     if(!sql.empty())
@@ -616,7 +617,7 @@ bool BridgeDatabase::writeToTable(const QString &tableName, QMap<QString, QVaria
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", dbPath_);
         db.setDatabaseName(dbPath_);
 
-        emit statusMessage("Beginning SQLite " + tableName + " import.");
+        emit statusMessage("SQLite " + tableName + " import.");
         if(db.open())
         {
             success = executeQueryAsString(db,tableName, invoiceResults);
@@ -632,12 +633,10 @@ bool BridgeDatabase::writeToTable(const QString &tableName, QMap<QString, QVaria
         }
 
         db.close();
-        emit statusMessage("Finished SQLite. INSERT OR REPLACE for database "
-                           + dbPath_
-                           + " for table "
-                           + tableName);
+        emit statusMessage("Finished SQLite. INSERT OR REPLACE for " + tableName);
+
     }
-    emit statusMessage("Cleaning up SQLite " + dbPath_ + " connection.");
+    emit debugMessage("Cleaning up SQLite " + dbPath_ + " connection.");
     QSqlDatabase::removeDatabase(dbPath_);
 
     return success;
@@ -652,7 +651,7 @@ QMap<QString, QVariantList> BridgeDatabase::executeQuery(const QString &queryStr
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", dbPath_);
         db.setDatabaseName(dbPath_);
 
-        emit statusMessage("Beginning SQLite " +verb);
+        emit debugMessage("Beginning SQLite query to " +verb);
         if(db.open())
         {
             QSqlQuery query(db);
@@ -672,8 +671,6 @@ QMap<QString, QVariantList> BridgeDatabase::executeQuery(const QString &queryStr
             {
                 emit errorMessage("Failed to execute a "+verb+" type command"
                                   + " on the SQLite database "
-                                  + dbPath_
-                                  + " for table "
                                   + dbPath_);
 
                 emit errorMessage("Query error: " + query.lastError().text());
@@ -686,12 +683,9 @@ QMap<QString, QVariantList> BridgeDatabase::executeQuery(const QString &queryStr
         }
 
         db.close();
-        emit statusMessage("Finished SQLite. "+verb+" completed database "
-                           + dbPath_
-                           + " for table "
-                           + dbPath_);
+        emit statusMessage("Finished SQLite. " + verb);
     }
-    emit statusMessage("Cleaning up SQLite " + dbPath_ + " connection.");
+    emit debugMessage("Cleaning up SQLite " + dbPath_ + " connection.");
     QSqlDatabase::removeDatabase(dbPath_);
 
     return sqlData;
@@ -705,7 +699,7 @@ bool BridgeDatabase::executeASYNCQuery(const QString &queryString, const QString
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", dbPath_);
         db.setDatabaseName(dbPath_);
 
-        emit statusMessage("Beginning SQLite " +verb);
+        emit statusMessage("Beginning SQLite " + verb);
         if(db.open())
         {
             QSqlQuery query(db);
@@ -729,12 +723,9 @@ bool BridgeDatabase::executeASYNCQuery(const QString &queryString, const QString
         }
 
         db.close();
-        emit statusMessage("Finished SQLite. "+verb+" completed database "
-                           + dbPath_
-                           + " for table "
-                           + dbPath_);
+        emit statusMessage("Finished SQLite. "+verb);
     }
-    emit statusMessage("Cleaning up SQLite " + dbPath_ + " connection.");
+    emit debugMessage("Cleaning up SQLite " + dbPath_ + " connection.");
     QSqlDatabase::removeDatabase(dbPath_);
     return success;
 }
@@ -754,8 +745,8 @@ void BridgeDatabase::processASYNCQuery(QSqlQuery &query, const QString &queryKey
                 emit debugMessage(verb + ": SQLite query returned an empty result set.");
                 qDebug() << verb + ": SQLite query returned an empty result set.";
             }
-            else
-                emit statusMessage(QString(verb + ": Retrieved " +  QString::number(sqlData.first().size()) + " records from SQLite."));
+//            else
+//                emit statusMessage(QString(verb + ": Retrieved " +  QString::number(sqlData.first().size()) + " records from SQLite."));
 
             emit asyncSqlResults(firstRun, queryKey, sqlData);
             firstRun = false;
@@ -781,8 +772,8 @@ void BridgeDatabase::processASYNCQuery(QSqlQuery &query, const QString &queryKey
         emit debugMessage(verb + ": SQLite query returned an empty result set.");
         qDebug() << verb + ": SQLite query returned an empty result set.";
     }
-    else
-        emit statusMessage(QString(verb + ": Retrieved " +  QString::number(sqlData.first().size()) + " records from SQLite."));
+//    else
+//        emit statusMessage(QString(verb + ": Retrieved " +  QString::number(sqlData.first().size()) + " records from SQLite."));
 
     emit asyncSqlResults(firstRun, queryKey, sqlData);
 
@@ -823,12 +814,9 @@ bool BridgeDatabase::executeInsertQuery(const QString &queryString, const QStrin
         }
 
         db.close();
-        emit statusMessage("Finished SQLite. "+verb+" completed database "
-                           + dbPath_
-                           + " for table "
-                           + dbPath_);
+        emit statusMessage("Finished SQLite. "+verb);
     }
-    emit statusMessage("Cleaning up SQLite " + dbPath_ + " connection.");
+    emit debugMessage("Cleaning up SQLite " + dbPath_ + " connection.");
     QSqlDatabase::removeDatabase(dbPath_);
     return success;
 }
@@ -930,7 +918,7 @@ QStringList BridgeDatabase::generateValueTuples(QMap<QString, QVariantList> invo
 bool BridgeDatabase::executeQueryAsBatch(QSqlDatabase &db, const QString &tableName, QMap<QString, QVariantList> sqlData)
 {
     qDebug() << "batch insert";
-    emit statusMessage("Falling back to batch insert.");
+    emit debugMessage("Falling back to batch insert.");
 
     bool success = false;
     int recordCount = 0;
@@ -991,7 +979,7 @@ bool BridgeDatabase::executeQueryAsString(QSqlDatabase &db, const QString &table
     }
     valueTuples = generateValueTuples(sqlData);
     queryString.append(columnsToUpdate.join(", ") + ") VALUES " + valueTuples.join(", "));
-    emit statusMessage(QString("Query length for " + tableName + " is " + QString::number(queryString.size()) + " char."));
+    emit debugMessage(QString("Query length for " + tableName + " is " + QString::number(queryString.size()) + " char."));
     emit statusMessage(QString("Inserting " + QString::number(sqlData.first().size()) + " records into " + tableName + "."));
 
     db.driver()->beginTransaction();
@@ -1051,5 +1039,8 @@ bool BridgeDatabase::executeQueryResiliantly(QSqlDatabase &db, const QString &ta
 
         db.driver()->commitTransaction();
     }
+
+    emit statusMessage("Finished resiliant INSERT for " + tableName);
+
     return success;
 }

@@ -42,7 +42,9 @@ SOURCES += \
     Bridge/GoogleSheets/googlesheetsconnection.cpp \
     Bridge/bridgedatacollector.cpp \
     Bridge/BridgeServices/locationgeocode.cpp \
-    Bridge/BridgeServices/locationupload.cpp
+    Bridge/BridgeServices/locationupload.cpp \
+    Bridge/BridgeServices/routeupload.cpp \
+    Bridge/BridgeServices/routeassignmentcorrection.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -62,7 +64,9 @@ HEADERS += \
     Bridge/GoogleSheets/googlesheetsconnection.h \
     Bridge/bridgedatacollector.h \
     Bridge/BridgeServices/locationgeocode.h \
-    Bridge/BridgeServices/locationupload.h
+    Bridge/BridgeServices/locationupload.h \
+    Bridge/BridgeServices/routeupload.h \
+    Bridge/BridgeServices/routeassignmentcorrection.h
 
 FORMS += \
         mainwindow.ui \

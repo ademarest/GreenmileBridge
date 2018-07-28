@@ -3,6 +3,14 @@
 LocationUpload::LocationUpload(QObject *parent) : QObject(parent)
 {
     connect(gmConn_, &GMConnection::gmNetworkResponse, this, &LocationUpload::handleGMResponse);
+
+    connect(gmConn_, &GMConnection::statusMessage, this, &LocationUpload::statusMessage);
+    connect(gmConn_, &GMConnection::errorMessage, this, &LocationUpload::errorMessage);
+    connect(gmConn_, &GMConnection::debugMessage, this, &LocationUpload::debugMessage);
+
+    //connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &LocationUpload::statusMessage);
+    connect(bridgeDB_, &BridgeDatabase::errorMessage, this, &LocationUpload::errorMessage);
+    connect(bridgeDB_, &BridgeDatabase::debugMessage, this, &LocationUpload::debugMessage);
 }
 
 //QJsonObject LocationUpload::getResults()

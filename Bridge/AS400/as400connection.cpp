@@ -125,6 +125,7 @@ bool AS400::getRouteDataForGreenmile(const QString &key, const QDate &date, cons
 
 bool AS400::queryAS400(const QString &key, const QString &queryString, const int chunkSize)
 {
+    jsonSettings_ = settings_.loadSettings(QFile(dbPath_), jsonSettings_);
     bool success = false;
     QString connectString = "DRIVER={"
             + jsonSettings_["driver"].toString()
@@ -154,15 +155,22 @@ bool AS400::queryAS400(const QString &key, const QString &queryString, const int
             else
             {
                 success = false;
-                emit debugMessage("AS400 Query Error: " + query.lastError().text());
+                emit errorMessage("AS400 Query Error: " + query.lastError().text());
+                emit errorMessage("Emitting empty result set.");
+
+                qDebug() << query.lastError().text();
+                emit sqlResults(key, QMap<QString,QVariantList>());
             }
 
         }
         else
         {
-            emit debugMessage("There was an error with AS400.");
-            emit debugMessage(odbc.lastError().text());
             success = false;
+            emit errorMessage("AS400 Error: " + odbc.lastError().text());
+            emit errorMessage("Emitting empty result set.");
+
+            qDebug() << "AS400 Error: " + odbc.lastError().text();
+            emit sqlResults(key, QMap<QString,QVariantList>());
         }
     }
     emit debugMessage("Cleaning up AS400 connection.");
@@ -181,7 +189,12 @@ void AS400::processQuery(const QString &key, QSqlQuery &query, const int chunkSi
         if(recordCounter == chunkSize && chunkSize != 0)
         {
             if(sqlData.isEmpty())
+            {
                 emit debugMessage("AS400 query returned an empty result set.");
+                qDebug() << "AS400 query returned an empty result set.";
+                emit sqlResults(key, sqlData);
+                return;
+            }
 
             //Count the amt of records. Explodes if chunk size is zero, etc.
             emit debugMessage(QString("Retrieved " +  QString::number(sqlData.first().size()) + " records from AS400."));
@@ -206,7 +219,12 @@ void AS400::processQuery(const QString &key, QSqlQuery &query, const int chunkSi
 
     //Count the amt of records.
     if(sqlData.isEmpty())
+    {
         emit debugMessage("AS400 query returned an empty result set.");
+        qDebug() << "AS400 query returned an empty result set.";
+        emit sqlResults(key, sqlData);
+        return;
+    }
 
     emit debugMessage(QString("Retrieved " +  QString::number(sqlData.first().size()) + " records from AS400."));
     emit sqlResults(key, sqlData);
