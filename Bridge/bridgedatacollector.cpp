@@ -156,7 +156,7 @@ void BridgeDataCollector::handleJobCompletion(const QString &key)
 
 void BridgeDataCollector::handleGMDriverInfo(const QJsonArray &array)
 {
-    emit statusMessage("GM driver response recieved.");
+    emit statusMessage("GM driver info recieved.");
 
     QString tableName    = "gmDrivers";
 
@@ -188,7 +188,7 @@ void BridgeDataCollector::handleGMDriverInfo(const QJsonArray &array)
 
 void BridgeDataCollector::handleGMEquipmentInfo(const QJsonArray &array)
 {
-    emit statusMessage("GM equipment response recieved.");
+    emit statusMessage("GM equipment info recieved.");
 
     QString tableName    = "gmEquipment";
 
@@ -257,6 +257,8 @@ void BridgeDataCollector::handleAS400RouteQuery(const QMap<QString, QVariantList
 
 void BridgeDataCollector::handleRSAssignments(const QString &tableName, const QMap<QString, QVariantList> &sql)
 {
+    emit statusMessage("MRS assignment info recieved for "+ tableName +".");
+
     QString creationQuery = "CREATE TABLE `" + tableName + "` "
                             "(`route:key` TEXT NOT NULL, "
                             "`route:date` TEXT NOT NULL, "
@@ -272,9 +274,7 @@ void BridgeDataCollector::handleRSAssignments(const QString &tableName, const QM
 
 void BridgeDataCollector::handleGMLocationInfo(const QJsonArray &array)
 {
-    emit statusMessage("Locations info retrieved from Greenmile. There are "
-                       + QString::number(array.size())
-                       + " locations.");
+    emit statusMessage("GM location info revieved.");
 
     QString tableName     = "gmLocations";
 
@@ -326,9 +326,7 @@ void BridgeDataCollector::handleGMLocationInfo(const QJsonArray &array)
 
 void BridgeDataCollector::handleGMOrganizationInfo(const QJsonArray &array)
 {
-    emit statusMessage("Organization info retrieved from Greenmile. There's "
-                       + QString::number(array.size())
-                       + " organizations for all Charlie's divisions.");
+    emit statusMessage("GM organization info recieved.");
 
     QString tableName     = "gmOrganizations";
 
@@ -351,7 +349,7 @@ void BridgeDataCollector::handleGMOrganizationInfo(const QJsonArray &array)
 
 void BridgeDataCollector::handleGMRouteInfo(const QJsonArray &array)
 {
-    emit statusMessage("Today's route comarison result recieved from Greenmile.");
+    emit statusMessage("GM route info recieved.");
 
     QString tableName       = "gmRoutes";
 
@@ -407,6 +405,8 @@ void BridgeDataCollector::handleGMRouteInfo(const QJsonArray &array)
 
 void BridgeDataCollector::handleRSRouteStartTimes(const QJsonObject &data)
 {
+    emit statusMessage("MRS route start time info recieved.");
+
     QMap<QString, QVariantList> sql;
     QString tableName       = "routeStartTimes";
     QString creationQuery = "CREATE TABLE `routeStartTimes` "
@@ -455,6 +455,8 @@ void BridgeDataCollector::handleRSRouteStartTimes(const QJsonObject &data)
 
 void BridgeDataCollector::handleRSDrivers(const QJsonObject &data)
 {
+    emit statusMessage("MRS driver info recieved.");
+
     QMap<QString, QVariantList> sql;
     QString tableName       = "drivers";
     QString creationQuery = "CREATE TABLE `drivers` "
@@ -476,6 +478,8 @@ void BridgeDataCollector::handleRSDrivers(const QJsonObject &data)
 
 void BridgeDataCollector::handleRSRouteOverrides(const QJsonObject &data)
 {
+    emit statusMessage("MRS route overrides recieved.");
+
     QMap<QString, QVariantList> sql;
     QString tableName       = "routeOverrides";
     QString creationQuery = "CREATE TABLE `routeOverrides` "
@@ -535,6 +539,9 @@ void BridgeDataCollector::handleRSRouteOverrides(const QJsonObject &data)
 
 void BridgeDataCollector::handleRSPowerUnits(const QJsonObject &data)
 {
+    emit statusMessage("MRS power unit info recieved.");
+
+
     QMap<QString, QVariantList> sql;
     QString tableName       = "powerUnits";
 
