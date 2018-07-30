@@ -48,6 +48,12 @@ void Bridge::addRequest(const QString &key)
 {
     QVariantMap request;
 
+     settings_ = QJsonObject{{"daysToUpload", QJsonValue(QJsonArray{QDate::currentDate().toString(Qt::ISODate), QDate::currentDate().addDays(1).toString(Qt::ISODate)})},
+                            {"scheduleTables", QJsonValue(QJsonArray{QJsonValue(QJsonObject{{"tableName", QJsonValue("dlmrsDailyAssignments")}}),
+                                                                     QJsonValue(QJsonObject{{"tableName", QJsonValue("mrsDailyAssignments")}, {"minRouteKey", "D"}, {"maxRouteKey", "U"}})})},
+                            {"organization:key", QJsonValue("SEATTLE")},
+                            {"schedulePrimaryKeys", QJsonValue(QJsonArray{"route:key", "route:date", "organization:key"})}};
+
     for(auto jVal : settings_["daysToUpload"].toArray())
     {
         request["key"] = key;
@@ -72,8 +78,6 @@ void Bridge::processQueue()
         return;
     else
     {
-
-
         currentRequest_ = requestQueue_.dequeue();
         QString jobKey = "initialCollection:" + currentRequest_["key"].toString();
 
