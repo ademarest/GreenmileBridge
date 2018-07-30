@@ -98,7 +98,7 @@ void RouteAssignmentCorrection::deleteAssignments()
         if(reassignmentObj["equipmentAssignments:0:id"].type() == QJsonValue::Double)
         {
             qDebug() << "deleting int " << reassignmentObj["equipmentAssignments:0:id"].toInt() << "double" << reassignmentObj["equipmentAssignments:0:id"].toDouble() << reassignmentObj["equipmentAssignments:0:id"].toString();
-            QString entityID = QString::number(reassignmentObj["driverAssignments:0:id"].toInt());
+            QString entityID = QString::number(reassignmentObj["equipmentAssignments:0:id"].toInt());
             qDebug() << entityID;
             activeJobs_.insert(routeEquipmentAssignmentDeletionKey);
             gmDeleteConn_->deleteEquipmentAssignment(routeEquipmentAssignmentDeletionKey, entityID);
@@ -151,13 +151,16 @@ void RouteAssignmentCorrection::uploadAssignments()
         QJsonObject reassignmentObj = routeAssignmentsToCorrect_[key].toObject();
         QJsonObject routeEquipmentAssignmentObj;
 
-        routeEquipmentAssignmentObj["route"]        = QJsonObject{{"id", reassignmentObj["id"]}};
-        routeEquipmentAssignmentObj["equipment"]    = QJsonObject{{"id", reassignmentObj["equipmentAssignments:0:equipment:id"]}};
-        routeEquipmentAssignmentObj["principal"]    = QJsonValue(true);
-        qDebug() << "route equipment reassignment obj" << routeEquipmentAssignmentKey <<  routeEquipmentAssignmentObj;
+        if(reassignmentObj["equipmentAssignments:0:equipment:id"].isDouble())
+        {
+            routeEquipmentAssignmentObj["route"]        = QJsonObject{{"id", reassignmentObj["id"]}};
+            routeEquipmentAssignmentObj["equipment"]    = QJsonObject{{"id", reassignmentObj["equipmentAssignments:0:equipment:id"]}};
+            routeEquipmentAssignmentObj["principal"]    = QJsonValue(true);
+            qDebug() << "route equipment reassignment obj" << routeEquipmentAssignmentKey <<  routeEquipmentAssignmentObj;
 
-        activeJobs_.insert(routeEquipmentAssignmentKey);
-        gmAssignConn_->assignEquipmentToRoute(routeEquipmentAssignmentKey, routeEquipmentAssignmentObj);
+            activeJobs_.insert(routeEquipmentAssignmentKey);
+            gmAssignConn_->assignEquipmentToRoute(routeEquipmentAssignmentKey, routeEquipmentAssignmentObj);
+        }
     }
 
     for(auto key:routeAssignmentsToCorrect_.keys())
@@ -171,12 +174,15 @@ void RouteAssignmentCorrection::uploadAssignments()
         QJsonObject reassignmentObj = routeAssignmentsToCorrect_[key].toObject();
         QJsonObject routeDriverAssignmentObj;
 
-        routeDriverAssignmentObj["route"] = QJsonObject{{"id", reassignmentObj["id"]}};
-        routeDriverAssignmentObj["driver"] = QJsonObject{{"id", reassignmentObj["driverAssignments:0:driver:id"]}};
-        qDebug() << "route driver reassignment obj" << routeDriverAssignmentKey << routeDriverAssignmentObj;
+        if(reassignmentObj["driverAssignments:0:driver:id"].isDouble())
+        {
+            routeDriverAssignmentObj["route"] = QJsonObject{{"id", reassignmentObj["id"]}};
+            routeDriverAssignmentObj["driver"] = QJsonObject{{"id", reassignmentObj["driverAssignments:0:driver:id"]}};
+            qDebug() << "route driver reassignment obj" << routeDriverAssignmentKey << routeDriverAssignmentObj;
 
-        activeJobs_.insert(routeDriverAssignmentKey);
-        gmAssignConn_->assignDriverToRoute(routeDriverAssignmentKey, routeDriverAssignmentObj);
+            activeJobs_.insert(routeDriverAssignmentKey);
+            gmAssignConn_->assignDriverToRoute(routeDriverAssignmentKey, routeDriverAssignmentObj);
+        }
     }
 }
 

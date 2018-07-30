@@ -3,14 +3,14 @@
 BridgeDataCollector::BridgeDataCollector(QObject *parent) : QObject(parent)
 {
     connect(mrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &BridgeDataCollector::handleSQLResponse);
-
     connect(dlmrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &BridgeDataCollector::handleSQLResponse);
-
     connect(routeSheetData, &GoogleSheetsConnection::data, this, &BridgeDataCollector::handleJsonResponse);
-
     connect(gmConn, &GMConnection::gmNetworkResponse, this, &BridgeDataCollector::handleJsonResponse);
-
     connect(as400, &AS400::sqlResults, this, &BridgeDataCollector::handleSQLResponse);
+
+    //connect(bridgeDB, &BridgeDatabase::statusMessage, this, &BridgeDataCollector::statusMessage);
+    connect(bridgeDB, &BridgeDatabase::errorMessage, this, &BridgeDataCollector::errorMessage);
+    connect(bridgeDB, &BridgeDatabase::debugMessage, this, &BridgeDataCollector::debugMessage);
 
     connect(queueTimer, &QTimer::timeout, this, &BridgeDataCollector::processQueue);
     queueTimer->start(1000);
@@ -274,7 +274,7 @@ void BridgeDataCollector::handleRSAssignments(const QString &tableName, const QM
 
 void BridgeDataCollector::handleGMLocationInfo(const QJsonArray &array)
 {
-    emit statusMessage("GM location info revieved.");
+    emit statusMessage("GM location info recieved.");
 
     QString tableName     = "gmLocations";
 

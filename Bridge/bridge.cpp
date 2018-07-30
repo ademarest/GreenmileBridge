@@ -48,7 +48,7 @@ void Bridge::addRequest(const QString &key)
 {
     QVariantMap request;
 
-     settings_ = QJsonObject{{"daysToUpload", QJsonValue(QJsonArray{QDate::currentDate().toString(Qt::ISODate), QDate::currentDate().addDays(1).toString(Qt::ISODate)})},
+    settings_ = QJsonObject{{"daysToUpload", QJsonValue(QJsonArray{QDate::currentDate().toString(Qt::ISODate), QDate::currentDate().addDays(1).toString(Qt::ISODate)})},
                             {"scheduleTables", QJsonValue(QJsonArray{QJsonValue(QJsonObject{{"tableName", QJsonValue("dlmrsDailyAssignments")}}),
                                                                      QJsonValue(QJsonObject{{"tableName", QJsonValue("mrsDailyAssignments")}, {"minRouteKey", "D"}, {"maxRouteKey", "U"}})})},
                             {"organization:key", QJsonValue("SEATTLE")},
@@ -82,7 +82,7 @@ void Bridge::processQueue()
         QString jobKey = "initialCollection:" + currentRequest_["key"].toString();
 
         emit statusMessage("-------------------------------------------------");
-        emit statusMessage("Bridge started for: " + currentRequest_["key"].toString() + currentRequest_["date"].toDate().toString(Qt::ISODate) + ".");
+        emit statusMessage("Bridge started for: " + currentRequest_["key"].toString() + "_" + currentRequest_["date"].toDate().toString(Qt::ISODate) + ".");
         emit statusMessage("-------------------------------------------------");
 
         activeJobs_.insert(jobKey);
@@ -170,7 +170,7 @@ void Bridge::handleJobCompletion(const QString &key)
         qDebug() << "Finished job with key " << currentRequest_["key"].toString();
 
         emit statusMessage("-------------------------------------------------");
-        emit statusMessage("Bridge finished for: " + currentRequest_["key"].toString() + currentRequest_["date"].toDate().toString(Qt::ISODate) + ".");
+        emit statusMessage("Bridge finished for: " + currentRequest_["key"].toString() + "_" + currentRequest_["date"].toDate().toString(Qt::ISODate) + ".");
         emit statusMessage("-------------------------------------------------");
 
         currentRequest_.clear();

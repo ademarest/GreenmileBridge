@@ -302,8 +302,8 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
     QJsonDocument jDoc;
     if(reply->error() != QNetworkReply::NoError)
     {
-        emit statusMessage(key + " finished with errors. " + reply->errorString());
-        emit errorMessage(reply->errorString());
+        emit errorMessage(key + " finished with errors. " + reply->errorString());
+        emit errorMessage(key + " server response was " + reply->readAll());
         qDebug() << reply->error();
     }
     if(reply->isOpen())

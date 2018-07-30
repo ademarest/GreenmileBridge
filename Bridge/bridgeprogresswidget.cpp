@@ -43,5 +43,5 @@ void BridgeProgressWidget::updateProgressBarStatus(qint64 bytesReceived, qint64 
 
 void BridgeProgressWidget::addToBridgeQueue()
 {
-    bridge_->addRequest("User Initiated Bridge");
+    bridge_->addRequest("USER_INITIATED_BRIDGE");
 }
