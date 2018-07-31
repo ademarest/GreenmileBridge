@@ -25,14 +25,10 @@ signals:
     void errorMessage(const QString &error);
     void statusMessage(const QString &status);
 
+    void started(const QString &key);
+    void aborted(const QString &key);
+    void completedReset(const QString &key);
     void finished(const QString &key);
-//    void stageFinished(const QString &key);
-//    void bridgeFinished();
-//    void geocodingFinished();
-//    void locationUploadFinished();
-//    void routeUploadFinished();
-//    void routeUploadAssignmentsFinished();
-//    void routeAssignmentCorrectionsFinished();
 
 public slots:
 //    void startBridge();
@@ -41,6 +37,8 @@ private slots:
 //    void handleGMResponse(const QString &key, const QJsonValue &val);
 //    void beginAnalysis(const QDate &date);
     void handleJobCompletion(const QString &key);
+    void abort();
+    void reset(const QString &key);
 
     void finishedDataCollection(const QString &key);
     void finishedLocationGeocode(const QString& key, const QJsonObject &result);
@@ -70,6 +68,7 @@ private:
     //TIMER SUBSECTION
     QTimer *queueTimer = new QTimer(this);
     QTimer *bridgeTimer = new QTimer(this);
+    QTimer *bridgeMalfunctionTimer = new QTimer(this);
     //END TIMER SUBSECTION
 
     //BRIDGE MEMBER SUBSECTION

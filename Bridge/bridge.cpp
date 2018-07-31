@@ -4,6 +4,7 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
 {
     connect(queueTimer, &QTimer::timeout, this, &Bridge::processQueue);
     connect(bridgeTimer, &QTimer::timeout, this, &Bridge::startOnTimer);
+    connect(bridgeMalfunctionTimer, &QTimer::timeout, this, &Bridge::abort);
 
     connect(dataCollector, &BridgeDataCollector::finished, this, &Bridge::finishedDataCollection);
     connect(locationGeocode_, &LocationGeocode::finished, this, &Bridge::finishedLocationGeocode);
@@ -79,6 +80,7 @@ void Bridge::processQueue()
     else
     {
         currentRequest_ = requestQueue_.dequeue();
+        emit started(currentRequest_["key"].toString());
         QString jobKey = "initialCollection:" + currentRequest_["key"].toString();
 
         emit statusMessage("-------------------------------------------------");
@@ -87,6 +89,8 @@ void Bridge::processQueue()
 
         activeJobs_.insert(jobKey);
         startDataCollection(jobKey, currentRequest_["date"].toDate());
+
+        bridgeMalfunctionTimer->start(450000);
     }
 }
 
@@ -163,18 +167,79 @@ void Bridge::finishedRouteAssignmentCorrections(const QString &key, const QJsonO
 void Bridge::handleJobCompletion(const QString &key)
 {
     qDebug() << activeJobs_.size() << "jobs remaining" << activeJobs_ << key;
+    emit statusMessage("The remaining bridge jobs are: " + activeJobs_.toList().join(",") + ".");
     activeJobs_.remove(key);
     if(!hasActiveJobs())
     {
+        bridgeMalfunctionTimer->stop();
         emit finished(currentRequest_["key"].toString());
         qDebug() << "Finished job with key " << currentRequest_["key"].toString();
-
         emit statusMessage("-------------------------------------------------");
         emit statusMessage("Bridge finished for: " + currentRequest_["key"].toString() + "_" + currentRequest_["date"].toDate().toString(Qt::ISODate) + ".");
         emit statusMessage("-------------------------------------------------");
 
         currentRequest_.clear();
     }
+}
+
+void Bridge::abort()
+{
+    QString key = currentRequest_["key"].toString();
+    emit errorMessage("ERROR: " + key + " ABORTED.");
+
+    queueTimer->stop();
+    bridgeTimer->stop();
+    bridgeMalfunctionTimer->stop();
+
+    argList_.clear();
+    currentRequest_.clear();
+    activeJobs_.clear();
+
+    dataCollector->deleteLater();
+    bridgeDB_->deleteLater();
+    locationGeocode_->deleteLater();
+    locationUpload_->deleteLater();
+    routeUpload_->deleteLater();
+    routeAssignmentCorrection_->deleteLater();
+
+    emit aborted(key);
+    reset(key);
+}
+
+void Bridge::reset(const QString &key)
+{
+    dataCollector = new BridgeDataCollector(this);
+    bridgeDB_ = new BridgeDatabase(this);
+    locationGeocode_ = new LocationGeocode(this);
+    locationUpload_ = new LocationUpload(this);
+    routeUpload_ = new RouteUpload(this);
+    routeAssignmentCorrection_ = new RouteAssignmentCorrection(this);
+
+    connect(dataCollector, &BridgeDataCollector::finished, this, &Bridge::finishedDataCollection);
+    connect(locationGeocode_, &LocationGeocode::finished, this, &Bridge::finishedLocationGeocode);
+    connect(locationUpload_, &LocationUpload::finished, this, &Bridge::finishedLocationUpload);
+    connect(routeUpload_, &RouteUpload::finished, this, &Bridge::finishedRouteUpload);
+    connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::finished, this, &Bridge::finishedRouteAssignmentCorrections);
+
+    connect(dataCollector, &BridgeDataCollector::statusMessage, this, &Bridge::statusMessage);
+    connect(dataCollector, &BridgeDataCollector::errorMessage, this, &Bridge::errorMessage);
+
+    connect(locationGeocode_, &LocationGeocode::statusMessage, this, &Bridge::statusMessage);
+    connect(locationGeocode_, &LocationGeocode::errorMessage, this, &Bridge::errorMessage);
+
+    connect(locationUpload_, &LocationUpload::statusMessage, this, &Bridge::statusMessage);
+    connect(locationUpload_, &LocationUpload::errorMessage, this, &Bridge::errorMessage);
+
+    connect(routeUpload_, &RouteUpload::statusMessage, this, &Bridge::statusMessage);
+    connect(routeUpload_, &RouteUpload::errorMessage, this, &Bridge::errorMessage);
+
+    connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::statusMessage, this, &Bridge::statusMessage);
+    connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::errorMessage, this, &Bridge::errorMessage);
+
+    emit statusMessage("Bridge has been reset. Restarting queue.");
+    emit completedReset(key);
+    bridgeTimer->start(600000);
+    queueTimer->start(1000);
 }
 
 void Bridge::applyScheduleHierarchy()
