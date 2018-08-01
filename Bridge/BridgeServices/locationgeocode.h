@@ -16,6 +16,7 @@ signals:
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
     void statusMessage(const QString &status);
+    void progress();
     void finished(const QString &key, const QJsonObject &result);
 
 public slots:

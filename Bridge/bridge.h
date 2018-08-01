@@ -21,24 +21,30 @@ public:
     void removeRequest(const QString &key);
 
 signals:
+    void started(const QString &key);
+    void aborted(const QString &key);
+    void rebuilt(const QString &key);
+    void finished(const QString &key);
+
+    void bridgeKeyChanged(const QString &key);
+    void bridgeProgress(const int remainingWork, const int totalWork);
+    void currentJobProgress(const int remainingWork, const int totalWork);
+    void currentJobChanged(const QString &key);
+
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
     void statusMessage(const QString &status);
 
-    void started(const QString &key);
-    void aborted(const QString &key);
-    void completedReset(const QString &key);
-    void finished(const QString &key);
 
 public slots:
 //    void startBridge();
+    void abort();
 
 private slots:
 //    void handleGMResponse(const QString &key, const QJsonValue &val);
 //    void beginAnalysis(const QDate &date);
     void handleJobCompletion(const QString &key);
-    void abort();
-    void reset(const QString &key);
+    void rebuild(const QString &key);
 
     void finishedDataCollection(const QString &key);
     void finishedLocationGeocode(const QString& key, const QJsonObject &result);
@@ -64,6 +70,8 @@ private:
     QList<QVariantMap> argList_;
     QVariantMap currentRequest_;
     QSet<QString> activeJobs_;
+    int activeJobCount_ = 0;
+    int totalJobCount_ = 0;
 
     //TIMER SUBSECTION
     QTimer *queueTimer = new QTimer(this);
@@ -80,43 +88,14 @@ private:
     RouteAssignmentCorrection *routeAssignmentCorrection_ = new RouteAssignmentCorrection(this);
     //END BRIDGE MEMBER SUBSECTION
 
+    void init();
     void startOnTimer();
     void processQueue();
+    void addActiveJob(const QString &key);
+    void removeActiveJob(const QString &key);
     void startDataCollection(const QString &key, const QDate &date);
     void applyScheduleHierarchy();
     void generateArgs();
 };
 
-//private:
-//    QSet<QString> activeJobs_;
-//    BridgeDatabase *bridgeDB = new BridgeDatabase(this);
-//    GMConnection *gmConn = new GMConnection(this);
-//    BridgeDataCollector *dataCollector = new BridgeDataCollector(this);
-
-//    void handleJobCompletion(const QString &key);
-
-//    void applyGeocodeResponseToLocation(const QString &key, const QJsonObject &obj);
-
-//    void fixRouteAssignments(const QString &table,
-//                             const QString &organizationKey,
-//                             const QDate &bridgeDate,
-//                             const QString &minDelim = QString(),
-//                             const QString &maxDelim = QString());
-
-//    void fixDriverAssignments(const QJsonObject &reassignmentResultObj);
-
-//    void fixEquipmentAssignments(const QJsonObject &reassignmentResultObj);
-
-//    void uploadRoutes(const QString &table,
-//                      const QString &organizationKey,
-//                      const QDate &bridgeDate,
-//                      const QString &minDelim = QString(),
-//                      const QString &maxDelim = QString());
-
-
-//    void uploadLocations(const QString &table,
-//                         const QString &organizationKey,
-//                         const QDate &bridgeDate,
-//                         const QString &minDelim = QString(),
-    //                         const QString &maxDelim = QString());
 #endif // BRIDGE_H

@@ -14,12 +14,13 @@ class BridgeProgressWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit BridgeProgressWidget(QWidget *parent = 0);
+    explicit BridgeProgressWidget(QWidget *parent = Q_NULLPTR);
     ~BridgeProgressWidget();
 
 public slots:
     void writeMessageTextWidget(const QString &message);
-    void updateProgressBarStatus(qint64 bytesReceived, qint64 bytesTotal);
+    void updateBridgeProgressBarStatus(qint64 done, qint64 todo);
+    void updateBridgeJobProgressBarStatus(qint64 done, qint64 todo);
 
 private slots:
     void addToBridgeQueue();

@@ -47,6 +47,7 @@ void BridgeDataCollector::processQueue()
         return;
     else
     {
+        qDebug() << activeJobs_.size() << totalJobs_;
         QPair<QString, QDate> job = gatheringQueue.dequeue();
         currentKey_ = job.first;
         emit statusMessage("Starting data collection for " + currentKey_ + ".");
@@ -71,6 +72,7 @@ void BridgeDataCollector::beginGathering(const QDate &date)
 
     totalJobs_ = activeJobs_.size();
     prepDatabases();
+    emit progress(activeJobs_.size(), totalJobs_);
 
     mrsConn->requestAssignments("mrsDailyAssignments", date);
     dlmrsConn->requestAssignments("dlmrsDailyAssignments", "Today");

@@ -21,6 +21,7 @@ public:
 signals:
     void finished(const QString &key);
     void progress(const int remainingJobs, const int totalJobs);
+
     void statusMessage(const QString &dbg);
     void debugMessage(const QString &dbg);
     void errorMessage(const QString &dbg);

@@ -5,13 +5,18 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
     connect(queueTimer, &QTimer::timeout, this, &Bridge::processQueue);
     connect(bridgeTimer, &QTimer::timeout, this, &Bridge::startOnTimer);
     connect(bridgeMalfunctionTimer, &QTimer::timeout, this, &Bridge::abort);
+    init();
+}
 
+void Bridge::init()
+{
     connect(dataCollector, &BridgeDataCollector::finished, this, &Bridge::finishedDataCollection);
     connect(locationGeocode_, &LocationGeocode::finished, this, &Bridge::finishedLocationGeocode);
     connect(locationUpload_, &LocationUpload::finished, this, &Bridge::finishedLocationUpload);
     connect(routeUpload_, &RouteUpload::finished, this, &Bridge::finishedRouteUpload);
     connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::finished, this, &Bridge::finishedRouteAssignmentCorrections);
 
+    connect(dataCollector, &BridgeDataCollector::progress, this, &Bridge::currentJobProgress);
     connect(dataCollector, &BridgeDataCollector::statusMessage, this, &Bridge::statusMessage);
     connect(dataCollector, &BridgeDataCollector::errorMessage, this, &Bridge::errorMessage);
 
@@ -80,6 +85,7 @@ void Bridge::processQueue()
     else
     {
         currentRequest_ = requestQueue_.dequeue();
+
         emit started(currentRequest_["key"].toString());
         QString jobKey = "initialCollection:" + currentRequest_["key"].toString();
 
@@ -87,15 +93,37 @@ void Bridge::processQueue()
         emit statusMessage("Bridge started for: " + currentRequest_["key"].toString() + "_" + currentRequest_["date"].toDate().toString(Qt::ISODate) + ".");
         emit statusMessage("-------------------------------------------------");
 
-        activeJobs_.insert(jobKey);
+        emit bridgeKeyChanged(currentRequest_["key"].toString() + "_" + currentRequest_["date"].toDate().toString(Qt::ISODate));
+        addActiveJob(jobKey);
         startDataCollection(jobKey, currentRequest_["date"].toDate());
 
         bridgeMalfunctionTimer->start(450000);
     }
 }
 
+void Bridge::addActiveJob(const QString &key)
+{
+    //addActiveJob(jobKey);
+    emit currentJobChanged(key);
+    activeJobs_.insert(key);
+
+    ++totalJobCount_;
+    activeJobCount_ = activeJobs_.size();
+
+    emit bridgeProgress(activeJobCount_, totalJobCount_);
+}
+
+void Bridge::removeActiveJob(const QString &key)
+{
+    activeJobs_.remove(key);
+    activeJobCount_ = activeJobs_.size();
+
+    emit bridgeProgress(activeJobCount_, totalJobCount_);
+}
+
 void Bridge::startDataCollection(const QString &key, const QDate &date)
 {
+    emit currentJobChanged(key);
     dataCollector->addRequest(key, date);
 }
 
@@ -110,7 +138,7 @@ void Bridge::finishedDataCollection(const QString &key)
     {
         qDebug() << "geocoding locations";
         QString jobKey = "geocodeLocations:" + currentRequest_["key"].toString();
-        activeJobs_.insert(jobKey);
+        addActiveJob(jobKey);
         locationGeocode_->GeocodeLocations(jobKey, argList_);
     }
 
@@ -118,7 +146,7 @@ void Bridge::finishedDataCollection(const QString &key)
     {
         qDebug() << "correcting route assignments";
         QString jobKey = "routeAssignmentCorrections:" + currentRequest_["key"].toString();
-        activeJobs_.insert(jobKey);
+        addActiveJob(jobKey);
         routeAssignmentCorrection_->CorrectRouteAssignments(jobKey, argList_);
     }
 
@@ -130,7 +158,7 @@ void Bridge::finishedLocationGeocode(const QString &key, const QJsonObject &resu
     emit statusMessage(key + " has been completed.");
 
     QString jobKey = "uploadLocations:" + currentRequest_["key"].toString();
-    activeJobs_.insert(jobKey);
+    addActiveJob(jobKey);
     locationUpload_->UploadLocations(jobKey, argList_, result);
     handleJobCompletion(key);
 }
@@ -141,7 +169,7 @@ void Bridge::finishedLocationUpload(const QString &key, const QJsonObject &resul
     qDebug() << result;
 
     QString jobKey = "uploadRoutes:" + currentRequest_["key"].toString();
-    activeJobs_.insert(jobKey);
+    addActiveJob(jobKey);
     routeUpload_->UploadRoutes(jobKey, argList_);
     handleJobCompletion(key);
 }
@@ -152,7 +180,7 @@ void Bridge::finishedRouteUpload(const QString &key, const QJsonObject &result)
     qDebug() << result;
 
     QString jobKey = "refreshDataForRouteAssignmentCorrections:" + currentRequest_["key"].toString();
-    activeJobs_.insert(jobKey);
+    addActiveJob(jobKey);
     dataCollector->addRequest(jobKey, currentRequest_["date"].toDate());
     handleJobCompletion(key);
 }
@@ -168,11 +196,19 @@ void Bridge::handleJobCompletion(const QString &key)
 {
     qDebug() << activeJobs_.size() << "jobs remaining" << activeJobs_ << key;
     emit statusMessage("The remaining bridge jobs are: " + activeJobs_.toList().join(",") + ".");
-    activeJobs_.remove(key);
+    removeActiveJob(key);
     if(!hasActiveJobs())
     {
+        currentJobChanged(QString());
+        activeJobCount_ = 0;
+        totalJobCount_ = 0;
+
+        bridgeProgress(activeJobCount_, totalJobCount_);
+
         bridgeMalfunctionTimer->stop();
         emit finished(currentRequest_["key"].toString());
+        emit currentJobChanged("Done");
+
         qDebug() << "Finished job with key " << currentRequest_["key"].toString();
         emit statusMessage("-------------------------------------------------");
         emit statusMessage("Bridge finished for: " + currentRequest_["key"].toString() + "_" + currentRequest_["date"].toDate().toString(Qt::ISODate) + ".");
@@ -185,6 +221,7 @@ void Bridge::handleJobCompletion(const QString &key)
 void Bridge::abort()
 {
     QString key = currentRequest_["key"].toString();
+    requestQueue_.enqueue(currentRequest_);
     emit errorMessage("ERROR: " + key + " ABORTED.");
 
     queueTimer->stop();
@@ -202,42 +239,29 @@ void Bridge::abort()
     routeUpload_->deleteLater();
     routeAssignmentCorrection_->deleteLater();
 
+    totalJobCount_ = 0;
+    activeJobCount_ = 0;
+    emit bridgeKeyChanged("ABORTED");
+    emit currentJobChanged("ABORTED");
+    emit bridgeProgress(activeJobCount_, totalJobCount_);
+    emit currentJobProgress(activeJobCount_, totalJobCount_);
     emit aborted(key);
-    reset(key);
+    rebuild(key);
 }
 
-void Bridge::reset(const QString &key)
+void Bridge::rebuild(const QString &key)
 {
-    dataCollector = new BridgeDataCollector(this);
-    bridgeDB_ = new BridgeDatabase(this);
-    locationGeocode_ = new LocationGeocode(this);
-    locationUpload_ = new LocationUpload(this);
-    routeUpload_ = new RouteUpload(this);
-    routeAssignmentCorrection_ = new RouteAssignmentCorrection(this);
+    dataCollector               = new BridgeDataCollector(this);
+    bridgeDB_                   = new BridgeDatabase(this);
+    locationGeocode_            = new LocationGeocode(this);
+    locationUpload_             = new LocationUpload(this);
+    routeUpload_                = new RouteUpload(this);
+    routeAssignmentCorrection_  = new RouteAssignmentCorrection(this);
 
-    connect(dataCollector, &BridgeDataCollector::finished, this, &Bridge::finishedDataCollection);
-    connect(locationGeocode_, &LocationGeocode::finished, this, &Bridge::finishedLocationGeocode);
-    connect(locationUpload_, &LocationUpload::finished, this, &Bridge::finishedLocationUpload);
-    connect(routeUpload_, &RouteUpload::finished, this, &Bridge::finishedRouteUpload);
-    connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::finished, this, &Bridge::finishedRouteAssignmentCorrections);
-
-    connect(dataCollector, &BridgeDataCollector::statusMessage, this, &Bridge::statusMessage);
-    connect(dataCollector, &BridgeDataCollector::errorMessage, this, &Bridge::errorMessage);
-
-    connect(locationGeocode_, &LocationGeocode::statusMessage, this, &Bridge::statusMessage);
-    connect(locationGeocode_, &LocationGeocode::errorMessage, this, &Bridge::errorMessage);
-
-    connect(locationUpload_, &LocationUpload::statusMessage, this, &Bridge::statusMessage);
-    connect(locationUpload_, &LocationUpload::errorMessage, this, &Bridge::errorMessage);
-
-    connect(routeUpload_, &RouteUpload::statusMessage, this, &Bridge::statusMessage);
-    connect(routeUpload_, &RouteUpload::errorMessage, this, &Bridge::errorMessage);
-
-    connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::statusMessage, this, &Bridge::statusMessage);
-    connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::errorMessage, this, &Bridge::errorMessage);
+    init();
 
     emit statusMessage("Bridge has been reset. Restarting queue.");
-    emit completedReset(key);
+    emit rebuilt(key);
     bridgeTimer->start(600000);
     queueTimer->start(1000);
 }

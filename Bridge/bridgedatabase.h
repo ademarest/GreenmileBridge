@@ -12,21 +12,21 @@ public:
 
     QJsonObject getRoutesToUpload(const QString &assignmentTableName,
                                   const QString &organizationKey,
-                                  const QDate &date,
+                                  const QDate   &date,
                                   const QString &minRouteString = QString(),
                                   const QString &maxRouteString = QString());
 
-    QJsonArray getRoutesToUpdate(const QString &assignmentTableName,
-                                 const QString &organizationKey,
-                                 const QDate &date,
-                                 const QString &minRouteString = QString(),
-                                 const QString &maxRouteString = QString());
+    QJsonArray getRoutesToUpdate(const QString  &assignmentTableName,
+                                 const QString  &organizationKey,
+                                 const QDate    &date,
+                                 const QString  &minRouteString = QString(),
+                                 const QString  &maxRouteString = QString());
 
-    QJsonObject getAssignmentsToUpdate(const QString &assignmentTableName,
-                                       const QString &organizationKey,
-                                       const QDate &date,
-                                       const QString &minRouteString = QString(),
-                                       const QString &maxRouteString = QString());
+    QJsonObject getAssignmentsToUpdate(const QString    &assignmentTableName,
+                                       const QString    &organizationKey,
+                                       const QDate      &date,
+                                       const QString    &minRouteString = QString(),
+                                       const QString    &maxRouteString = QString());
 
     QJsonArray getLocationsToUpdate();
 
