@@ -221,13 +221,13 @@ void Bridge::handleJobCompletion(const QString &key)
 void Bridge::abort()
 {
     QString key = currentRequest_["key"].toString();
-    requestQueue_.enqueue(currentRequest_);
     emit errorMessage("ERROR: " + key + " ABORTED.");
 
     queueTimer->stop();
     bridgeTimer->stop();
     bridgeMalfunctionTimer->stop();
 
+    requestQueue_.clear();
     argList_.clear();
     currentRequest_.clear();
     activeJobs_.clear();
