@@ -32,6 +32,7 @@ void MRSConnection::handleNetworkReply(const QString &key, const QJsonObject &da
 
 QMap<QString, QVariantList> MRSConnection::mrsDailyScheduleJsonToSQL(const QJsonObject &data)
 {
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
     QMap<QString, QVariantList> sqlData;
     bool foundDate = false;
     QDate date;

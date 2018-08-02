@@ -12,6 +12,8 @@ BridgeDataCollector::BridgeDataCollector(QObject *parent) : QObject(parent)
     connect(bridgeDB, &BridgeDatabase::errorMessage, this, &BridgeDataCollector::errorMessage);
     connect(bridgeDB, &BridgeDatabase::debugMessage, this, &BridgeDataCollector::debugMessage);
 
+    connect(as400, &AS400::errorMessage, this, &BridgeDataCollector::errorMessage);
+
     connect(queueTimer, &QTimer::timeout, this, &BridgeDataCollector::processQueue);
     queueTimer->start(1000);
 }
