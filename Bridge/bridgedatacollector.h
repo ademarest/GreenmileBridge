@@ -15,7 +15,7 @@ class BridgeDataCollector : public QObject
 public:
     explicit BridgeDataCollector(QObject *parent = nullptr);
     bool hasActiveJobs();
-    void addRequest(const QString &key, const QDate date);
+    void addRequest(const QString &key, const QDate &date, const int monthsUntilCustDisabled, const QStringList &sourceOverrides = QStringList());
     void removeRequest(const QString &key);
 
 signals:
@@ -33,11 +33,12 @@ private slots:
 public slots:
 
 private:
-    QQueue<QPair<QString, QDate>> gatheringQueue;
+    QQueue<QVariantMap> requestQueue_;
     QSet<QString> activeJobs_;
 
-    void prepDatabases();
-    void beginGathering(const QDate &date);
+    void prepDatabases(const QStringList &sourceOverrides = QStringList());
+    void beginGathering(const QVariantMap &request);
+
     BridgeDatabase *bridgeDB                = new BridgeDatabase(this);
     MRSConnection *mrsConn                  = new MRSConnection("mrsconnection.db", this);
     MRSConnection *dlmrsConn                = new MRSConnection("dlmrsconnection.db", this);
@@ -46,10 +47,26 @@ private:
     AS400 *as400                            = new AS400(this);
     QTimer *queueTimer                      = new QTimer(this);
 
+    QStringList knownSources_ =
+    {"mrsDailyAssignments",
+     "dlmrsDailyAssignments",
+     "routeStartTimes",
+     "drivers",
+     "powerUnits",
+     "routeOverrides",
+     "gmOrganizations",
+     "gmRoutes",
+     "gmDrivers",
+     "gmEquipment",
+     "gmLocations",
+     "as400RouteQuery",
+     "as400LocationQuery"};
+
     int totalJobs_ = 0;
     QString currentKey_;
 
     void handleAS400RouteQuery(const QMap<QString, QVariantList> &sql);
+    void handleAS400LocationQuery(const QMap<QString, QVariantList> &sql);
 
     void handleGMLocationInfo(const QJsonArray &array);
     void handleGMDriverInfo(const QJsonArray &array);

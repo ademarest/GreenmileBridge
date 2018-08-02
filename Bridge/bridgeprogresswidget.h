@@ -19,8 +19,8 @@ public:
 
 public slots:
     void writeMessageTextWidget(const QString &message);
-    void updateBridgeProgressBarStatus(qint64 done, qint64 todo);
-    void updateBridgeJobProgressBarStatus(qint64 done, qint64 todo);
+    void updateBridgeProgressBarStatus(qint64 done, qint64 total);
+    void updateBridgeJobProgressBarStatus(qint64 done, qint64 total);
 
 private slots:
     void addToBridgeQueue();

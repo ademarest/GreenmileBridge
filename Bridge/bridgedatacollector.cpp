@@ -24,82 +24,202 @@ bool BridgeDataCollector::hasActiveJobs()
         return true;
 }
 
-void BridgeDataCollector::addRequest(const QString &key, const QDate date)
+void BridgeDataCollector::addRequest(const QString &key, const QDate &date, const int monthsUntilCustDisabled, const QStringList &sourceOverrides)
 {
     qDebug() << "START BridgeDataCollector::addRequest.";
-    QPair<QString, QDate> gatheringRequest {key, date};
-    gatheringQueue.enqueue(gatheringRequest);
+    QVariantMap request {
+        {"key", key},
+        {"date", date},
+        {"monthsUntilCustDisabled", monthsUntilCustDisabled},
+        {"sourceOverrides", sourceOverrides}
+    };
+    requestQueue_.enqueue(request);
     qDebug() << "END BridgeDataCollector::addRequest.";
 }
 
 void BridgeDataCollector::removeRequest(const QString &key)
 {
     qDebug() << "START BridgeDataCollector::removeRequest.";
-    for(int i = 0; i < gatheringQueue.size(); i++)
-        if(gatheringQueue[i].first == key)
-            gatheringQueue.removeAt(i);
+    for(int i = 0; i < requestQueue_.size(); i++)
+        if(requestQueue_[i]["key"].toString() == key)
+            requestQueue_.removeAt(i);
     qDebug() << "START BridgeDataCollector::removeRequest.";
 }
 
 void BridgeDataCollector::processQueue()
 {
-    if(hasActiveJobs() || gatheringQueue.isEmpty())
+    if(hasActiveJobs() || requestQueue_.isEmpty())
         return;
     else
     {
         qDebug() << activeJobs_.size() << totalJobs_;
-        QPair<QString, QDate> job = gatheringQueue.dequeue();
-        currentKey_ = job.first;
+        QVariantMap request = requestQueue_.dequeue();
+        currentKey_ = request["key"].toString();
         emit statusMessage("Starting data collection for " + currentKey_ + ".");
-        beginGathering(job.second);
+        beginGathering(request);
     }
 }
 
-void BridgeDataCollector::beginGathering(const QDate &date)
+void BridgeDataCollector::beginGathering(const QVariantMap &request)
 {
-    activeJobs_.insert("mrsDailyAssignments");
-    activeJobs_.insert("dlmrsDailyAssignments");
-    activeJobs_.insert("routeStartTimes");
-    activeJobs_.insert("drivers");
-    activeJobs_.insert("powerUnits");
-    activeJobs_.insert("routeOverrides");
-    activeJobs_.insert("gmOrganizations");
-    activeJobs_.insert("gmRoutes");
-    activeJobs_.insert("gmDrivers");
-    activeJobs_.insert("gmEquipment");
-    activeJobs_.insert("gmLocations");
-    activeJobs_.insert("as400RouteQuery");
+    QStringList sources;
+    QStringList sourceOverrides = request["sourceOverrides"].toStringList();
+    QDate date = request["date"].toDate();
+    QString key = request["key"].toString();
+    int monthsUntilCustDisabled = request["monthsUntilCustDisabled"].toInt();
+    qDebug() << "monthsUntilCustDisabled" <<  monthsUntilCustDisabled << request["monthsUntilCustDisabled"].toInt();
 
-    totalJobs_ = activeJobs_.size();
-    prepDatabases();
-    emit progress(activeJobs_.size(), totalJobs_);
+    if(sourceOverrides.isEmpty())
+        sources = knownSources_;
+    else
+    {
+        for(auto source:sourceOverrides)
+            if(knownSources_.contains(source))
+                sources.append(source);
 
-    mrsConn->requestAssignments("mrsDailyAssignments", date);
-    dlmrsConn->requestAssignments("dlmrsDailyAssignments", "Today");
-    routeSheetData->requestValuesFromAGoogleSheet("routeStartTimes", "routeStartTimes");
-    routeSheetData->requestValuesFromAGoogleSheet("drivers", "drivers");
-    routeSheetData->requestValuesFromAGoogleSheet("powerUnits", "powerUnits");
-    routeSheetData->requestValuesFromAGoogleSheet("routeOverrides", "routeOverrides");
-    gmConn->requestAllOrganizationInfo("gmOrganizations");
-    gmConn->requestRouteComparisonInfo("gmRoutes", date);
-    gmConn->requestDriverInfo("gmDrivers");
-    gmConn->requestEquipmentInfo("gmEquipment");
-    gmConn->requestLocationInfo("gmLocations");
-    as400->getRouteDataForGreenmile("as400RouteQuery", date, 0);
+        if(sources.isEmpty())
+        {
+            emit errorMessage("Source overrides for " + key + "are invalid. Overrides are " + sourceOverrides.join(", ") + ".");
+            emit finished(key);
+            return;
+        }
+    }
+
+    prepDatabases(sources);
+    for(auto source : sources)
+    {
+        if(source == "mrsDailyAssignments")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            mrsConn->requestAssignments("mrsDailyAssignments", date);
+            continue;
+        }
+
+        if(source == "dlmrsDailyAssignments")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            dlmrsConn->requestAssignments("dlmrsDailyAssignments", "Today");
+            continue;
+        }
+
+        if(source == "routeStartTimes")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            routeSheetData->requestValuesFromAGoogleSheet("routeStartTimes", "routeStartTimes");
+            continue;
+        }
+
+        if(source == "drivers")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            routeSheetData->requestValuesFromAGoogleSheet("drivers", "drivers");
+            continue;
+        }
+
+        if(source == "powerUnits")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            routeSheetData->requestValuesFromAGoogleSheet("powerUnits", "powerUnits");
+            continue;
+        }
+
+        if(source == "routeOverrides")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            routeSheetData->requestValuesFromAGoogleSheet("routeOverrides", "routeOverrides");
+            continue;
+        }
+
+        if(source == "gmOrganizations")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            gmConn->requestAllOrganizationInfo("gmOrganizations");
+            continue;
+        }
+
+        if(source == "gmRoutes")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            gmConn->requestRouteComparisonInfo("gmRoutes", date);
+            continue;
+        }
+
+        if(source == "gmDrivers")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            gmConn->requestDriverInfo("gmDrivers");
+            continue;
+        }
+
+        if(source == "gmEquipment")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            gmConn->requestEquipmentInfo("gmEquipment");
+            continue;
+        }
+
+        if(source == "gmLocations")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            gmConn->requestLocationInfo("gmLocations");
+            continue;
+        }
+
+        if(source == "as400RouteQuery")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            as400->getRouteDataForGreenmile("as400RouteQuery", date, 0);
+            continue;
+        }
+
+        if(source == "as400LocationQuery")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            as400->getLocationDataForGreenmile("as400LocationQuery", date, monthsUntilCustDisabled, 0);
+            continue;
+        }
+    }
 }
 
-void BridgeDataCollector::prepDatabases()
+void BridgeDataCollector::prepDatabases(const QStringList &sourceOverrides)
 {
-    bridgeDB->truncateATable("as400RouteQuery");
-    bridgeDB->truncateATable("gmOrganizations");
-    bridgeDB->truncateATable("gmRoutes");
-    bridgeDB->truncateATable("gmDrivers");
-    bridgeDB->truncateATable("gmEquipment");
-    bridgeDB->truncateATable("gmLocations");
-    bridgeDB->truncateATable("routeStartTimes");
-    bridgeDB->truncateATable("drivers");
-    bridgeDB->truncateATable("powerUnits");
-    bridgeDB->truncateATable("routeOverrides");
+    if(sourceOverrides.isEmpty())
+    {
+        for(auto source:knownSources_)
+            bridgeDB->truncateATable(source);
+    }
+    else
+    {
+        for(auto source:sourceOverrides)
+            if(knownSources_.contains(source))
+                bridgeDB->truncateATable(source);
+    }
 }
 
 void BridgeDataCollector::handleSQLResponse(const QString &key, const QMap<QString, QVariantList> &sql)
@@ -112,6 +232,8 @@ void BridgeDataCollector::handleSQLResponse(const QString &key, const QMap<QStri
         handleRSAssignments(key, sql);
     if(key == "as400RouteQuery")
         handleAS400RouteQuery(sql);
+    if(key == "as400LocationQuery")
+        handleAS400LocationQuery(sql);
 
     handleJobCompletion(key);
 }
@@ -252,6 +374,34 @@ void BridgeDataCollector::handleAS400RouteQuery(const QMap<QString, QVariantList
                             "`route:key` TEXT, "
                             "`stop:baseLineSequenceNum` INT, "
                             "PRIMARY KEY(`order:number`))";
+
+    bridgeDB->addSQLInfo(tableName, creationQuery);
+    bridgeDB->SQLDataInsert(tableName, sql);
+}
+
+void BridgeDataCollector::handleAS400LocationQuery(const QMap<QString, QVariantList> &sql)
+{
+    emit statusMessage("Location info retrieved from AS400.");
+
+    QString tableName    = "as400LocationQuery";
+    QString creationQuery = "CREATE TABLE `as400LocationQuery` "
+                            "(`location:enabled` TEXT, "
+                            "`organization:key` TEXT, "
+                            "`location:key` TEXT, "
+                            "`location:addressLine1` TEXT, "
+                            "`location:addressLine2` TEXT, "
+                            "`location:city` TEXT, "
+                            "`location:deliveryDays` TEXT, "
+                            "`location:description` TEXT, "
+                            "`location:state` TEXT, "
+                            "`location:zipCode` TEXT, "
+                            "`locationOverrideTimeWindows:closeTime` TEXT, "
+                            "`locationOverrideTimeWindows:openTime` TEXT, "
+                            "`locationOverrideTimeWindows:tw1Close` TEXT, "
+                            "`locationOverrideTimeWindows:tw1Open` TEXT, "
+                            "`locationOverrideTimeWindows:tw2Close` TEXT, "
+                            "`locationOverrideTimeWindows:tw2Open` TEXT, "
+                            "PRIMARY KEY(`location:key`))";
 
     bridgeDB->addSQLInfo(tableName, creationQuery);
     bridgeDB->SQLDataInsert(tableName, sql);

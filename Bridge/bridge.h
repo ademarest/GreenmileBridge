@@ -61,6 +61,7 @@ private:
                            {"scheduleTables", QJsonValue(QJsonArray{QJsonValue(QJsonObject{{"tableName", QJsonValue("dlmrsDailyAssignments")}}),
                                                                     QJsonValue(QJsonObject{{"tableName", QJsonValue("mrsDailyAssignments")}, {"minRouteKey", "D"}, {"maxRouteKey", "U"}})})},
                            {"organization:key", QJsonValue("SEATTLE")},
+                           {"monthsUntilCustDisabled", QJsonValue(3)},
                            {"schedulePrimaryKeys", QJsonValue(QJsonArray{"route:key", "route:date", "organization:key"})}};
 
     //END SETTINGS SUBSECTION
@@ -93,7 +94,7 @@ private:
     void processQueue();
     void addActiveJob(const QString &key);
     void removeActiveJob(const QString &key);
-    void startDataCollection(const QString &key, const QDate &date);
+    void startDataCollection(const QString &key, const QDate &date, const int monthsUntilCustDisabled);
     void applyScheduleHierarchy();
     void generateArgs();
 };

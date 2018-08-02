@@ -123,6 +123,14 @@ bool AS400::getRouteDataForGreenmile(const QString &key, const QDate &date, cons
     return queryAS400(key, queryString, chunkSize);
 }
 
+bool AS400::getLocationDataForGreenmile(const QString &key, const QDate &date, const int monthsUntilCustDisabled, const int chunkSize)
+{
+    QDate disableCustDate = date.addMonths(-monthsUntilCustDisabled);
+    qDebug() << "disable cust date" << disableCustDate << monthsUntilCustDisabled;
+    QString queryString = "SELECT DISTINCT CASE WHEN customerInfo.FFDDTEI < "+disableCustDate.toString("yyyyMMdd")+" THEN 0 ELSE 1 END AS \"location:enabled\", TRIM(companyInfo.L1NAME) AS \"organization:key\", TRIM(customerInfo.FFDCUSN) AS \"location:key\", CASE WHEN TRIM(customerInfo.FFDCNMB) = '' THEN NULL ELSE TRIM(customerInfo.FFDCNMB) END AS \"location:description\", CASE WHEN TRIM(customerInfo.FFDCA1B) = '' THEN NULL ELSE TRIM(customerInfo.FFDCA1B) END AS \"location:addressLine1\", CASE WHEN TRIM(customerInfo.FFDCA2B) = '' THEN NULL ELSE TRIM(customerInfo.FFDCA2B) END AS \"location:addressLine2\", CASE WHEN TRIM(customerInfo.FFDCTYB) = '' THEN NULL ELSE TRIM(customerInfo.FFDCTYB) END AS \"location:city\", CASE WHEN TRIM(customerInfo.FFDSTEB) = '' THEN NULL ELSE TRIM(customerInfo.FFDSTEB) END AS \"location:state\", CASE WHEN TRIM(customerInfo.FFDZPCB) = '' THEN NULL ELSE TRIM(SUBSTR(customerInfo.FFDZPCB, 0, 6)) END AS \"location:zipCode\", CASE WHEN customerWindows.JJCTSR1 = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCTSR1),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindows:tw1Open\", CASE WHEN customerWindows.JJCTSP1 = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCTSP1),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindows:tw1Close\", CASE WHEN customerWindows.JJCTSR2 = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCTSR2),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindows:tw2Open\", CASE WHEN customerWindows.JJCTSP2 = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCTSP2),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindows:tw2Close\", CASE WHEN customerWindows.JJCOPEN = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCOPEN),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindows:openTime\", CASE WHEN customerWindows.JJCCLOS = 0 THEN NULL ELSE TIME(TIMESTAMP_FORMAT(LPAD(DIGITS(customerWindows.JJCCLOS),4,'0'),'HH24MI')) END AS \"locationOverrideTimeWindows:closeTime\", CASE WHEN TRIM(LEADING ',' FROM deliveryDays.\"location:deliveryDays\") = '' THEN NULL ELSE TRIM(LEADING ',' FROM deliveryDays.\"location:deliveryDays\") END AS \"location:deliveryDays\" FROM PWRDTA.FFDCSTBL0 AS customerInfo LEFT JOIN PWRUSER.CMPNLIST1 AS companyInfo ON companyInfo.L1LOC = TRIM(customerInfo.FFDCMPN) || TRIM(customerInfo.FFDDIVN) || TRIM (customerInfo.FFDDPTN) LEFT JOIN (SELECT CASE WHEN LENGTH(TRIM(EETRTF1))>0 THEN ',M' ELSE '' END || CASE WHEN LENGTH(TRIM(EETRTF2))>0 THEN ',T' ELSE '' END || CASE WHEN LENGTH(TRIM(EETRTF3))>0 THEN ',W' ELSE '' END || CASE WHEN LENGTH(TRIM(EETRTF4))>0 THEN ',R' ELSE '' END || CASE WHEN LENGTH(TRIM(EETRTF5))>0 THEN ',F' ELSE '' END || CASE WHEN LENGTH(TRIM(EETRTF6))>0 THEN ',S' ELSE '' END || CASE WHEN LENGTH(TRIM(EETRTF7))>0 THEN ',U' ELSE '' END AS \"location:deliveryDays\", EETCUSN AS customerNumber FROM PWRDTA.EETRTEAL0) AS deliveryDays ON TRIM(customerInfo.FFDCUSN) = TRIM(deliveryDays.customerNumber) LEFT JOIN PWRDTA.JJCCSTRL0 AS customerWindows ON TRIM(customerWindows.JJCCUSN) = TRIM(customerInfo.FFDCUSN)";
+    return queryAS400(key, queryString, chunkSize);
+}
+
 bool AS400::queryAS400(const QString &key, const QString &queryString, const int chunkSize)
 {
     jsonSettings_ = settings_.loadSettings(QFile(dbPath_), jsonSettings_);
@@ -193,6 +201,7 @@ void AS400::processQuery(const QString &key, QSqlQuery &query, const int chunkSi
                 emit debugMessage("AS400 query returned an empty result set.");
                 qDebug() << "AS400 query returned an empty result set.";
                 emit sqlResults(key, sqlData);
+                qDebug() << "AS400 First run " << firstRun;
                 return;
             }
 
@@ -201,6 +210,7 @@ void AS400::processQuery(const QString &key, QSqlQuery &query, const int chunkSi
 
             emit sqlResults(key, sqlData);
             firstRun = false;
+            qDebug() << "AS400 First run " << firstRun;
 
             for(auto key: sqlData.keys())
             {

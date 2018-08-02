@@ -10,6 +10,11 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
 
 void Bridge::init()
 {
+
+    /*  Location PUT query.
+    SELECT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays`, `id` FROM as400LocationQuery LEFT JOIN gmLocations ON `key` = `location:key` WHERE gmLocations.`key` IN ( SELECT `location:key` FROM ( SELECT DISTINCT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays` FROM as400LocationQuery WHERE as400LocationQuery.`organization:key` = 'SEATTLE' EXCEPT SELECT DISTINCT `enabled`, `key`,`description`,`addressLine1`,`addressLine2`,`city`, `state`,`zipCode`,`deliveryDays` FROM gmLocations WHERE gmLocations.`organization:key` = 'SEATTLE' ) )
+    */
+
     connect(dataCollector, &BridgeDataCollector::finished, this, &Bridge::finishedDataCollection);
     connect(locationGeocode_, &LocationGeocode::finished, this, &Bridge::finishedLocationGeocode);
     connect(locationUpload_, &LocationUpload::finished, this, &Bridge::finishedLocationUpload);
@@ -31,7 +36,6 @@ void Bridge::init()
 
     connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::statusMessage, this, &Bridge::statusMessage);
     connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::errorMessage, this, &Bridge::errorMessage);
-
 
     bridgeTimer->start(600000);
     queueTimer->start(1000);
@@ -58,6 +62,7 @@ void Bridge::addRequest(const QString &key)
                             {"scheduleTables", QJsonValue(QJsonArray{QJsonValue(QJsonObject{{"tableName", QJsonValue("dlmrsDailyAssignments")}}),
                                                                      QJsonValue(QJsonObject{{"tableName", QJsonValue("mrsDailyAssignments")}, {"minRouteKey", "D"}, {"maxRouteKey", "U"}})})},
                             {"organization:key", QJsonValue("SEATTLE")},
+                            {"monthsUntilCustDisabled", QJsonValue(3)},
                             {"schedulePrimaryKeys", QJsonValue(QJsonArray{"route:key", "route:date", "organization:key"})}};
 
     for(auto jVal : settings_["daysToUpload"].toArray())
@@ -67,6 +72,7 @@ void Bridge::addRequest(const QString &key)
         request["date"] = QDate::fromString(jVal.toString(), Qt::ISODate);
         request["scheduleTables"] = settings_["scheduleTables"].toArray();
         request["schedulePrimaryKeys"] = settings_["schedulePrimaryKeys"].toArray();
+        request["monthsUntilCustDisabled"] = settings_["monthsUntilCustDisabled"].toInt();
         requestQueue_.enqueue(request);
     }
 }
@@ -95,7 +101,7 @@ void Bridge::processQueue()
 
         emit bridgeKeyChanged(currentRequest_["key"].toString() + "_" + currentRequest_["date"].toDate().toString(Qt::ISODate));
         addActiveJob(jobKey);
-        startDataCollection(jobKey, currentRequest_["date"].toDate());
+        startDataCollection(jobKey, currentRequest_["date"].toDate(), currentRequest_["monthsUntilCustDisabled"].toInt());
 
         bridgeMalfunctionTimer->start(450000);
     }
@@ -121,10 +127,10 @@ void Bridge::removeActiveJob(const QString &key)
     emit bridgeProgress(activeJobCount_, totalJobCount_);
 }
 
-void Bridge::startDataCollection(const QString &key, const QDate &date)
+void Bridge::startDataCollection(const QString &key, const QDate &date, const int monthsUntilCustDisabled)
 {
     emit currentJobChanged(key);
-    dataCollector->addRequest(key, date);
+    dataCollector->addRequest(key, date, monthsUntilCustDisabled);
 }
 
 void Bridge::finishedDataCollection(const QString &key)
@@ -181,7 +187,11 @@ void Bridge::finishedRouteUpload(const QString &key, const QJsonObject &result)
 
     QString jobKey = "refreshDataForRouteAssignmentCorrections:" + currentRequest_["key"].toString();
     addActiveJob(jobKey);
-    dataCollector->addRequest(jobKey, currentRequest_["date"].toDate());
+    dataCollector->addRequest(jobKey,
+                            currentRequest_["date"].toDate(),
+                            currentRequest_["monthsUntilCustDisabled"].toInt(),
+                            QStringList{"gmRoutes"});
+
     handleJobCompletion(key);
 }
 

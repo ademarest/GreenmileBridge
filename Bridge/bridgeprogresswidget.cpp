@@ -34,17 +34,17 @@ void BridgeProgressWidget::writeMessageTextWidget(const QString &message)
     ui->operationHistoryTextBrowser->setText(contents);
 }
 
-void BridgeProgressWidget::updateBridgeProgressBarStatus(qint64 done, qint64 todo)
+void BridgeProgressWidget::updateBridgeProgressBarStatus(qint64 done, qint64 total)
 {
-    if(todo <= 0)
+    if(total <= 0)
     {
-        ui->currentBridgeOperationProgressBar->setValue(100);
+        ui->currentBridgeOperationProgressBar->setValue(0);
         return;
     }
 
-    int netStatus = int(100) - int((double(done)/double(todo))*100);
+    int netStatus = int(100) - int((double(done)/double(total))*100);
 
-    qDebug() << netStatus << done << todo;
+    qDebug() << netStatus << done << total;
 
     if(netStatus < 0)
         netStatus = 0;
@@ -52,17 +52,17 @@ void BridgeProgressWidget::updateBridgeProgressBarStatus(qint64 done, qint64 tod
     ui->currentBridgeProgressBar->setValue(netStatus);
 }
 
-void BridgeProgressWidget::updateBridgeJobProgressBarStatus(qint64 done, qint64 todo)
+void BridgeProgressWidget::updateBridgeJobProgressBarStatus(qint64 done, qint64 total)
 {
-    if(todo <= 0)
+    if(total <= 0)
     {
-        ui->currentBridgeOperationProgressBar->setValue(100);
+        ui->currentBridgeOperationProgressBar->setValue(0);
         return;
     }
 
-    int netStatus = int(100) - int((double(done)/double(todo))*100);
+    int netStatus = int(100) - int((double(done)/double(total))*100);
 
-    qDebug() << netStatus << done << todo;
+    qDebug() << netStatus << done << total;
 
     if(netStatus < 0)
         netStatus = 0;

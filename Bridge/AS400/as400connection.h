@@ -31,7 +31,7 @@ public:
     bool getCustomerData(const QString &key);
 
     bool getRouteDataForGreenmile(const QString &key, const QDate &date, const int chunkSize);
-
+    bool getLocationDataForGreenmile(const QString &key, const QDate &date, const int monthsUntilCustDisabled, const int chunkSize);
 
 signals:
     void sqlResults(const QString &key, const QMap<QString,QVariantList> &sql);
