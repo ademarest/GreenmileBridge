@@ -41,6 +41,7 @@ public:
 
     void geocodeLocation(const QString &key, const QJsonObject &locationJson);
     void uploadALocation(const QString &key, const QJsonObject &locationJson);
+    void putALocation(const QString &key, const QString &entityID, const QJsonObject &locationJson);
 
     bool isProcessingNetworkRequests();
 

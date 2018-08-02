@@ -195,6 +195,15 @@ void GMConnection::uploadALocation(const QString &key, const QJsonObject &locati
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation, key, serverAddrTail, postData);
 }
 
+void GMConnection::putALocation(const QString &key, const QString &entityID, const QJsonObject &locationJson)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+
+    QString serverAddrTail = "/Location/" + entityID;
+    QByteArray postData = QJsonDocument(locationJson).toJson(QJsonDocument::Compact);
+    addToConnectionQueue(QNetworkAccessManager::Operation::PutOperation, key, serverAddrTail, postData);
+}
+
 void GMConnection::addToConnectionQueue(const QNetworkAccessManager::Operation requestType,
                                         const QString &requestKey,
                                         const QString &serverAddrTail,
@@ -252,7 +261,8 @@ void GMConnection::processConnectionQueue()
                 emit debugMessage("GetOperation not implemented yet.");
                 break;
             case QNetworkAccessManager::Operation::PutOperation :
-                emit debugMessage("PutOperation not implemented yet.");
+                qDebug() << "put request" << requestKey;
+                networkReplies_[requestKey] = networkManagers_[requestKey]->put(request, data);
                 break;
             case QNetworkAccessManager::Operation::PostOperation :
                 qDebug() << "post request" << requestKey;
