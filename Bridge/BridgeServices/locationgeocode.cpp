@@ -66,14 +66,48 @@ void LocationGeocode::GeocodeLocations(const QString &key, const QList<QVariantM
         emit finished(currentKey_, QJsonObject());
         reset();
     }
+}
 
+void LocationGeocode::GeocodeUpdateLocations(const QString &key, const QList<QVariantMap> &argList)
+{
+
+    if(!activeJobs_.isEmpty())
+    {
+        errorMessage("Geocoding in progress. Try again once current request is finished.");
+        qDebug() << "Geocoding in progress. Try again once current request is finished.";
+        return;
+    }
+
+    currentKey_ = key;
+    geocodedLocations_.empty();
+    locationsToGeocode_.empty();
+
+    for(auto vMap:argList)
+    {
+        QString organizationKey = vMap["organization:key"].toString();
+        //mergeLocationsToGeocode(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
+        //mergeLocationsToGeocode(bridgeDB_->getLocationsToUpdate(organizationKey));
+    }
+
+    qDebug() << "Size of locations to upload is..." << locationsToGeocode_.size();
+    for(auto key:locationsToGeocode_.keys())
+    {
+        activeJobs_.insert(key);
+        gmConn_->geocodeLocation(key, locationsToGeocode_[key].toObject());
+    }
+
+    if(activeJobs_.empty())
+    {
+        emit finished(currentKey_, QJsonObject());
+        reset();
+    }
 }
 
 void LocationGeocode::handleGMResponse(const QString &key, const QJsonValue &response)
 {
     activeJobs_.remove(key);
     geocodedLocations_[key] = response;
-
+    qDebug() << activeJobs_.count();
     if(activeJobs_.empty())
     {
         emit finished(currentKey_, geocodedLocations_);

@@ -16,8 +16,13 @@ void Bridge::init()
     */
 
     connect(dataCollector, &BridgeDataCollector::finished, this, &Bridge::finishedDataCollection);
-    connect(locationGeocode_, &LocationGeocode::finished, this, &Bridge::finishedLocationGeocode);
+
+    connect(locationUpdateGeocode_, &LocationGeocode::finished, this, &Bridge::finishedLocationUpdateGeocode);
+    connect(locationUpdate_, &LocationUpload::finished, this, &Bridge::finishedLocationUpdate);
+
+    connect(locationUploadGeocode_, &LocationGeocode::finished, this, &Bridge::finishedLocationUploadGeocode);
     connect(locationUpload_, &LocationUpload::finished, this, &Bridge::finishedLocationUpload);
+
     connect(routeUpload_, &RouteUpload::finished, this, &Bridge::finishedRouteUpload);
     connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::finished, this, &Bridge::finishedRouteAssignmentCorrections);
 
@@ -25,8 +30,8 @@ void Bridge::init()
     connect(dataCollector, &BridgeDataCollector::statusMessage, this, &Bridge::statusMessage);
     connect(dataCollector, &BridgeDataCollector::errorMessage, this, &Bridge::errorMessage);
 
-    connect(locationGeocode_, &LocationGeocode::statusMessage, this, &Bridge::statusMessage);
-    connect(locationGeocode_, &LocationGeocode::errorMessage, this, &Bridge::errorMessage);
+    connect(locationUploadGeocode_, &LocationGeocode::statusMessage, this, &Bridge::statusMessage);
+    connect(locationUploadGeocode_, &LocationGeocode::errorMessage, this, &Bridge::errorMessage);
 
     connect(locationUpload_, &LocationUpload::statusMessage, this, &Bridge::statusMessage);
     connect(locationUpload_, &LocationUpload::errorMessage, this, &Bridge::errorMessage);
@@ -103,7 +108,7 @@ void Bridge::processQueue()
         addActiveJob(jobKey);
         startDataCollection(jobKey, currentRequest_["date"].toDate(), currentRequest_["monthsUntilCustDisabled"].toInt());
 
-        bridgeMalfunctionTimer->start(450000);
+        bridgeMalfunctionTimer->start(4500000);
     }
 }
 
@@ -142,10 +147,11 @@ void Bridge::finishedDataCollection(const QString &key)
 
     if(key.split(":").first() == "initialCollection")
     {
-        qDebug() << "geocoding locations";
-        QString jobKey = "geocodeLocations:" + currentRequest_["key"].toString();
+        bridgeDB_->getLocationsToUpdate("SEATTLE");
+        qDebug() << "geocoding updated locations";
+        QString jobKey = "geocodeUpdatedLocations:" + currentRequest_["key"].toString();
         addActiveJob(jobKey);
-        locationGeocode_->GeocodeLocations(jobKey, argList_);
+        locationUpdateGeocode_->GeocodeUpdateLocations(jobKey, argList_);
     }
 
     if(key.split(":").first() == "refreshDataForRouteAssignmentCorrections")
@@ -159,7 +165,28 @@ void Bridge::finishedDataCollection(const QString &key)
     handleJobCompletion(key);
 }
 
-void Bridge::finishedLocationGeocode(const QString &key, const QJsonObject &result)
+void Bridge::finishedLocationUpdateGeocode(const QString &key, const QJsonObject &result)
+{
+    emit statusMessage(key + " has been completed.");
+
+    QString jobKey = "updateLocations:" + currentRequest_["key"].toString();
+    addActiveJob(jobKey);
+    locationUpload_->UpdateLocations(jobKey, argList_, result);
+    handleJobCompletion(key);
+}
+
+void Bridge::finishedLocationUpdate(const QString &key, const QJsonObject &result)
+{
+    emit statusMessage(key + " has been completed.");
+    qDebug() << result;
+
+    QString jobKey = "geocodeUploadLocations:" + currentRequest_["key"].toString();
+    addActiveJob(jobKey);
+    locationUploadGeocode_->GeocodeLocations(jobKey, argList_);
+    handleJobCompletion(key);
+}
+
+void Bridge::finishedLocationUploadGeocode(const QString &key, const QJsonObject &result)
 {
     emit statusMessage(key + " has been completed.");
 
@@ -244,8 +271,10 @@ void Bridge::abort()
 
     dataCollector->deleteLater();
     bridgeDB_->deleteLater();
-    locationGeocode_->deleteLater();
+    locationUploadGeocode_->deleteLater();
     locationUpload_->deleteLater();
+    locationUpdateGeocode_->deleteLater();
+    locationUpdate_->deleteLater();
     routeUpload_->deleteLater();
     routeAssignmentCorrection_->deleteLater();
 
@@ -253,8 +282,8 @@ void Bridge::abort()
     activeJobCount_ = 0;
     emit bridgeKeyChanged("ABORTED");
     emit currentJobChanged("ABORTED");
-    emit bridgeProgress(activeJobCount_, totalJobCount_);
-    emit currentJobProgress(activeJobCount_, totalJobCount_);
+    emit bridgeProgress(0, 0);
+    emit currentJobProgress(0, 0);
     emit aborted(key);
     rebuild(key);
 }
@@ -263,8 +292,10 @@ void Bridge::rebuild(const QString &key)
 {
     dataCollector               = new BridgeDataCollector(this);
     bridgeDB_                   = new BridgeDatabase(this);
-    locationGeocode_            = new LocationGeocode(this);
+    locationUploadGeocode_      = new LocationGeocode(this);
     locationUpload_             = new LocationUpload(this);
+    locationUpdateGeocode_      = new LocationGeocode(this);
+    locationUpdate_             = new LocationUpload(this);
     routeUpload_                = new RouteUpload(this);
     routeAssignmentCorrection_  = new RouteAssignmentCorrection(this);
 

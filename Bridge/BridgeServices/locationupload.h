@@ -20,6 +20,7 @@ signals:
 
 public slots:
     void UploadLocations(const QString &key, const QList<QVariantMap> &argList, const QJsonObject &geocodes);
+    void UpdateLocations(const QString &key, const QList<QVariantMap> &argList, const QJsonObject &geocodes);
 
 private slots:
     void handleGMResponse(const QString &key, const QJsonValue &response);

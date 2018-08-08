@@ -41,7 +41,8 @@ public:
 
     void geocodeLocation(const QString &key, const QJsonObject &locationJson);
     void uploadALocation(const QString &key, const QJsonObject &locationJson);
-    void putALocation(const QString &key, const QString &entityID, const QJsonObject &locationJson);
+    void putLocation(const QString &key, const QString &entityID, const QJsonObject &locationJson);
+    void patchLocation(const QString &key, const QJsonObject &locationJson);
 
     bool isProcessingNetworkRequests();
 
@@ -56,20 +57,23 @@ signals:
 public slots:
 
 private slots:
+    void prepConnectionQueue();
+    void setReadyForNextConnection();
     void processConnectionQueue();
+
     void handleNetworkReply(QNetworkReply *reply);
     void startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal);
     void requestTimedOut();
-    //void routeKeyResponseTimeoutCheck(QNetworkReply *reply);
-
 private:
-    QSet<QString> activeConnections_;
+    int numberOfActiveConnections_;
 
     void addToConnectionQueue(const QNetworkAccessManager::Operation requestType,
                               const QString &requestKey,
                               const QString &serverAddrTail,
-                              const QByteArray &data = QByteArray());
+                              const QByteArray &data = QByteArray(),
+                              const QString &customOperation = QString());
 
+    bool readyForNextConnection_    = true;
     QTimer *checkQueueTimer         = new QTimer(this);
     QString dbPath_                 = qApp->applicationDirPath() + "/gmconnection.db";
     JsonSettings *settings_         = new JsonSettings(this);
@@ -80,6 +84,7 @@ private:
 
     QNetworkAccessManager *qnam_    = new QNetworkAccessManager(this);
     QTimer *routeKeyResponseTimer_  = new QTimer(this);
+    QTimer *connectionFrequencyTimer_  = new QTimer(this);
 
     QNetworkRequest makeGMNetworkRequest(const QString &serverAddrTail);
 
@@ -87,6 +92,7 @@ private:
     QMap<QString, QNetworkAccessManager*> networkManagers_;
     QMap<QString, QNetworkReply*> networkReplies_;
     QMap<QString, QTimer*> networkTimers_;
+    QMap<QString, QBuffer*> networkBuffers_;
     QSet<QString> networkRequestsInProgress_;
     QQueue<QVariantMap> connectionQueue_;
 };

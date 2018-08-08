@@ -289,7 +289,7 @@ void BridgeDataCollector::handleGMDriverInfo(const QJsonArray &array)
     QString creationQuery = "CREATE TABLE `gmDrivers` "
                             "(`id` INTEGER NOT NULL UNIQUE, "
                             "`login` TEXT, "
-                            "`enabled` TEXT, "
+                            "`enabled` INTEGER, "
                             "`organization:id` INTEGER, "
                             "`organization:key` TEXT, "
                             "`key` TEXT, "
@@ -327,7 +327,7 @@ void BridgeDataCollector::handleGMEquipmentInfo(const QJsonArray &array)
                             "`organization:id` INTEGER, "
                             "`organization:key` TEXT, "
                             "`gpsUnitId` TEXT, "
-                            "`enabled` TEXT, "
+                            "`enabled` INTEGER, "
                             "PRIMARY KEY(`id`))";
 
     QStringList expectedKeys {"id",
@@ -387,7 +387,7 @@ void BridgeDataCollector::handleAS400LocationQuery(const QMap<QString, QVariantL
 
     QString tableName    = "as400LocationQuery";
     QString creationQuery = "CREATE TABLE `as400LocationQuery` "
-                            "(`location:enabled` TEXT, "
+                            "(`location:enabled` INTEGER, "
                             "`organization:key` TEXT, "
                             "`location:key` TEXT, "
                             "`location:addressLine1` TEXT, "
@@ -445,7 +445,7 @@ void BridgeDataCollector::handleGMLocationInfo(const QJsonArray &array)
                             "`longitude` NUMERIC, "
                             "`geocodingQuality` TEXT, "
                             "`deliveryDays` TEXT, "
-                            "`enabled` TEXT, "
+                            "`enabled` INTEGER, "
                             "`hasGeofence` TEXT, "
                             "`organization:id` INTEGER, "
                             "`organization:key` TEXT, "

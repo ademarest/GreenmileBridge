@@ -73,6 +73,42 @@ void LocationUpload::UploadLocations(const QString &key, const QList<QVariantMap
     }
 }
 
+void LocationUpload::UpdateLocations(const QString &key, const QList<QVariantMap> &argList, const QJsonObject &geocodes)
+{
+    if(!activeJobs_.isEmpty())
+    {
+        errorMessage("Location upload in progress. Try again once current request is finished.");
+        qDebug() << "Location upload in progress. Try again once current request is finished.";
+        return;
+    }
+
+    currentKey_ = key;
+    uploadedLocations_.empty();
+    locationsToUpload_.empty();
+
+    for(auto vMap:argList)
+    {
+        QString organizationKey = vMap["organization:key"].toString();
+
+        mergeLocationsToUpload(bridgeDB_->getLocationsToUpdate(organizationKey));
+        //mergeLocationsToUpload(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
+    }
+    applyGeocodesToLocations(geocodes);
+
+    for(auto key:locationsToUpload_.keys())
+    {
+        activeJobs_.insert(key);
+        qDebug() << QString::number(locationsToUpload_[key].toObject()["id"].toInt()) << locationsToUpload_[key].toObject();
+        gmConn_->patchLocation(key, locationsToUpload_[key].toObject());
+    }
+
+    if(activeJobs_.empty())
+    {
+        emit finished(currentKey_, QJsonObject());
+        reset();
+    }
+}
+
 void LocationUpload::handleGMResponse(const QString &key, const QJsonValue &response)
 {
     activeJobs_.remove(key);

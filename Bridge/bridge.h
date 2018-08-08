@@ -47,8 +47,13 @@ private slots:
     void rebuild(const QString &key);
 
     void finishedDataCollection(const QString &key);
-    void finishedLocationGeocode(const QString& key, const QJsonObject &result);
+
+    void finishedLocationUpdateGeocode(const QString& key, const QJsonObject &result);
+    void finishedLocationUpdate(const QString &key, const QJsonObject &result);
+
+    void finishedLocationUploadGeocode(const QString& key, const QJsonObject &result);
     void finishedLocationUpload(const QString &key, const QJsonObject &result);
+
     void finishedRouteUpload(const QString &key, const QJsonObject &result);
     void finishedRouteAssignmentCorrections(const QString &key, const QJsonObject &result);
 
@@ -83,8 +88,10 @@ private:
     //BRIDGE MEMBER SUBSECTION
     BridgeDataCollector *dataCollector = new BridgeDataCollector(this);
     BridgeDatabase *bridgeDB_ = new BridgeDatabase(this);
-    LocationGeocode *locationGeocode_ = new LocationGeocode(this);
+    LocationGeocode *locationUploadGeocode_ = new LocationGeocode(this);
     LocationUpload *locationUpload_ = new LocationUpload(this);
+    LocationGeocode *locationUpdateGeocode_ = new LocationGeocode(this);
+    LocationUpload *locationUpdate_ = new LocationUpload(this);
     RouteUpload *routeUpload_ = new RouteUpload(this);
     RouteAssignmentCorrection *routeAssignmentCorrection_ = new RouteAssignmentCorrection(this);
     //END BRIDGE MEMBER SUBSECTION

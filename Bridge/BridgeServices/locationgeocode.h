@@ -21,6 +21,7 @@ signals:
 
 public slots:
     void GeocodeLocations(const QString &key, const QList<QVariantMap> &argList);
+    void GeocodeUpdateLocations(const QString &key, const QList<QVariantMap> &argList);
 
 private slots:
     void handleGMResponse(const QString &key, const QJsonValue &response);

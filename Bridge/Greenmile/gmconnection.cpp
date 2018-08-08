@@ -4,7 +4,8 @@ GMConnection::GMConnection(QObject *parent) : QObject(parent)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
     checkQueueTimer->start(1000);
-    connect(checkQueueTimer, &QTimer::timeout, this, &GMConnection::processConnectionQueue);
+    connect(checkQueueTimer, &QTimer::timeout, this, &GMConnection::prepConnectionQueue);
+    connect(connectionFrequencyTimer_, &QTimer::timeout, this, &GMConnection::processConnectionQueue);
 }
 
 GMConnection::GMConnection(const QString &serverAddress, const QString &username, const QString &password, QObject *parent) : QObject(parent)
@@ -177,7 +178,9 @@ void GMConnection::geocodeLocation(const QString &key, const QJsonObject &locati
     geocodeObj["address"] = QJsonValue(locationJson["addressLine1"].toString());
     geocodeObj["locality"] = QJsonValue(locationJson["city"].toString());
     geocodeObj["administrativeArea"] = QJsonValue(locationJson["state"].toString());
-    geocodeObj["postalCode"] = QJsonValue(locationJson["zipCode"].toString());
+    //Commented out because a bad zip code is causes 0 results to come back.
+    //Sales can't seem to get the zip correct, so best to omit.
+    //geocodeObj["postalCode"] = QJsonValue(locationJson["zipCode"].toString());
 
     QByteArray postData = QJsonDocument(geocodeObj).toJson(QJsonDocument::Compact);
     qDebug() << key << serverAddrTail << postData;
@@ -195,105 +198,151 @@ void GMConnection::uploadALocation(const QString &key, const QJsonObject &locati
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation, key, serverAddrTail, postData);
 }
 
-void GMConnection::putALocation(const QString &key, const QString &entityID, const QJsonObject &locationJson)
+void GMConnection::putLocation(const QString &key, const QString &entityID, const QJsonObject &locationJson)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 
     QString serverAddrTail = "/Location/" + entityID;
+
     QByteArray postData = QJsonDocument(locationJson).toJson(QJsonDocument::Compact);
     addToConnectionQueue(QNetworkAccessManager::Operation::PutOperation, key, serverAddrTail, postData);
+}
+
+void GMConnection::patchLocation(const QString &key, const QJsonObject &locationJson)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+
+    QString serverAddrTail = "/Location";
+
+    QByteArray postData = QJsonDocument(locationJson).toJson(QJsonDocument::Compact);
+    addToConnectionQueue(QNetworkAccessManager::Operation::CustomOperation, key, serverAddrTail, postData, "PATCH");
 }
 
 void GMConnection::addToConnectionQueue(const QNetworkAccessManager::Operation requestType,
                                         const QString &requestKey,
                                         const QString &serverAddrTail,
-                                        const QByteArray &data)
+                                        const QByteArray &data,
+                                        const QString &customOperation)
 {
     QVariantMap requestInfo {{"requestType", requestType},
                              {"requestKey", requestKey},
                              {"serverAddrTail", serverAddrTail},
-                             {"data", data}};
+                             {"data", data},
+                             {"customOperation", customOperation}};
 
     connectionQueue_.enqueue(requestInfo);
 }
 
-void GMConnection::processConnectionQueue()
+void GMConnection::prepConnectionQueue()
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    for(int i = 0; i < connectionQueue_.size(); i++)
+    connectionFrequencyTimer_->start(30);
+    processConnectionQueue();
+}
+
+void GMConnection::setReadyForNextConnection()
+{
+    readyForNextConnection_ = true;
+    processConnectionQueue();
+}
+
+void GMConnection::processConnectionQueue()
+{
+    if(!readyForNextConnection_)
+        return;
+
+    if(numberOfActiveConnections_ > 100)
     {
-        if(connectionQueue_.isEmpty())
-        {
-            emit debugMessage("GMConnection::processConnectionQueue(): "
-                              "Greenmile connection queue is empty. "
-                              "Will not attempt to dequeue.");
-            return;
-        }
-
-        QVariantMap requestMap  = connectionQueue_.dequeue();
-        int requestType         = requestMap["requestType"].toInt();
-        QString requestKey      = requestMap["requestKey"].toString();
-        QString serverAddrTail  = requestMap["serverAddrTail"].toString();
-        QByteArray data         = requestMap["data"].toByteArray();
-
-        if(networkRequestsInProgress_.contains(requestKey))
-        {
-            emit errorMessage("Net request " + requestKey + " already in progress. The request will retry when the current request has completed.");
-            qDebug() << "Net request " << requestKey << " already in progress. The request will retry when the current request has completed.";
-            connectionQueue_.enqueue(requestMap);
-            continue;
-        }
-
-        QNetworkRequest request = makeGMNetworkRequest(serverAddrTail);
-
-        networkTimers_[requestKey] = new QTimer(this);
-        networkTimers_[requestKey]->setObjectName(requestKey);
-
-        networkManagers_[requestKey] = new QNetworkAccessManager(this);
-        networkManagers_[requestKey]->setObjectName(requestKey);
-
-        switch(requestType)
-        {
-            case QNetworkAccessManager::Operation::HeadOperation :
-                emit debugMessage("HeadOperation not implemented yet.");
-                break;
-            case QNetworkAccessManager::Operation::GetOperation :
-                emit debugMessage("GetOperation not implemented yet.");
-                break;
-            case QNetworkAccessManager::Operation::PutOperation :
-                qDebug() << "put request" << requestKey;
-                networkReplies_[requestKey] = networkManagers_[requestKey]->put(request, data);
-                break;
-            case QNetworkAccessManager::Operation::PostOperation :
-                qDebug() << "post request" << requestKey;
-                networkReplies_[requestKey] = networkManagers_[requestKey]->post(request,data);
-                break;
-            case QNetworkAccessManager::Operation::DeleteOperation :
-                qDebug() << "delete request" << requestKey;
-                networkReplies_[requestKey] = networkManagers_[requestKey]->deleteResource(request);
-                break;
-            case QNetworkAccessManager::Operation::CustomOperation :
-                emit debugMessage("CustomOperation not implemented yet.");
-                break;
-            case QNetworkAccessManager::Operation::UnknownOperation :
-                emit debugMessage("UnknownOperation not implemented yet.");
-                break;
-        }
-
-        networkReplies_[requestKey]->setObjectName(requestKey);
-
-        connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::downloadProgess);
-        connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::startNetworkTimer);
-        connect(networkManagers_[requestKey],   &QNetworkAccessManager::finished,   this, &GMConnection::handleNetworkReply);
-        connect(networkTimers_  [requestKey],   &QTimer::timeout,                   this, &GMConnection::requestTimedOut);
-
-        networkRequestsInProgress_.insert(requestKey);
-
-        networkTimers_[requestKey]->stop();
-        networkTimers_[requestKey]->start(jsonSettings_["requestTimeoutSec"].toInt() * 1000);
-        //Keeps from the DDOS bear away from GM.
-        usleep(250000);
+        qDebug() << "Too many connections! There's more than 100!";
+        return;
     }
+
+    if(connectionQueue_.isEmpty())
+    {
+        emit debugMessage("GMConnection::processConnectionQueue(): "
+                          "Greenmile connection queue is empty. "
+                          "Will not attempt to dequeue.");
+
+        connectionFrequencyTimer_->stop();
+        readyForNextConnection_ = true;
+        return;
+    }
+
+    QVariantMap requestMap      = connectionQueue_.dequeue();
+    int requestType             = requestMap["requestType"].toInt();
+    QString requestKey          = requestMap["requestKey"].toString();
+    QString serverAddrTail      = requestMap["serverAddrTail"].toString();
+    QByteArray data             = requestMap["data"].toByteArray();
+    QString customOperation   = requestMap["customOperation"].toByteArray();
+
+
+    if(networkRequestsInProgress_.contains(requestKey))
+    {
+        emit errorMessage("Net request " + requestKey + " already in progress. The request will retry when the current request has completed.");
+        qDebug() << "Net request " << requestKey << " already in progress. The request will retry when the current request has completed.";
+        connectionQueue_.enqueue(requestMap);
+        return;
+    }
+    QNetworkRequest request = makeGMNetworkRequest(serverAddrTail);
+
+    if(data.isEmpty())
+    {
+        networkBuffers_[requestKey] = Q_NULLPTR;
+    }
+    else
+    {
+        networkBuffers_[requestKey] =  new QBuffer(this);
+        networkBuffers_[requestKey]->open((QBuffer::ReadWrite));
+        networkBuffers_[requestKey]->write(data);
+        networkBuffers_[requestKey]->seek(0);
+    }
+
+    networkTimers_[requestKey] = new QTimer(this);
+    networkTimers_[requestKey]->setObjectName(requestKey);
+
+    networkManagers_[requestKey] = new QNetworkAccessManager(this);
+    networkManagers_[requestKey]->setObjectName(requestKey);
+
+    switch(requestType)
+    {
+        case QNetworkAccessManager::Operation::HeadOperation :
+            emit debugMessage("HeadOperation not implemented yet.");
+            break;
+        case QNetworkAccessManager::Operation::GetOperation :
+            emit debugMessage("GetOperation not implemented yet.");
+            break;
+        case QNetworkAccessManager::Operation::PutOperation :
+            qDebug() << "put request" << requestKey;
+            networkReplies_[requestKey] = networkManagers_[requestKey]->put(request, data);
+            break;
+        case QNetworkAccessManager::Operation::PostOperation :
+            qDebug() << "post request" << requestKey;
+            networkReplies_[requestKey] = networkManagers_[requestKey]->post(request,data);
+            break;
+        case QNetworkAccessManager::Operation::DeleteOperation :
+            qDebug() << "delete request" << requestKey;
+            networkReplies_[requestKey] = networkManagers_[requestKey]->deleteResource(request);
+            break;
+        case QNetworkAccessManager::Operation::CustomOperation :
+            networkReplies_[requestKey] = networkManagers_[requestKey]->sendCustomRequest(request, customOperation.toLatin1(), networkBuffers_[requestKey]);
+            break;
+        case QNetworkAccessManager::Operation::UnknownOperation :
+            emit debugMessage("UnknownOperation not implemented yet.");
+            break;
+    }
+
+    networkReplies_[requestKey]->setObjectName(requestKey);
+
+    connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::downloadProgess);
+    connect(networkReplies_ [requestKey],   &QNetworkReply::downloadProgress,   this, &GMConnection::startNetworkTimer);
+    connect(networkManagers_[requestKey],   &QNetworkAccessManager::finished,   this, &GMConnection::handleNetworkReply);
+    connect(networkTimers_  [requestKey],   &QTimer::timeout,                   this, &GMConnection::requestTimedOut);
+
+    networkRequestsInProgress_.insert(requestKey);
+
+    networkTimers_[requestKey]->stop();
+    networkTimers_[requestKey]->start(jsonSettings_["requestTimeoutSec"].toInt() * 1000);
+    ++numberOfActiveConnections_;
 }
 
 bool GMConnection::isProcessingNetworkRequests()
@@ -307,6 +356,7 @@ bool GMConnection::isProcessingNetworkRequests()
 void GMConnection::handleNetworkReply(QNetworkReply *reply)
 {
     QString key = reply->objectName();
+    QByteArray rawData;
     QJsonArray json;
     QJsonObject jObj;
     QJsonDocument jDoc;
@@ -319,14 +369,16 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
     if(reply->isOpen())
     {
         emit statusMessage(key + " finished. No errors.");
-
-        jDoc = QJsonDocument::fromJson(reply->readAll());
+        rawData = reply->readAll();
+        jDoc = QJsonDocument::fromJson(rawData);
     }
     networkRequestsInProgress_.remove(key);
     networkTimers_[key]->stop();
     networkTimers_[key]->deleteLater();
     networkManagers_[key]->deleteLater();
     networkReplies_[key]->deleteLater();
+    networkBuffers_[key]->deleteLater();
+    --numberOfActiveConnections_;
 
 
     if(jDoc.isArray())
@@ -343,7 +395,8 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
     }
     else
     {
-        qDebug() << "GM Response for " + key + " was an invalid.";
+        qDebug() << "GM Response for " + key + " was not valid json.";
+        qDebug() << "Raw data is " << rawData;
         emit gmNetworkResponse(key, QJsonObject());
     }
 

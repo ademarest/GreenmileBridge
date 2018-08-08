@@ -28,13 +28,15 @@ public:
                                        const QString    &minRouteString = QString(),
                                        const QString    &maxRouteString = QString());
 
-    QJsonArray getLocationsToUpdate();
+    QJsonObject getLocationsToUpdate(const QString &organizationKey);
 
     QJsonObject getLocationsToUpload(const QString &assignmentTableName,
                                      const QString &organizationKey,
                                      const QDate &date,
                                      const QString &minRouteString = QString(),
                                      const QString &maxRouteString = QString());
+
+    QJsonObject getGMLocationsWithBadGeocode(const QString &organizationKey);
 
     QJsonArray getDriversToUpdate();
 
@@ -73,7 +75,7 @@ public slots:
 
 private:
     //Utility Section
-
+    bool isSQLResultValid(const QMap<QString,QVariantList> &data);
     QMap<QString,QVariantList> transposeJsonArrayToSQL(const QStringList &expectedKeys, const QJsonArray &data);
     QVariantMap transposeJsonObjectToVarMap(const QStringList &expectedKeys, const QJsonObject &obj);
     QVariant jsonValueToQVariant(const QJsonValue &val);

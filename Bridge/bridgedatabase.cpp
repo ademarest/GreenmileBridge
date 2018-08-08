@@ -60,6 +60,48 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &assignmentTableN
     return locationObj;
 }
 
+QJsonObject BridgeDatabase::getGMLocationsWithBadGeocode(const QString &organizationKey)
+{
+    QString query = "SELECT `id` as `location:id`, `key` AS `location:key`,`description` AS `location:description`,`addressLine1` AS `location:addressLine1`,`addressLine2` AS `location:addressLine2`,`city` AS `location:city`, `state` AS `location:state`,`zipCode` AS `location:zipCode`, `organization:id`, `locationType:id` FROM gmLocations WHERE gmLocations.`organization:key` = '"+organizationKey+"' AND gmLocations.`geocodingQuality` = 'UNSUCCESSFULL'";
+    QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile.");
+    QJsonObject returnObj;
+
+    if(!sql.empty())
+    {
+        for(int i = 0; i < sql.first().size(); ++i)
+        {
+            QString locationKey;
+            QStringList locationKeyList;
+
+            QJsonObject locationObj;
+            QJsonObject locationTypeObj;
+            QJsonObject organizationObj;
+
+            for(auto key:sql.keys())
+            {
+                QStringList splitKey = key.split(":");
+                if(splitKey.first() == "location")
+                    locationObj[splitKey.last()] = sql[key][i].toJsonValue();
+                if(splitKey.first() == "locationType")
+                    locationTypeObj[splitKey.last()] = sql[key][i].toJsonValue();
+                if(splitKey.first() == "organization")
+                    organizationObj[splitKey.last()] = sql[key][i].toJsonValue();
+            }
+
+            locationKeyList << "locationToUpdate"
+                                << QString::number(locationObj["id"].toInt())
+                                << QString::number(organizationObj["id"].toInt());
+
+            locationKey = locationKeyList.join(":");
+            locationObj["organization"] =   QJsonValue(organizationObj);
+            locationObj["locationType"] =   QJsonValue(locationTypeObj);
+            returnObj[locationKey]      =   QJsonValue(locationObj);
+            qDebug() << locationObj;
+        }
+    }
+    return returnObj;
+}
+
 void BridgeDatabase::enforceTableSanity(QStringList primaryKeyList,
                                         const QString &primaryTable,
                                         const QString &secondaryTable)
@@ -148,6 +190,47 @@ QJsonObject BridgeDatabase::getAssignmentsToUpdate(const QString &assignmentTabl
         }
     }
     qDebug() << returnObj;
+    return returnObj;
+}
+
+QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
+{
+    QString query = "SELECT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays`, `id` AS `location:id`, `locationType:id`, `organization:id` FROM as400LocationQuery LEFT JOIN gmLocations ON `key` = `location:key` WHERE gmLocations.`key` IN ( SELECT `location:key` FROM ( SELECT DISTINCT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays` FROM as400LocationQuery WHERE as400LocationQuery.`organization:key` = '"+organizationKey+"' EXCEPT SELECT DISTINCT `enabled`, `key`,`description`,`addressLine1`,`addressLine2`,`city`, `state`,`zipCode`,`deliveryDays` FROM gmLocations WHERE gmLocations.`organization:key` = '"+organizationKey+"'))";
+    QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile.");
+    QJsonObject returnObj;
+
+    if(!sql.empty())
+    {
+        for(int i = 0; i < sql.first().size(); ++i)
+        {
+            QString locationKey;
+            QStringList locationKeyList;
+
+            QJsonObject locationObj;
+            QJsonObject locationTypeObj;
+            QJsonObject organizationObj;
+
+            for(auto key:sql.keys())
+            {
+                QStringList splitKey = key.split(":");
+                if(splitKey.first() == "location")
+                    locationObj[splitKey.last()] = sql[key][i].toJsonValue();
+                if(splitKey.first() == "locationType")
+                    locationTypeObj[splitKey.last()] = sql[key][i].toJsonValue();
+                if(splitKey.first() == "organization")
+                    organizationObj[splitKey.last()] = sql[key][i].toJsonValue();
+            }
+
+            locationKeyList << "locationToUpdate"
+                                << QString::number(locationObj["id"].toInt())
+                                << QString::number(organizationObj["id"].toInt());
+
+            locationKey = locationKeyList.join(":");
+            locationObj["organization"] =   QJsonValue(organizationObj);
+            locationObj["locationType"] =   QJsonValue(locationTypeObj);
+            returnObj[locationKey]      =   QJsonValue(locationObj);
+        }
+    }
     return returnObj;
 }
 
@@ -347,6 +430,38 @@ void BridgeDatabase::SQLDataInsert(const QString &tableName, const QMap<QString,
         executeInsertQuery(sqlTableInfoMap_[tableName]["creationQuery"].toString(), QString("create" + tableName));
 
     writeToTable(tableName, sql);
+}
+
+bool BridgeDatabase::isSQLResultValid(const QMap<QString, QVariantList> &data)
+{
+    int columnSizeCount;
+    int otherColumnSizeCount;
+
+    if(data.isEmpty())
+    {
+        emit debugMessage("SQL result is invalid.");
+        return false;
+    }
+
+    if(data.first().isEmpty())
+    {
+        emit debugMessage("SQL result is empty.");
+        return true;
+    }
+
+    columnSizeCount = data.first().size();
+
+    for(auto key:data.keys())
+    {
+        otherColumnSizeCount = data[key].size();
+        if(columnSizeCount != otherColumnSizeCount)
+        {
+            emit errorMessage("ERROR: SQL columns are not all of equal length.");
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void BridgeDatabase::JSONArrayInsert(const QString &tableName, const QJsonArray &jsonArray)
