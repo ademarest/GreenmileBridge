@@ -89,7 +89,7 @@ void LocationGeocode::GeocodeUpdateLocations(const QString &key, const QList<QVa
         //mergeLocationsToGeocode(bridgeDB_->getLocationsToUpdate(organizationKey));
     }
 
-    qDebug() << "Size of locations to upload is..." << locationsToGeocode_.size();
+    qDebug() << "Size of locations to geocode is..." << locationsToGeocode_.size();
     for(auto key:locationsToGeocode_.keys())
     {
         activeJobs_.insert(key);

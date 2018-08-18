@@ -44,7 +44,8 @@ SOURCES += \
     Bridge/BridgeServices/locationgeocode.cpp \
     Bridge/BridgeServices/locationupload.cpp \
     Bridge/BridgeServices/routeupload.cpp \
-    Bridge/BridgeServices/routeassignmentcorrection.cpp
+    Bridge/BridgeServices/routeassignmentcorrection.cpp \
+    Bridge/BridgeServices/routecheck.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -66,7 +67,8 @@ HEADERS += \
     Bridge/BridgeServices/locationgeocode.h \
     Bridge/BridgeServices/locationupload.h \
     Bridge/BridgeServices/routeupload.h \
-    Bridge/BridgeServices/routeassignmentcorrection.h
+    Bridge/BridgeServices/routeassignmentcorrection.h \
+    Bridge/BridgeServices/routecheck.h
 
 FORMS += \
         mainwindow.ui \

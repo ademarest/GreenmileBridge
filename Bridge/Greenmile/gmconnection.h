@@ -65,7 +65,7 @@ private slots:
     void startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal);
     void requestTimedOut();
 private:
-    int numberOfActiveConnections_;
+    int numberOfActiveConnections_ = 0;
 
     void addToConnectionQueue(const QNetworkAccessManager::Operation requestType,
                               const QString &requestKey,
