@@ -16,11 +16,9 @@ public:
                                   const QString &minRouteString = QString(),
                                   const QString &maxRouteString = QString());
 
-    QJsonArray getRoutesToUpdate(const QString  &assignmentTableName,
+    QJsonObject getRoutesToDelete(const QString  &assignmentTableName,
                                  const QString  &organizationKey,
-                                 const QDate    &date,
-                                 const QString  &minRouteString = QString(),
-                                 const QString  &maxRouteString = QString());
+                                 const QDate    &date);
 
     QJsonObject getAssignmentsToUpdate(const QString    &assignmentTableName,
                                        const QString    &organizationKey,

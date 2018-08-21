@@ -18,7 +18,7 @@ signals:
     void finished(const QString &key, const QJsonObject &result);
 
 public slots:
-    void UploadRoutes(const QString &key, const QList<QVariantMap> &argList);
+    void deleteRoutes(const QString &key, const QList<QVariantMap> &argList);
 
 private slots:
     void handleGMResponse(const QString &key, const QJsonValue &response);
@@ -31,11 +31,10 @@ private:
     QVariantMap currentRequest_;
     QSet<QString> activeJobs_;
 
-    QJsonObject routesToUpload_;
-    QJsonObject uploadedRoutes_;
-    void mergeRoutesToUpload(const QJsonObject &locations);
+    QJsonObject routesToDelete_;
+    QJsonObject deletedRoutes_;
+    void mergeRoutesToDelete(const QJsonObject &routeIDs);
     void reset();
-};
 };
 
 #endif // ROUTECHECK_H

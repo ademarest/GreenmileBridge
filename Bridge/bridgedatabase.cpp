@@ -137,23 +137,21 @@ QJsonObject BridgeDatabase::getRoutesToUpload(const QString &assignmentTableName
     return assembleUploadRouteFromQuery(sql);
 }
 
-QJsonArray BridgeDatabase::getRoutesToUpdate(const QString &assignmentTableName,
+QJsonObject BridgeDatabase::getRoutesToDelete(const QString &assignmentTableName,
                                              const QString &organizationKey,
-                                             const QDate &date,
-                                             const QString &minRouteString,
-                                             const QString &maxRouteString)
+                                             const QDate &date)
 {
+    QJsonObject returnObj;
+    QString keyBase = "DeleteRoute:" + organizationKey + ":" + date.toString("yyyy-MM-dd")+ ":";
     QString query = "SELECT `id` FROM gmRoutes WHERE `date` || `key` || `organization:id` IN ( SELECT `unique_id` FROM( SELECT CAST(baselineSize1 as INTEGER), CAST(baselineSize2 as INTEGER), CAST(baselineSize3 as INTEGER), `date`, `key`, `organization:id`, `date` || `key` || `organization:id` as `unique_id`, `totalStops` FROM gmRoutes WHERE `date` = '"+date.toString("yyyy-MM-dd")+"' AND `organization:key` = '"+organizationKey+"' AND `key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = '"+organizationKey+"' AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL ) AND `status` != 'COMPLETED' EXCEPT SELECT CAST(SUM(routeQuery.`order:pieces`) as INTEGER) as `order:plannedSize1`, CAST(SUM(routeQuery.`order:cube`) as INTEGER) as `order:plannedSize2`, CAST(SUM(routeQuery.`order:weight`) as INTEGER) as `order:plannedSize3`, routeQuery.`route:date`, routeQuery.`route:key`, gmOrg.`id` as `organization:id`, routeQuery.`route:date` || routeQuery.`route:key` || gmOrg.`id` as `unique_id`, count( distinct `routeQuery`.`location:key`) FROM as400RouteQuery `routeQuery` LEFT JOIN gmOrganizations `gmOrg` ON gmOrg.`key` = routeQuery.`organization:key` LEFT JOIN "+assignmentTableName+" `dailyAssignment` ON `routeQuery`.`route:key` = `dailyAssignment`.`route:key` AND `routeQuery`.`route:date` = `dailyAssignment`.`route:date` AND `routeQuery`.`organization:key` = `dailyAssignment`.`organization:key` LEFT JOIN drivers `mrsDataDrivers` ON `dailyAssignment`.`driver:name` = `mrsDataDrivers`.`employeeName` LEFT JOIN gmDrivers `gmDriverInfo` ON `gmDriverInfo`.`login` = `mrsDataDrivers`.`employeeNumber` LEFT JOIN gmEquipment `gmEquipmentInfo` ON `gmEquipmentInfo`.`key` = `dailyAssignment`.`truck:key` LEFT JOIN routeStartTimes `rst` ON `rst`.`route` = `routeQuery`.`route:key` LEFT JOIN gmLocations `gmLoc` ON `gmLoc`.`key` = `routeQuery`.`organization:key` LEFT JOIN gmLocations `gmLocID` ON `gmLocID`.`key` = `routeQuery`.`location:key` WHERE `routeQuery`.`organization:key` = '"+organizationKey+"' AND `routeQuery`.`route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `routeQuery`.`route:key` IN (SELECT `key` FROM gmRoutes WHERE `organization:key` = '"+organizationKey+"' AND `date` = '"+date.toString("yyyy-MM-dd")+"') AND `routeQuery`.`route:key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = '"+organizationKey+"' AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL ) GROUP BY routeQuery.`route:key`))";
     QMap<QString,QVariantList> sql = executeQuery(query, "Getting route IDs to update.");
-    qDebug() << query;
 
-    qDebug() << assignmentTableName;
-    qDebug() << organizationKey;
-    qDebug() << date;
-    qDebug() << minRouteString;
-    qDebug() << maxRouteString;
+    qDebug() << query << "looking for";
+    qDebug() << sql;
+    for(auto var:sql["id"])
+        returnObj[keyBase + var.toString()] = QJsonValue(var.toInt());
 
-    return QJsonArray();
+    return returnObj;
 }
 
 QJsonObject BridgeDatabase::getAssignmentsToUpdate(const QString &assignmentTableName,

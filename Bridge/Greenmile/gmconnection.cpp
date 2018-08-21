@@ -153,6 +153,14 @@ void GMConnection::assignEquipmentToRoute(const QString &key, const QJsonObject 
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
+void GMConnection::deleteRoute(const QString &key, const QString &entityID)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString serverAddrTail = "/Route/" + entityID;
+    qDebug() << serverAddrTail;
+    addToConnectionQueue(QNetworkAccessManager::Operation::DeleteOperation, key, serverAddrTail);
+}
+
 void GMConnection::deleteDriverAssignment(const QString &key, const QString &entityID)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);

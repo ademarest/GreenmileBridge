@@ -36,6 +36,7 @@ public:
     void assignDriverToRoute(const QString &key, const QJsonObject &routeDriverAssignmentJson);
     void assignEquipmentToRoute(const QString &key, const QJsonObject &routeEquipmentAssignmentJson);
 
+    void deleteRoute(const QString &key, const QString &entityID);
     void deleteDriverAssignment(const QString &key, const QString &entityID);
     void deleteEquipmentAssignment(const QString &key, const QString &entityID);
 

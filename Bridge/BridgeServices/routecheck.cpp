@@ -16,50 +16,47 @@ void RouteCheck::reset()
 {
     if(!activeJobs_.isEmpty())
     {
-        errorMessage("Geocoding in progress. Try again once current request is finished.");
-        qDebug() << "Geocoding in progress. Try again once current request is finished.";
+        errorMessage("Route deletion in progress. Try again once current request is finished.");
+        qDebug() << "Route deletion in progress. Try again once current request is finished.";
         return;
     }
 
     currentKey_.clear();
     activeJobs_.clear();
     currentRequest_.clear();
-    routesToUpload_ = QJsonObject();
-    uploadedRoutes_ = QJsonObject();
+    routesToDelete_ = QJsonObject();
+    deletedRoutes_ = QJsonObject();
 }
 
-void RouteCheck::UploadRoutes(const QString &key, const QList<QVariantMap> &argList)
+void RouteCheck::deleteRoutes(const QString &key, const QList<QVariantMap> &argList)
 {
 
     if(!activeJobs_.isEmpty())
     {
-        errorMessage("Geocoding in progress. Try again once current request is finished.");
-        qDebug() << "Geocoding in progress. Try again once current request is finished.";
+        errorMessage("Route deletion in progress. Try again once current requests are finished.");
+        qDebug() << "Route deletion in progress. Try again once current requests are finished.";
         return;
     }
 
     currentKey_ = key;
-    uploadedRoutes_.empty();
-    routesToUpload_.empty();
+    deletedRoutes_.empty();
+    routesToDelete_.empty();
 
     for(auto vMap:argList)
     {
         QString tableName = vMap["tableName"].toString();
         QString organizationKey = vMap["organization:key"].toString();
         QDate date = vMap["date"].toDate();
-        QString minRouteKey = vMap["minRouteKey"].toString();
-        QString maxRouteKey = vMap["maxRouteKey"].toString();
 
-        mergeRoutesToUpload(bridgeDB_->getRoutesToUpload(tableName, organizationKey, date, minRouteKey, maxRouteKey));
+        mergeRoutesToDelete(bridgeDB_->getRoutesToUpload(tableName, organizationKey, date));
     }
 
-    for(auto key:routesToUpload_.keys())
+    for(auto key:routesToDelete_.keys())
     {
-
-        if(key.split(":").first() == "RouteCheck")
+        if(key.split(":").first() == "DeleteRoute")
         {
             activeJobs_.insert(key);
-            gmConn_->uploadARoute(key, routesToUpload_[key].toObject());
+            gmConn_->deleteRoute(key, QString::number(routesToDelete_[key].toInt()));
         }
     }
 
@@ -73,20 +70,21 @@ void RouteCheck::UploadRoutes(const QString &key, const QList<QVariantMap> &argL
 void RouteCheck::handleGMResponse(const QString &key, const QJsonValue &response)
 {
     activeJobs_.remove(key);
-    uploadedRoutes_[key] = response;
+    deletedRoutes_[key] = response;
     qDebug() << activeJobs_;
 
     if(activeJobs_.empty())
     {
-        emit finished(currentKey_, uploadedRoutes_);
+        emit finished(currentKey_, deletedRoutes_);
         reset();
     }
 }
 
-void RouteCheck::mergeRoutesToUpload(const QJsonObject &locations)
+void RouteCheck::mergeRoutesToDelete(const QJsonObject &routeIDs)
 {
-    for(auto key:locations.keys())
+    qDebug() << routeIDs;
+    for(auto key:routeIDs.keys())
     {
-        routesToUpload_[key] = locations[key];
+        routesToDelete_[key] = routeIDs[key];
     }
 }

@@ -9,6 +9,7 @@
 #include "Bridge/BridgeServices/locationupload.h"
 #include "Bridge/BridgeServices/routeupload.h"
 #include "Bridge/BridgeServices/routeassignmentcorrection.h"
+#include "Bridge/BridgeServices/routecheck.h"
 #include "Greenmile/gmconnection.h"
 
 class Bridge : public QObject
@@ -54,6 +55,7 @@ private slots:
     void finishedLocationUploadGeocode(const QString& key, const QJsonObject &result);
     void finishedLocationUpload(const QString &key, const QJsonObject &result);
 
+    void finishedRouteCheck(const QString &key, const QJsonObject &result);
     void finishedRouteUpload(const QString &key, const QJsonObject &result);
     void finishedRouteAssignmentCorrections(const QString &key, const QJsonObject &result);
 
@@ -94,6 +96,7 @@ private:
     LocationUpload *locationUpdate_ = new LocationUpload(this);
     RouteUpload *routeUpload_ = new RouteUpload(this);
     RouteAssignmentCorrection *routeAssignmentCorrection_ = new RouteAssignmentCorrection(this);
+    RouteCheck *routeCheck_ = new RouteCheck(this);
     //END BRIDGE MEMBER SUBSECTION
 
     void init();

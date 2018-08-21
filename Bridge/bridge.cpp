@@ -23,6 +23,8 @@ void Bridge::init()
     connect(locationUploadGeocode_, &LocationGeocode::finished, this, &Bridge::finishedLocationUploadGeocode);
     connect(locationUpload_, &LocationUpload::finished, this, &Bridge::finishedLocationUpload);
 
+    connect(routeCheck_, &RouteCheck::finished, this, &Bridge::finishedRouteCheck);
+
     connect(routeUpload_, &RouteUpload::finished, this, &Bridge::finishedRouteUpload);
     connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::finished, this, &Bridge::finishedRouteAssignmentCorrections);
 
@@ -201,6 +203,17 @@ void Bridge::finishedLocationUpload(const QString &key, const QJsonObject &resul
     emit statusMessage(key + " has been completed.");
     qDebug() << result;
 
+    QString jobKey = "routeCheck:" + currentRequest_["key"].toString();
+    addActiveJob(jobKey);
+    routeCheck_->deleteRoutes(jobKey, argList_);
+    handleJobCompletion(key);
+}
+
+void Bridge::finishedRouteCheck(const QString &key, const QJsonObject &result)
+{
+    emit statusMessage(key + " has been completed.");
+    qDebug() << result;
+
     QString jobKey = "uploadRoutes:" + currentRequest_["key"].toString();
     addActiveJob(jobKey);
     routeUpload_->UploadRoutes(jobKey, argList_);
@@ -275,6 +288,7 @@ void Bridge::abort()
     locationUpload_->deleteLater();
     locationUpdateGeocode_->deleteLater();
     locationUpdate_->deleteLater();
+    routeCheck_->deleteLater();
     routeUpload_->deleteLater();
     routeAssignmentCorrection_->deleteLater();
 
@@ -296,6 +310,7 @@ void Bridge::rebuild(const QString &key)
     locationUpload_             = new LocationUpload(this);
     locationUpdateGeocode_      = new LocationGeocode(this);
     locationUpdate_             = new LocationUpload(this);
+    routeCheck_                 = new RouteCheck(this);
     routeUpload_                = new RouteUpload(this);
     routeAssignmentCorrection_  = new RouteAssignmentCorrection(this);
 
