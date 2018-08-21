@@ -28,7 +28,7 @@ void RouteCheck::reset()
     deletedRoutes_ = QJsonObject();
 }
 
-void RouteCheck::deleteRoutes(const QString &key, const QList<QVariantMap> &argList)
+void RouteCheck::deleteIncorrectRoutes(const QString &key, const QList<QVariantMap> &argList)
 {
 
     if(!activeJobs_.isEmpty())
@@ -48,7 +48,7 @@ void RouteCheck::deleteRoutes(const QString &key, const QList<QVariantMap> &argL
         QString organizationKey = vMap["organization:key"].toString();
         QDate date = vMap["date"].toDate();
 
-        mergeRoutesToDelete(bridgeDB_->getRoutesToUpload(tableName, organizationKey, date));
+        mergeRoutesToDelete(bridgeDB_->getRoutesToDelete(tableName, organizationKey, date));
     }
 
     for(auto key:routesToDelete_.keys())

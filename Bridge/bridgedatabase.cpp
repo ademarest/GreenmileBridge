@@ -149,8 +149,10 @@ QJsonObject BridgeDatabase::getRoutesToDelete(const QString &assignmentTableName
     qDebug() << query << "looking for";
     qDebug() << sql;
     for(auto var:sql["id"])
-        returnObj[keyBase + var.toString()] = QJsonValue(var.toInt());
-
+    {
+        qDebug() << var;
+        returnObj[keyBase + var.toString()] = QJsonValue(QString::number(var.toInt()));
+    }
     return returnObj;
 }
 
@@ -1022,7 +1024,7 @@ QStringList BridgeDatabase::generateValueTuples(QMap<QString, QVariantList> invo
                 emit errorMessage(QString("Unsupported data type from SQLite database "
                                           + invoiceResults[key][i].toString()
                                           + " "
-                                          + invoiceResults[key][i].type()));
+                                          + QString(invoiceResults[key][i].type())));
                 break;
             }
         }

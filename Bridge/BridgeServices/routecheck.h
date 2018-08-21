@@ -18,7 +18,7 @@ signals:
     void finished(const QString &key, const QJsonObject &result);
 
 public slots:
-    void deleteRoutes(const QString &key, const QList<QVariantMap> &argList);
+    void deleteIncorrectRoutes(const QString &key, const QList<QVariantMap> &argList);
 
 private slots:
     void handleGMResponse(const QString &key, const QJsonValue &response);

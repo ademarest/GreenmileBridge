@@ -15,6 +15,8 @@ void Bridge::init()
     SELECT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays`, `id` FROM as400LocationQuery LEFT JOIN gmLocations ON `key` = `location:key` WHERE gmLocations.`key` IN ( SELECT `location:key` FROM ( SELECT DISTINCT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays` FROM as400LocationQuery WHERE as400LocationQuery.`organization:key` = 'SEATTLE' EXCEPT SELECT DISTINCT `enabled`, `key`,`description`,`addressLine1`,`addressLine2`,`city`, `state`,`zipCode`,`deliveryDays` FROM gmLocations WHERE gmLocations.`organization:key` = 'SEATTLE' ) )
     */
 
+    qDebug() << settings_;
+
     connect(dataCollector, &BridgeDataCollector::finished, this, &Bridge::finishedDataCollection);
 
     connect(locationUpdateGeocode_, &LocationGeocode::finished, this, &Bridge::finishedLocationUpdateGeocode);
@@ -24,7 +26,6 @@ void Bridge::init()
     connect(locationUpload_, &LocationUpload::finished, this, &Bridge::finishedLocationUpload);
 
     connect(routeCheck_, &RouteCheck::finished, this, &Bridge::finishedRouteCheck);
-
     connect(routeUpload_, &RouteUpload::finished, this, &Bridge::finishedRouteUpload);
     connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::finished, this, &Bridge::finishedRouteAssignmentCorrections);
 
@@ -205,7 +206,7 @@ void Bridge::finishedLocationUpload(const QString &key, const QJsonObject &resul
 
     QString jobKey = "routeCheck:" + currentRequest_["key"].toString();
     addActiveJob(jobKey);
-    routeCheck_->deleteRoutes(jobKey, argList_);
+    routeCheck_->deleteIncorrectRoutes(jobKey, argList_);
     handleJobCompletion(key);
 }
 
