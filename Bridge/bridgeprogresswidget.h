@@ -3,7 +3,7 @@
 
 #include <QtCore>
 #include <QWidget>
-#include "bridge.h"
+#include "bridgethreadcontroller.h"
 
 namespace Ui {
 class BridgeProgressWidget;
@@ -27,7 +27,7 @@ private slots:
 
 private:
     Ui::BridgeProgressWidget *ui;
-    Bridge *bridge_ = new Bridge(this);
+    BridgeThreadController *bridgeThreadController_ = new BridgeThreadController(this);
 };
 
 #endif // BRIDGEPROGRESSWIDGET_H

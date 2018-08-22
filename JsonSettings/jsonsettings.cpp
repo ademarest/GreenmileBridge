@@ -8,6 +8,7 @@ JsonSettings::JsonSettings(QObject *parent) : QObject(parent)
 QJsonObject JsonSettings::loadSettings(const QFile &dbFile,const QJsonObject &jsonSettings)
 {
     QJsonObject populatedJsonSettings;
+    QString connectionName = QUuid::createUuid().toString();
     emit debugMessage("Loading JsonSettings.");
 
     if(!dbFile.fileName().isEmpty() && !jsonSettings.isEmpty())
@@ -18,7 +19,7 @@ QJsonObject JsonSettings::loadSettings(const QFile &dbFile,const QJsonObject &js
         }
 
         {
-            QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", dbFile.fileName());
+            QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", connectionName);
             db.setDatabaseName(dbFile.fileName());
             if(db.open())
             {
@@ -34,7 +35,7 @@ QJsonObject JsonSettings::loadSettings(const QFile &dbFile,const QJsonObject &js
             }
             db.close();
         }
-        QSqlDatabase::removeDatabase(dbFile.fileName());
+        QSqlDatabase::removeDatabase(connectionName);
     }
     else
     {
@@ -102,13 +103,15 @@ QJsonObject JsonSettings::selectSettingsFromDB(QSqlDatabase &db, QJsonObject jso
 bool JsonSettings::saveSettings(const QFile &dbFile, const QJsonObject &jsonSettings)
 {
     bool success = false;
+    QString connectionName = QUuid::createUuid().toString();
+
     if(dbFile.fileName().isEmpty())
         return success;
 
     if(!doesDatabaseExist(dbFile))
         makeInitalSettingsDatabase(dbFile);
     {
-        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", dbFile.fileName());
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", connectionName);
         db.setDatabaseName(dbFile.fileName());
         if(db.open())
         {
@@ -120,7 +123,7 @@ bool JsonSettings::saveSettings(const QFile &dbFile, const QJsonObject &jsonSett
             emit debugMessage("Could not save json object to database. DB error = " + db.lastError().text());
         }
     }
-    QSqlDatabase::removeDatabase(dbFile.fileName());
+    QSqlDatabase::removeDatabase(connectionName);
 
     return success;
 }
@@ -226,8 +229,9 @@ bool JsonSettings::doesDatabaseExist(const QFile &dbFile)
 bool JsonSettings::makeInitalSettingsDatabase(const QFile &dbFile)
 {
     bool success = false;
+    QString connectionName = QUuid::createUuid().toString();
     {
-        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", dbFile.fileName());
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", connectionName);
 
         db.setDatabaseName(dbFile.fileName());
         if(db.open())
@@ -243,6 +247,6 @@ bool JsonSettings::makeInitalSettingsDatabase(const QFile &dbFile)
 
         db.close();
     }
-    QSqlDatabase::removeDatabase(dbFile.fileName());
+    QSqlDatabase::removeDatabase(connectionName);
     return success;
 }

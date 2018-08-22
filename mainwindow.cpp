@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->mrsDataConfigGrid->addWidget(mrsDataConfig_);
     ui->bridgeConfigGrid->addWidget(bridgeConfig_);
     ui->dlmrsConfigGrid->addWidget(dlmrsConfig_);
+    this->setWindowTitle("Greenmile API Bridge");
 }
 
 MainWindow::~MainWindow()

@@ -96,7 +96,7 @@ QJsonObject BridgeDatabase::getGMLocationsWithBadGeocode(const QString &organiza
             locationObj["organization"] =   QJsonValue(organizationObj);
             locationObj["locationType"] =   QJsonValue(locationTypeObj);
             returnObj[locationKey]      =   QJsonValue(locationObj);
-            qDebug() << locationObj;
+            //qDebug() << locationObj;
         }
     }
     return returnObj;
@@ -143,14 +143,14 @@ QJsonObject BridgeDatabase::getRoutesToDelete(const QString &assignmentTableName
 {
     QJsonObject returnObj;
     QString keyBase = "DeleteRoute:" + organizationKey + ":" + date.toString("yyyy-MM-dd")+ ":";
-    QString query = "SELECT `id` FROM gmRoutes WHERE `date` || `key` || `organization:id` IN ( SELECT `unique_id` FROM( SELECT CAST(baselineSize1 as INTEGER), CAST(baselineSize2 as INTEGER), CAST(baselineSize3 as INTEGER), `date`, `key`, `organization:id`, `date` || `key` || `organization:id` as `unique_id`, `totalStops` FROM gmRoutes WHERE `date` = '"+date.toString("yyyy-MM-dd")+"' AND `organization:key` = '"+organizationKey+"' AND `key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = '"+organizationKey+"' AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL ) AND `status` != 'COMPLETED' EXCEPT SELECT CAST(SUM(routeQuery.`order:pieces`) as INTEGER) as `order:plannedSize1`, CAST(SUM(routeQuery.`order:cube`) as INTEGER) as `order:plannedSize2`, CAST(SUM(routeQuery.`order:weight`) as INTEGER) as `order:plannedSize3`, routeQuery.`route:date`, routeQuery.`route:key`, gmOrg.`id` as `organization:id`, routeQuery.`route:date` || routeQuery.`route:key` || gmOrg.`id` as `unique_id`, count( distinct `routeQuery`.`location:key`) FROM as400RouteQuery `routeQuery` LEFT JOIN gmOrganizations `gmOrg` ON gmOrg.`key` = routeQuery.`organization:key` LEFT JOIN "+assignmentTableName+" `dailyAssignment` ON `routeQuery`.`route:key` = `dailyAssignment`.`route:key` AND `routeQuery`.`route:date` = `dailyAssignment`.`route:date` AND `routeQuery`.`organization:key` = `dailyAssignment`.`organization:key` LEFT JOIN drivers `mrsDataDrivers` ON `dailyAssignment`.`driver:name` = `mrsDataDrivers`.`employeeName` LEFT JOIN gmDrivers `gmDriverInfo` ON `gmDriverInfo`.`login` = `mrsDataDrivers`.`employeeNumber` LEFT JOIN gmEquipment `gmEquipmentInfo` ON `gmEquipmentInfo`.`key` = `dailyAssignment`.`truck:key` LEFT JOIN routeStartTimes `rst` ON `rst`.`route` = `routeQuery`.`route:key` LEFT JOIN gmLocations `gmLoc` ON `gmLoc`.`key` = `routeQuery`.`organization:key` LEFT JOIN gmLocations `gmLocID` ON `gmLocID`.`key` = `routeQuery`.`location:key` WHERE `routeQuery`.`organization:key` = '"+organizationKey+"' AND `routeQuery`.`route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `routeQuery`.`route:key` IN (SELECT `key` FROM gmRoutes WHERE `organization:key` = '"+organizationKey+"' AND `date` = '"+date.toString("yyyy-MM-dd")+"') AND `routeQuery`.`route:key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = '"+organizationKey+"' AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL ) GROUP BY routeQuery.`route:key`))";
+    QString query = "SELECT `id` FROM gmRoutes WHERE `date` || `key` || `organization:id` IN ( SELECT `unique_id` FROM( SELECT CAST(baselineSize1 as INTEGER), CAST(baselineSize2 as INTEGER), CAST(baselineSize3 as INTEGER), `date`, `key`, `organization:id`, `date` || `key` || `organization:id` as `unique_id`, `totalStops` FROM gmRoutes WHERE `date` = '"+date.toString("yyyy-MM-dd")+"' AND `organization:key` = '"+organizationKey+"' AND `key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = '"+organizationKey+"' AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL ) AND `status` = 'NOT_STARTED' EXCEPT SELECT CAST(SUM(routeQuery.`order:pieces`) as INTEGER) as `order:plannedSize1`, CAST(SUM(routeQuery.`order:cube`) as INTEGER) as `order:plannedSize2`, CAST(SUM(routeQuery.`order:weight`) as INTEGER) as `order:plannedSize3`, routeQuery.`route:date`, routeQuery.`route:key`, gmOrg.`id` as `organization:id`, routeQuery.`route:date` || routeQuery.`route:key` || gmOrg.`id` as `unique_id`, count( distinct `routeQuery`.`location:key`) FROM as400RouteQuery `routeQuery` LEFT JOIN gmOrganizations `gmOrg` ON gmOrg.`key` = routeQuery.`organization:key` LEFT JOIN "+assignmentTableName+" `dailyAssignment` ON `routeQuery`.`route:key` = `dailyAssignment`.`route:key` AND `routeQuery`.`route:date` = `dailyAssignment`.`route:date` AND `routeQuery`.`organization:key` = `dailyAssignment`.`organization:key` LEFT JOIN drivers `mrsDataDrivers` ON `dailyAssignment`.`driver:name` = `mrsDataDrivers`.`employeeName` LEFT JOIN gmDrivers `gmDriverInfo` ON `gmDriverInfo`.`login` = `mrsDataDrivers`.`employeeNumber` LEFT JOIN gmEquipment `gmEquipmentInfo` ON `gmEquipmentInfo`.`key` = `dailyAssignment`.`truck:key` LEFT JOIN routeStartTimes `rst` ON `rst`.`route` = `routeQuery`.`route:key` LEFT JOIN gmLocations `gmLoc` ON `gmLoc`.`key` = `routeQuery`.`organization:key` LEFT JOIN gmLocations `gmLocID` ON `gmLocID`.`key` = `routeQuery`.`location:key` WHERE `routeQuery`.`organization:key` = '"+organizationKey+"' AND `routeQuery`.`route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `routeQuery`.`route:key` IN (SELECT `key` FROM gmRoutes WHERE `organization:key` = '"+organizationKey+"' AND `date` = '"+date.toString("yyyy-MM-dd")+"') AND `routeQuery`.`route:key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = '"+organizationKey+"' AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL ) GROUP BY routeQuery.`route:key`))";
     QMap<QString,QVariantList> sql = executeQuery(query, "Getting route IDs to update.");
 
-    qDebug() << query << "looking for";
-    qDebug() << sql;
+    //qDebug() << query << "looking for";
+    //qDebug() << sql;
     for(auto var:sql["id"])
     {
-        qDebug() << var;
+        //qDebug() << var;
         returnObj[keyBase + var.toString()] = QJsonValue(QString::number(var.toInt()));
     }
     return returnObj;
@@ -170,7 +170,7 @@ QJsonObject BridgeDatabase::getAssignmentsToUpdate(const QString &assignmentTabl
     QString query = "SELECT gmr.`key`, gmr.`date`, gmr.`organization:id`, gmr.`id`, gmr.`driverAssignments:0:id`, gmDrv.`id` AS `driverAssignments:0:driver:id`, gmEqp.`id` AS `equipmentAssignments:0:equipment:id` , gmr.`equipmentAssignments:0:id` FROM gmRoutes AS gmr LEFT JOIN "+assignmentTableName+" AS mrsda ON mrsda.`route:key` || mrsda.`route:date` || mrsda.`organization:key` = gmr.`key` || gmr.`date` || gmr.`organization:key` LEFT JOIN drivers AS mrsdrv ON mrsda.`driver:name` = mrsdrv.`employeeName` LEFT JOIN gmDrivers AS gmDrv ON mrsdrv.`employeeNumber` = gmDrv.`key` LEFT JOIN gmEquipment AS gmEqp ON gmEqp.`key` = mrsda.`truck:key` WHERE gmr.`status` != 'COMPLETED' AND gmr.`key` IN (SELECT `route:key` FROM (SELECT DISTINCT routeQuery.`route:key`, routeQuery.`route:date`, gmOrg.`id` as `organization:id`, `gmDriverInfo`.`key` as `driver:id`, `gmEquipmentInfo`.`key` as `equipment:id` FROM as400RouteQuery `routeQuery` LEFT JOIN gmOrganizations `gmOrg` ON gmOrg.`key` = routeQuery.`organization:key` LEFT JOIN "+assignmentTableName+" `dailyAssignment` ON `routeQuery`.`route:key` = `dailyAssignment`.`route:key` AND `routeQuery`.`route:date` = `dailyAssignment`.`route:date`AND `routeQuery`.`organization:key` = `dailyAssignment`.`organization:key` LEFT JOIN drivers `mrsDataDrivers` ON `dailyAssignment`.`driver:name` = `mrsDataDrivers`.`employeeName` LEFT JOIN gmDrivers `gmDriverInfo` ON `gmDriverInfo`.`login` = `mrsDataDrivers`.`employeeNumber` LEFT JOIN gmEquipment `gmEquipmentInfo` ON `gmEquipmentInfo`.`key` = `dailyAssignment`.`truck:key` LEFT JOIN routeStartTimes `rst` ON `rst`.`route` = `routeQuery`.`route:key` LEFT JOIN gmLocations `gmLoc` ON `gmLoc`.`key` = `routeQuery`.`organization:key` LEFT JOIN gmLocations `gmLocID` ON `gmLocID`.`key` = `routeQuery`.`location:key`WHERE `routeQuery`.`organization:key` = \""+organizationKey+"\" AND `routeQuery`.`route:date` = \""+date.toString("yyyy-MM-dd")+"\" AND `routeQuery`.`route:key` IN (SELECT `key` FROM gmRoutes WHERE `organization:key` = \""+organizationKey+"\" AND `date` = \""+date.toString("yyyy-MM-dd")+"\") AND `routeQuery`.`route:key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString("yyyy-MM-dd") +"\""+ routeKeyBoundaries+") EXCEPT SELECT DISTINCT `key`, `date`, `organization:id`, `driverAssignments:0:driver:key`, `equipmentAssignments:0:equipment:key` FROM gmRoutes WHERE `organization:key` = '"+organizationKey+"' AND `date` = '"+date.toString("yyyy-MM-dd")+"'))";
 
     emit debugMessage(query);
-    qDebug() << "BridgeDatabase::getAssignmentsToUpdate query " << query;
+    //qDebug() << "BridgeDatabase::getAssignmentsToUpdate query " << query;
     QMap<QString, QVariantList> sql = executeQuery(query, "Getting truck and driver assignment corrections.");
     QJsonObject returnObj;
     if(!sql.empty())
@@ -193,13 +193,14 @@ QJsonObject BridgeDatabase::getAssignmentsToUpdate(const QString &assignmentTabl
             returnObj[reassignmentKey] = QJsonValue(reassignmentObj);
         }
     }
-    qDebug() << returnObj;
+    //qDebug() << returnObj;
     return returnObj;
 }
 
 QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
 {
     QString query = "SELECT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays`, `id` AS `location:id`, `locationType:id`, `organization:id` FROM as400LocationQuery LEFT JOIN gmLocations ON `key` = `location:key` WHERE gmLocations.`key` IN ( SELECT `location:key` FROM ( SELECT DISTINCT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays` FROM as400LocationQuery WHERE as400LocationQuery.`organization:key` = '"+organizationKey+"' EXCEPT SELECT DISTINCT `enabled`, `key`,`description`,`addressLine1`,`addressLine2`,`city`, `state`,`zipCode`,`deliveryDays` FROM gmLocations WHERE gmLocations.`organization:key` = '"+organizationKey+"'))";
+    qDebug() << query;
     QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile.");
     QJsonObject returnObj;
 
@@ -251,7 +252,7 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
     QMap<QString, QJsonObject> driver;
     QMap<QString, QJsonObject> equipment;
 
-    qDebug() << "sql empty check";
+    //qDebug() << "sql empty check";
     //qDebug() << sql;
     bool startsPrevDay  = false;
     bool runsBackwards   = false;
@@ -290,7 +291,7 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
                         }
                         else if(splitKey[1].contains("planned") && sql[key][i].isNull())
                         {
-                            qDebug() << "start into for route is now";
+                            //qDebug() << "start into for route is now";
                             if(startsPrevDay)
                                 route[routeKey][splitKey[1]] = QJsonValue(QDateTime::currentDateTimeUtc().addDays(-1).toString(Qt::ISODate));
                             else
@@ -349,7 +350,7 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
     }
 
     else
-        qDebug() << "sql empty";
+        //qDebug() << "sql empty";
 
 
     for(auto routeKey:route.keys())
@@ -485,19 +486,19 @@ bool BridgeDatabase::okToInsertJsonArray(const QString &tableName, const QString
     if(tableName.isNull() || tableName.isEmpty())
     {
         emit errorMessage(whatMethod + ": JSON array info cannot be null");
-        qDebug() << whatMethod + ": JSON array info cannot be null.";
+        //qDebug() << whatMethod + ": JSON array info cannot be null.";
         return ok;
     }
     if(jsonTableInfoMap_[tableName]["creationQuery"].toString().isNull() || jsonTableInfoMap_[tableName]["creationQuery"].toString().isEmpty())
     {
         emit errorMessage(whatMethod + ": JSON array table creation query cannot be null");
-        qDebug() << whatMethod + ": JSON array table creation query cannot be null";
+        //qDebug() << whatMethod + ": JSON array table creation query cannot be null";
         return ok;
     }
     if(jsonTableInfoMap_[tableName].isEmpty())
     {
         emit errorMessage(whatMethod + ": Expected JSON object keys cannot be null.");
-        qDebug() << whatMethod + ": Expected JSON object keys cannot be null.";
+        //qDebug() << whatMethod + ": Expected JSON object keys cannot be null.";
         return ok;
     }
 
@@ -512,13 +513,13 @@ bool BridgeDatabase::okToInsertSQLData(const QString &tableName, const QString &
     if(tableName.isNull() || tableName.isEmpty())
     {
         emit errorMessage(whatMethod + ": SQL table info cannot be null");
-        qDebug() << whatMethod + ": SQL table info cannot be null.";
+        //qDebug() << whatMethod + ": SQL table info cannot be null.";
         return ok;
     }
     if(sqlTableInfoMap_[tableName]["creationQuery"].toString().isNull() || sqlTableInfoMap_[tableName]["creationQuery"].toString().isEmpty())
     {
         emit errorMessage(whatMethod + ": SQL table creation query cannot be null");
-        qDebug() << whatMethod + ": SQL table creation query cannot be null";
+        //qDebug() << whatMethod + ": SQL table creation query cannot be null";
         return ok;
     }
 
@@ -545,19 +546,19 @@ bool BridgeDatabase::addJsonArrayInfo(const QString &tableName, const QString &t
     if(tableName.isNull() || tableName.isEmpty())
     {
         emit errorMessage("JSON array info cannot be null");
-        qDebug() << "JSON array info cannot be null.";
+        //qDebug() << "JSON array info cannot be null.";
         return ok;
     }
     if(tableCreationQuery.isNull() || tableCreationQuery.isEmpty())
     {
         emit errorMessage("JSON array table creation query cannot be null");
-        qDebug() << "JSON array table creation query cannot be null";
+        //qDebug() << "JSON array table creation query cannot be null";
         return ok;
     }
     if(expectedJsonKeys.isEmpty())
     {
         emit errorMessage("Expected JSON object keys cannot be null.");
-        qDebug() << "Expected JSON object keys cannot be null.";
+        //qDebug() << "Expected JSON object keys cannot be null.";
         return ok;
     }
 
@@ -582,13 +583,13 @@ bool BridgeDatabase::addSQLInfo(const QString &tableName, const QString &tableCr
     if(tableName.isNull() || tableName.isEmpty())
     {
         emit errorMessage("SQL table name info cannot be null");
-        qDebug() << "SQL table name info cannot be null.";
+        //qDebug() << "SQL table name info cannot be null.";
         return ok;
     }
     if(tableCreationQuery.isNull() || tableCreationQuery.isEmpty())
     {
         emit errorMessage("SQL table creation query cannot be null");
-        qDebug() << "SQL table creation query cannot be null";
+        //qDebug() << "SQL table creation query cannot be null";
         return ok;
     }
 
@@ -672,9 +673,9 @@ QVariantMap BridgeDatabase::transposeJsonObjectToVarMap(const QStringList &expec
             //qDebug() << str << valCopy.toObject()[str];
         }
     }
-    //    qDebug() << vMap.size();
+    //    //qDebug() << vMap.size();
     //    for(auto key:vMap.keys())
-    //        qDebug() << key << vMap[key].type() << vMap["id"];
+    //        //qDebug() << key << vMap[key].type() << vMap["id"];
     return vMap;
 }
 
@@ -862,7 +863,7 @@ void BridgeDatabase::processASYNCQuery(QSqlQuery &query, const QString &queryKey
             if(sqlData.isEmpty())
             {
                 emit debugMessage(verb + ": SQLite query returned an empty result set.");
-                qDebug() << verb + ": SQLite query returned an empty result set.";
+                //qDebug() << verb + ": SQLite query returned an empty result set.";
             }
 //            else
 //                emit statusMessage(QString(verb + ": Retrieved " +  QString::number(sqlData.first().size()) + " records from SQLite."));
@@ -889,7 +890,7 @@ void BridgeDatabase::processASYNCQuery(QSqlQuery &query, const QString &queryKey
     if(sqlData.isEmpty())
     {
         emit debugMessage(verb + ": SQLite query returned an empty result set.");
-        qDebug() << verb + ": SQLite query returned an empty result set.";
+        //qDebug() << verb + ": SQLite query returned an empty result set.";
     }
 //    else
 //        emit statusMessage(QString(verb + ": Retrieved " +  QString::number(sqlData.first().size()) + " records from SQLite."));
@@ -1018,9 +1019,9 @@ QStringList BridgeDatabase::generateValueTuples(QMap<QString, QVariantList> invo
 
             default:
                 qApp->processEvents();
-                qDebug() << "Unknown variant type in switch. "
-                            "If you see this a lot, "
-                            " your event loop might be getting smashed... " << invoiceResults[key][i].type();
+                //qDebug() << "Unknown variant type in switch. "
+                //            "If you see this a lot, "
+                //            " your event loop might be getting smashed... " << invoiceResults[key][i].type();
                 emit errorMessage(QString("Unsupported data type from SQLite database "
                                           + invoiceResults[key][i].toString()
                                           + " "
@@ -1036,7 +1037,7 @@ QStringList BridgeDatabase::generateValueTuples(QMap<QString, QVariantList> invo
 
 bool BridgeDatabase::executeQueryAsBatch(QSqlDatabase &db, const QString &tableName, QMap<QString, QVariantList> sqlData)
 {
-    qDebug() << "batch insert";
+    //qDebug() << "batch insert";
     emit debugMessage("Falling back to batch insert.");
 
     bool success = false;
@@ -1153,7 +1154,7 @@ bool BridgeDatabase::executeQueryResiliantly(QSqlDatabase &db, const QString &ta
         {
             success = false;
             emit errorMessage("Failed on query "  + queryString);
-            qDebug() << "Failed on query "  + queryString;
+            //qDebug() << "Failed on query "  + queryString;
         }
 
         db.driver()->commitTransaction();

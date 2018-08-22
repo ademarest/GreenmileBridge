@@ -39,6 +39,9 @@ void Bridge::init()
     connect(locationUpload_, &LocationUpload::statusMessage, this, &Bridge::statusMessage);
     connect(locationUpload_, &LocationUpload::errorMessage, this, &Bridge::errorMessage);
 
+    connect(routeCheck_, &RouteCheck::statusMessage, this, &Bridge::statusMessage);
+    connect(routeCheck_, &RouteCheck::errorMessage, this, &Bridge::errorMessage);
+
     connect(routeUpload_, &RouteUpload::statusMessage, this, &Bridge::statusMessage);
     connect(routeUpload_, &RouteUpload::errorMessage, this, &Bridge::errorMessage);
 

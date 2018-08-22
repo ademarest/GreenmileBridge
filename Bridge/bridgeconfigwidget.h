@@ -13,7 +13,7 @@ class BridgeConfigWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit BridgeConfigWidget(QWidget *parent = 0);
+    explicit BridgeConfigWidget(QWidget *parent = Q_NULLPTR);
     ~BridgeConfigWidget();
 
 private slots:

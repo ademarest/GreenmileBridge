@@ -7,14 +7,14 @@ BridgeProgressWidget::BridgeProgressWidget(QWidget *parent) :
 {
     ui->setupUi(this);
     connect(ui->bridgeButton, &QPushButton::pressed, this, &BridgeProgressWidget::addToBridgeQueue);
-    connect(ui->stopBridgeButton, &QPushButton::pressed, bridge_, &Bridge::abort);
+    connect(ui->stopBridgeButton, &QPushButton::pressed, bridgeThreadController_, &BridgeThreadController::abort);
 
-    connect(bridge_, &Bridge::statusMessage, this, &BridgeProgressWidget::writeMessageTextWidget);
-    connect(bridge_, &Bridge::errorMessage, this, &BridgeProgressWidget::writeMessageTextWidget);
-    connect(bridge_, &Bridge::currentJobChanged, ui->currentBridgeOperationLabel, &QLabel::setText);
-    connect(bridge_, &Bridge::bridgeProgress, this, &BridgeProgressWidget::updateBridgeProgressBarStatus);
-    connect(bridge_, &Bridge::currentJobProgress, this, &BridgeProgressWidget::updateBridgeJobProgressBarStatus);
-    connect(bridge_, &Bridge::bridgeKeyChanged, ui->currentBridgeKeyLabel, &QLabel::setText);
+    connect(bridgeThreadController_, &BridgeThreadController::statusMessage, this, &BridgeProgressWidget::writeMessageTextWidget);
+    connect(bridgeThreadController_, &BridgeThreadController::errorMessage, this, &BridgeProgressWidget::writeMessageTextWidget);
+    connect(bridgeThreadController_, &BridgeThreadController::currentJobChanged, ui->currentBridgeOperationLabel, &QLabel::setText);
+    connect(bridgeThreadController_, &BridgeThreadController::bridgeProgress, this, &BridgeProgressWidget::updateBridgeProgressBarStatus);
+    connect(bridgeThreadController_, &BridgeThreadController::currentJobProgress, this, &BridgeProgressWidget::updateBridgeJobProgressBarStatus);
+    connect(bridgeThreadController_, &BridgeThreadController::bridgeKeyChanged, ui->currentBridgeKeyLabel, &QLabel::setText);
 }
 
 BridgeProgressWidget::~BridgeProgressWidget()
@@ -72,5 +72,5 @@ void BridgeProgressWidget::updateBridgeJobProgressBarStatus(qint64 done, qint64 
 
 void BridgeProgressWidget::addToBridgeQueue()
 {
-    bridge_->addRequest("USER_INITIATED_BRIDGE");
+    bridgeThreadController_->addRequest("USER_INITIATED_BRIDGE");
 }

@@ -1,6 +1,7 @@
 #ifndef BRIDGE_H
 #define BRIDGE_H
 
+#include <algorithm>
 #include <QObject>
 #include <QtConcurrent/QtConcurrent>
 #include "Bridge/bridgedatabase.h"
@@ -17,9 +18,6 @@ class Bridge : public QObject
     Q_OBJECT
 public:
     explicit Bridge(QObject *parent = nullptr);
-    bool hasActiveJobs();
-    void addRequest(const QString &key);
-    void removeRequest(const QString &key);
 
 signals:
     void started(const QString &key);
@@ -38,7 +36,9 @@ signals:
 
 
 public slots:
-//    void startBridge();
+    void addRequest(const QString &key);
+    bool hasActiveJobs();
+    void removeRequest(const QString &key);
     void abort();
 
 private slots:

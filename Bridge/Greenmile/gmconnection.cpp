@@ -385,7 +385,8 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
     networkTimers_[key]->deleteLater();
     networkManagers_[key]->deleteLater();
     networkReplies_[key]->deleteLater();
-    networkBuffers_[key]->deleteLater();
+    if(networkBuffers_[key])
+        networkBuffers_[key]->deleteLater();
     --numberOfActiveConnections_;
 
 

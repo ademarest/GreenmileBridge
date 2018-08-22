@@ -45,7 +45,8 @@ SOURCES += \
     Bridge/BridgeServices/locationupload.cpp \
     Bridge/BridgeServices/routeupload.cpp \
     Bridge/BridgeServices/routeassignmentcorrection.cpp \
-    Bridge/BridgeServices/routecheck.cpp
+    Bridge/BridgeServices/routecheck.cpp \
+    Bridge/bridgethreadcontroller.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -68,7 +69,8 @@ HEADERS += \
     Bridge/BridgeServices/locationupload.h \
     Bridge/BridgeServices/routeupload.h \
     Bridge/BridgeServices/routeassignmentcorrection.h \
-    Bridge/BridgeServices/routecheck.h
+    Bridge/BridgeServices/routecheck.h \
+    Bridge/bridgethreadcontroller.h
 
 FORMS += \
         mainwindow.ui \

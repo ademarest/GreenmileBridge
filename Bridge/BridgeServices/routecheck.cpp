@@ -56,7 +56,7 @@ void RouteCheck::deleteIncorrectRoutes(const QString &key, const QList<QVariantM
         if(key.split(":").first() == "DeleteRoute")
         {
             activeJobs_.insert(key);
-            gmConn_->deleteRoute(key, QString::number(routesToDelete_[key].toInt()));
+            gmConn_->deleteRoute(key, routesToDelete_[key].toString());
         }
     }
 
@@ -87,4 +87,5 @@ void RouteCheck::mergeRoutesToDelete(const QJsonObject &routeIDs)
     {
         routesToDelete_[key] = routeIDs[key];
     }
+    qDebug() << routesToDelete_;
 }

@@ -203,7 +203,7 @@ void BridgeDataCollector::beginGathering(const QVariantMap &request)
             activeJobs_.insert(source);
             totalJobs_ = activeJobs_.size();
             emit progress(activeJobs_.size(), totalJobs_);
-            as400->getLocationDataForGreenmile("as400LocationQuery", date, monthsUntilCustDisabled, 0);
+            as400->getLocationDataForGreenmile("as400LocationQuery", monthsUntilCustDisabled, 0);
             continue;
         }
     }

@@ -28,7 +28,6 @@ void BridgeConfigWidget::handleGMResponse(const QString &key, const QJsonValue &
     {
         populateOrganizations(jVal);
     }
-
 }
 
 void BridgeConfigWidget::populateOrganizations(const QJsonValue &jVal)
