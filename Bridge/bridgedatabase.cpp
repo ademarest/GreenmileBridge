@@ -22,6 +22,7 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &assignmentTableN
     if(minRouteString.isNull() || maxRouteString.isNull())
         routeKeyBoundaries = QString();
 
+    qDebug() << "AM I HERE?";
     QJsonObject locationObj;
     QString query = "SELECT DISTINCT "
                     "as400RouteQuery.`location:key` as `key`,"
@@ -34,6 +35,7 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &assignmentTableN
                     "as400RouteQuery.`location:zipCode` as `zipCode` "
                     "FROM as400RouteQuery WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString(Qt::ISODate)+"\" AND `location:key` NOT IN (SELECT `key` FROM gmLocations) AND `route:key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString(Qt::ISODate)+"\" AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL"+routeKeyBoundaries+") GROUP BY as400RouteQuery.`location:key`";
 
+    qDebug() << query;
     emit debugMessage(query);
     //qDebug() << query;
     QMap<QString,QVariantList> sql = executeQuery(query, "Finding locations to upload");
@@ -132,8 +134,10 @@ QJsonObject BridgeDatabase::getRoutesToUpload(const QString &assignmentTableName
     QString query = "SELECT routeQuery.`order:number` as `order:number`, routeQuery.`order:pieces` as `order:plannedSize1`, routeQuery.`order:cube` as `order:plannedSize2`, routeQuery.`order:weight` as `order:plannedSize3`, routeQuery.`route:date`, routeQuery.`route:key`, routeQuery.`stop:baseLineSequenceNum`, gmOrg.`id` as `organization:id`, `gmDriverInfo`.`id` as `driver:id`, `gmEquipmentInfo`.`id` as `equipment:id`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedArrival`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedComplete`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedDeparture`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedStart`, `rst`.`avgStartsPrev` AS `startsPreviousDay`, `gmLoc`.`id` as `origin:id`, `gmLoc`.`id` as `destination:id`, `gmLocID`.`id` as `location:id` FROM as400RouteQuery `routeQuery` LEFT JOIN gmOrganizations `gmOrg` ON gmOrg.`key` = routeQuery.`organization:key` LEFT JOIN "+assignmentTableName+" `dailyAssignment` ON `routeQuery`.`route:key` = `dailyAssignment`.`route:key` AND `routeQuery`.`route:date` = `dailyAssignment`.`route:date`AND `routeQuery`.`organization:key` = `dailyAssignment`.`organization:key` LEFT JOIN drivers `mrsDataDrivers` ON `dailyAssignment`.`driver:name` = `mrsDataDrivers`.`employeeName` LEFT JOIN gmDrivers `gmDriverInfo` ON `gmDriverInfo`.`login` = `mrsDataDrivers`.`employeeNumber` LEFT JOIN gmEquipment `gmEquipmentInfo` ON `gmEquipmentInfo`.`key` = `dailyAssignment`.`truck:key` LEFT JOIN routeStartTimes `rst` ON `rst`.`route` = `routeQuery`.`route:key` LEFT JOIN gmLocations `gmLoc` ON `gmLoc`.`key` = `routeQuery`.`organization:key` LEFT JOIN gmLocations `gmLocID` ON `gmLocID`.`key` = `routeQuery`.`location:key`"
                     "WHERE `routeQuery`.`organization:key` = \""+organizationKey+"\" AND `routeQuery`.`route:date` = \""+date.toString("yyyy-MM-dd")+"\" AND `routeQuery`.`route:key` NOT IN (SELECT `key` FROM gmRoutes WHERE `organization:key` = \""+organizationKey+"\" AND `date` = \""+date.toString("yyyy-MM-dd")+"\") AND `routeQuery`.`route:key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString("yyyy-MM-dd")+"\" AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL"+routeKeyBoundaries+")";
 
+    qDebug() << "looking for SELECT RC" <<  query;
     emit debugMessage(query);
     QMap<QString,QVariantList> sql = executeQuery(query, "Building routes to upload");
+    qDebug() << "route upload sql size" << sql.size();
     return assembleUploadRouteFromQuery(sql);
 }
 
@@ -350,7 +354,10 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
     }
 
     else
-        //qDebug() << "sql empty";
+    {
+        emit debugMessage("SQL is empty.");
+        qDebug() << "sql empty";
+    }
 
 
     for(auto routeKey:route.keys())

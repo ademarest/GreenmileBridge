@@ -19,11 +19,11 @@ void Bridge::init()
 
     connect(dataCollector, &BridgeDataCollector::finished, this, &Bridge::finishedDataCollection);
 
-    connect(locationUpdateGeocode_, &LocationGeocode::finished, this, &Bridge::finishedLocationUpdateGeocode);
-    connect(locationUpdate_, &LocationUpload::finished, this, &Bridge::finishedLocationUpdate);
+    connect(locationUpdateGeocode_, &LocationGeocode::finished, this,   &Bridge::finishedLocationUpdateGeocode);
+    connect(locationUpdate_,        &LocationUpload::finished, this,    &Bridge::finishedLocationUpdate);
 
-    connect(locationUploadGeocode_, &LocationGeocode::finished, this, &Bridge::finishedLocationUploadGeocode);
-    connect(locationUpload_, &LocationUpload::finished, this, &Bridge::finishedLocationUpload);
+    connect(locationUploadGeocode_, &LocationGeocode::finished, this,   &Bridge::finishedLocationUploadGeocode);
+    connect(locationUpload_,        &LocationUpload::finished, this,    &Bridge::finishedLocationUpload);
 
     connect(routeCheck_, &RouteCheck::finished, this, &Bridge::finishedRouteCheck);
     connect(routeUpload_, &RouteUpload::finished, this, &Bridge::finishedRouteUpload);
@@ -156,6 +156,7 @@ void Bridge::finishedDataCollection(const QString &key)
         bridgeDB_->getLocationsToUpdate("SEATTLE");
         qDebug() << "geocoding updated locations";
         QString jobKey = "geocodeUpdatedLocations:" + currentRequest_["key"].toString();
+        qDebug() << "Do I go here 0?";
         addActiveJob(jobKey);
         locationUpdateGeocode_->GeocodeUpdateLocations(jobKey, argList_);
     }
@@ -177,7 +178,9 @@ void Bridge::finishedLocationUpdateGeocode(const QString &key, const QJsonObject
 
     QString jobKey = "updateLocations:" + currentRequest_["key"].toString();
     addActiveJob(jobKey);
-    locationUpload_->UpdateLocations(jobKey, argList_, result);
+    qDebug() << "Do I go here 1?";
+
+    locationUpdate_->UpdateLocations(jobKey, argList_, result);
     handleJobCompletion(key);
 }
 
@@ -185,6 +188,7 @@ void Bridge::finishedLocationUpdate(const QString &key, const QJsonObject &resul
 {
     emit statusMessage(key + " has been completed.");
     qDebug() << result;
+    qDebug() << "Do I go here 2?";
 
     QString jobKey = "geocodeUploadLocations:" + currentRequest_["key"].toString();
     addActiveJob(jobKey);
@@ -195,7 +199,7 @@ void Bridge::finishedLocationUpdate(const QString &key, const QJsonObject &resul
 void Bridge::finishedLocationUploadGeocode(const QString &key, const QJsonObject &result)
 {
     emit statusMessage(key + " has been completed.");
-
+    qDebug() << "Do I go here 3?";
     QString jobKey = "uploadLocations:" + currentRequest_["key"].toString();
     addActiveJob(jobKey);
     locationUpload_->UploadLocations(jobKey, argList_, result);
@@ -206,7 +210,7 @@ void Bridge::finishedLocationUpload(const QString &key, const QJsonObject &resul
 {
     emit statusMessage(key + " has been completed.");
     qDebug() << result;
-
+    qDebug() << "Do I go here 4?";
     QString jobKey = "routeCheck:" + currentRequest_["key"].toString();
     addActiveJob(jobKey);
     routeCheck_->deleteIncorrectRoutes(jobKey, argList_);
@@ -217,7 +221,8 @@ void Bridge::finishedRouteCheck(const QString &key, const QJsonObject &result)
 {
     emit statusMessage(key + " has been completed.");
     qDebug() << result;
-
+    qDebug() << "Do I go here 5?";
+    qDebug() << "UPLOAD THE ROUTES";
     QString jobKey = "uploadRoutes:" + currentRequest_["key"].toString();
     addActiveJob(jobKey);
     routeUpload_->UploadRoutes(jobKey, argList_);

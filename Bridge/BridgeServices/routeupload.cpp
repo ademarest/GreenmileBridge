@@ -88,5 +88,6 @@ void RouteUpload::mergeRoutesToUpload(const QJsonObject &locations)
     for(auto key:locations.keys())
     {
         routesToUpload_[key] = locations[key];
+        qDebug() <<  locations[key];
     }
 }

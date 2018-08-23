@@ -55,6 +55,7 @@ void LocationUpload::UploadLocations(const QString &key, const QList<QVariantMap
         QString minRouteKey = vMap["minRouteKey"].toString();
         QString maxRouteKey = vMap["maxRouteKey"].toString();
 
+        qDebug() << "AM I HERE0?";
         QJsonObject locations = bridgeDB_->getLocationsToUpload(tableName, organizationKey, date, minRouteKey, maxRouteKey);
         mergeLocationsToUpload(locations);
     }
