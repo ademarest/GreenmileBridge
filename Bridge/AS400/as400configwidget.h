@@ -13,13 +13,13 @@ class AS400ConfigWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit AS400ConfigWidget(QWidget *parent = 0);
+    explicit AS400ConfigWidget(QWidget *parent = Q_NULLPTR);
     ~AS400ConfigWidget();
 
 signals:
+    void statusMessage(const QString &status);
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
-    void statusMessage(const QString &status);
 
 private slots:
     void saveUItoSettings();

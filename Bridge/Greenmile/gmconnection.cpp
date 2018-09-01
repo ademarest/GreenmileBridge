@@ -94,7 +94,8 @@ void GMConnection::requestRouteComparisonInfo(const QString &key, const QDate &d
                              " \"equipmentAssignments.equipment.*\","
                              " \"driverAssignments.driver.*\","
                              " \"stops.location.*\","
-                             " \"stops.location.locationOverrideTimeWindows.*\"]}";
+                             " \"stops.location.locationOverrideTimeWindows.*\","
+                             " \"stops.*\"]}";
 
     QByteArray postData = QString("{\"attr\":\"date\", \"eq\":\"" + date.toString(Qt::ISODate) + "\"}").toLocal8Bit();
 
@@ -244,7 +245,7 @@ void GMConnection::addToConnectionQueue(const QNetworkAccessManager::Operation r
 void GMConnection::prepConnectionQueue()
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    connectionFrequencyTimer_->start(30);
+    connectionFrequencyTimer_->start(connectionFreqMS_);
     processConnectionQueue();
 }
 
@@ -259,7 +260,7 @@ void GMConnection::processConnectionQueue()
     if(!readyForNextConnection_)
         return;
 
-    if(numberOfActiveConnections_ > 100)
+    if(numberOfActiveConnections_ > maxActiveConnections_)
     {
         qDebug() << "Too many connections! There's more than 100!";
         return;
@@ -363,6 +364,7 @@ bool GMConnection::isProcessingNetworkRequests()
 
 void GMConnection::handleNetworkReply(QNetworkReply *reply)
 {
+    bool hasErrors = false;
     QString key = reply->objectName();
     QByteArray rawData;
     QJsonArray json;
@@ -370,13 +372,21 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
     QJsonDocument jDoc;
     if(reply->error() != QNetworkReply::NoError)
     {
+        hasErrors = true;
         emit errorMessage(key + " finished with errors. " + reply->errorString());
         emit errorMessage(key + " server response was " + reply->readAll());
         qDebug() << reply->error();
     }
     if(reply->isOpen())
     {
-        emit statusMessage(key + " finished. No errors.");
+        if(hasErrors)
+        {
+            emit statusMessage(key + " finished with errors.");
+        }
+        else
+        {
+            emit statusMessage(key + " finished without errors.");
+        }
         rawData = reply->readAll();
         jDoc = QJsonDocument::fromJson(rawData);
     }

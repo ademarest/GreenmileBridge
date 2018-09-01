@@ -68,7 +68,7 @@ void BridgeDataCollector::processQueue()
 void BridgeDataCollector::beginGathering(const QVariantMap &request)
 {
     QStringList sources;
-    QStringList sourceOverrides = request["sourceOverrides"].toStringList();
+    QStringList sourceOverrides = request["sourPOceOverrides"].toStringList();
     QDate date = request["date"].toDate();
     QString key = request["key"].toString();
     int monthsUntilCustDisabled = request["monthsUntilCustDisabled"].toInt();

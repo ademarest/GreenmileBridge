@@ -147,7 +147,6 @@ void Bridge::startDataCollection(const QString &key, const QDate &date, const in
 void Bridge::finishedDataCollection(const QString &key)
 {
     emit statusMessage(key + " has been completed.");
-
     applyScheduleHierarchy();
     generateArgs();
 

@@ -25,11 +25,8 @@ public:
                         const int chunkSize);
 
     bool getOpenOrderHeaders(const QString &key, const int chunkSize);
-
     bool getOpenOrderDetails(const QString &key, const int chunkSize);
-
     bool getCustomerData(const QString &key);
-
     bool getRouteDataForGreenmile(const QString &key, const QDate &date, const int chunkSize);
     bool getLocationDataForGreenmile(const QString &key, const int monthsUntilCustDisabled, const int chunkSize);
 
