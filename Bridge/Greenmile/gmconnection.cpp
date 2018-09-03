@@ -18,6 +18,11 @@ GMConnection::GMConnection(const QString &serverAddress, const QString &username
     connect(checkQueueTimer, &QTimer::timeout, this, &GMConnection::processConnectionQueue);
 }
 
+GMConnection::~GMConnection()
+{
+
+}
+
 void GMConnection::requestRouteKeysForDate(const QString &key, const QDate &date)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);

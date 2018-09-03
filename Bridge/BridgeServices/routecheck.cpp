@@ -12,6 +12,11 @@ RouteCheck::RouteCheck(QObject *parent) : QObject(parent)
     connect(bridgeDB_, &BridgeDatabase::debugMessage, this, &RouteCheck::debugMessage);
 }
 
+RouteCheck::~RouteCheck()
+{
+
+}
+
 void RouteCheck::reset()
 {
     if(!activeJobs_.isEmpty())

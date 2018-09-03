@@ -10,11 +10,12 @@ class RouteAssignmentCorrection : public QObject
     Q_OBJECT
 public:
     explicit RouteAssignmentCorrection(QObject *parent = nullptr);
+    virtual ~RouteAssignmentCorrection();
 
 signals:
+    void statusMessage(const QString &status);
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
-    void statusMessage(const QString &status);
 
     void finished(const QString &key, const QJsonObject &result);
 

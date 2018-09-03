@@ -14,6 +14,11 @@ AS400::AS400(const QString &systemIP, const QString &username, const QString &pa
     settings_.saveSettings(QFile(dbPath_), jsonSettings_);
 }
 
+AS400::~AS400()
+{
+
+}
+
 void AS400::init()
 {
     connect(&settings_, &JsonSettings::debugMessage, this, &AS400::debugMessage);
@@ -48,6 +53,7 @@ bool AS400::getInvoiceData(const QString &key, const QDate &minDate, const QDate
                         +minDate.toString("yyyy-MM-dd")
                         +"\' AND \'"
                         +maxDate.toString("yyyy-MM-dd")+"\'");
+
 
     return queryAS400(key, queryString, chunkSize);
 }

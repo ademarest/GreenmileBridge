@@ -8,7 +8,8 @@ class BridgeDatabase : public QObject
 {
     Q_OBJECT
 public:
-    explicit BridgeDatabase(QObject *parent = nullptr);
+    explicit BridgeDatabase(QObject *parent = Q_NULLPTR);
+    virtual ~BridgeDatabase();
 
     QJsonObject getRoutesToUpload(const QString &assignmentTableName,
                                   const QString &organizationKey,
@@ -60,9 +61,9 @@ public:
                     const QString &tableCreationQuery);
 
 signals:
-    void statusMessage(const QString &dbg);
-    void debugMessage(const QString &dbg);
-    void errorMessage(const QString &dbg);
+    void statusMessage(const QString &status);
+    void debugMessage(const QString &debug);
+    void errorMessage(const QString &error);
     void asyncSqlResults(const bool isFirstRun,
                          const QString &queryKey,
                          const QMap<QString, QVariantList> &sqlResults);

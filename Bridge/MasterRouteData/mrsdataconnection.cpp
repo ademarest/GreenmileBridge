@@ -5,6 +5,11 @@ MRSDataConnection::MRSDataConnection(QObject *parent) : QObject(parent)
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 }
 
+MRSDataConnection::~MRSDataConnection()
+{
+
+}
+
 void MRSDataConnection::requestValuesFromAGoogleSheet(const QString &requestKey, const QString &sheetName)
 {
     QString key = requestKey;

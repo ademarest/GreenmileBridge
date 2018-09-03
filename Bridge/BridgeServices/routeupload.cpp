@@ -12,6 +12,11 @@ RouteUpload::RouteUpload(QObject *parent) : QObject(parent)
     connect(bridgeDB_, &BridgeDatabase::debugMessage, this, &RouteUpload::debugMessage);
 }
 
+RouteUpload::~RouteUpload()
+{
+
+}
+
 void RouteUpload::reset()
 {
     if(!activeJobs_.isEmpty())

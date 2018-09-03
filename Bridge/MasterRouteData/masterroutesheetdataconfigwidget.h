@@ -18,6 +18,11 @@ public:
     explicit MasterRouteSheetDataConfigWidget(QWidget *parent = 0);
     ~MasterRouteSheetDataConfigWidget();
 
+signals:
+    void statusMessage(const QString &status);
+    void debugMessage(const QString &debug);
+    void errorMessage(const QString &error);
+
 public slots:
     void loadSettings();
     void saveSettings();

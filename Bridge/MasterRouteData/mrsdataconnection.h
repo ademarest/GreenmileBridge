@@ -12,12 +12,13 @@ class MRSDataConnection : public QObject
     Q_OBJECT
 public:
     explicit MRSDataConnection(QObject *parent = nullptr);
+    virtual ~MRSDataConnection();
     void requestValuesFromAGoogleSheet(const QString &requestKey, const QString &sheetName);
 
 signals:
+    void statusMessage(const QString &status);
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
-    void statusMessage(const QString &status);
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
     void oauth2AlreadyGranted();
     void data(const QString &key, const QJsonObject &data);

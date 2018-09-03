@@ -8,6 +8,11 @@ MRSConnection::MRSConnection(const QString &databaseName, QObject *parent) : QOb
     connect(googleSheets_, &GoogleSheetsConnection::data, this, &MRSConnection::handleNetworkReply);
 }
 
+MRSConnection::~MRSConnection()
+{
+
+}
+
 void MRSConnection::requestAssignments(const QString &key, const QDate &date)
 {
     googleSheets_->requestValuesFromAGoogleSheet(key, date.toString("dddd"));

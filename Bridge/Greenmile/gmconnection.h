@@ -16,6 +16,8 @@ public:
                             const QString &password,
                             QObject *parent = nullptr);
 
+    virtual ~GMConnection();
+
     void setServerAddress(const QString &serverAddress);
     void setUsername(const QString &username);
     void setPassword(const QString &password);
@@ -48,9 +50,9 @@ public:
     bool isProcessingNetworkRequests();
 
 signals:
+    void statusMessage(const QString &status);
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
-    void statusMessage(const QString &status);
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
 
     void gmNetworkResponse(const QString &key, const QJsonValue &obj);

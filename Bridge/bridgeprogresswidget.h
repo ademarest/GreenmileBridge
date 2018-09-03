@@ -17,6 +17,11 @@ public:
     explicit BridgeProgressWidget(QWidget *parent = Q_NULLPTR);
     ~BridgeProgressWidget();
 
+signals:
+    void statusMessage(const QString &status);
+    void debugMessage(const QString &debug);
+    void errorMessage(const QString &error);
+
 public slots:
     void writeMessageTextWidget(const QString &message);
     void updateBridgeProgressBarStatus(qint64 done, qint64 total);

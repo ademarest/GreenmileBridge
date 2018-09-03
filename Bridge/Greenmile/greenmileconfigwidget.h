@@ -14,13 +14,13 @@ class GreenmileConfigWidget : public QWidget
     Q_OBJECT
 
 public:
-    explicit GreenmileConfigWidget(QWidget *parent = 0);
+    explicit GreenmileConfigWidget(QWidget *parent = Q_NULLPTR);
     ~GreenmileConfigWidget();
 
 signals:
+    void statusMessage(const QString &status);
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
-    void statusMessage(const QString &status);
 
 private slots:
     void saveUItoSettings();

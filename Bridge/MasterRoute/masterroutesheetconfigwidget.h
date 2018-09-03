@@ -16,9 +16,14 @@ class MasterRouteSheetConfigWidget : public QWidget
 
 public:
     explicit MasterRouteSheetConfigWidget(const QString &datbaseName,
-                                          QWidget *parent = 0);
+                                          QWidget *parent = Q_NULLPTR);
 
     ~MasterRouteSheetConfigWidget();
+
+signals:
+    void statusMessage(const QString &status);
+    void debugMessage(const QString &debug);
+    void errorMessage(const QString &error);
 
 private slots:
     void saveUItoSettings();

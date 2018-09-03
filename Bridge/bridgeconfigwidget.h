@@ -16,6 +16,11 @@ public:
     explicit BridgeConfigWidget(QWidget *parent = Q_NULLPTR);
     ~BridgeConfigWidget();
 
+signals:
+    void statusMessage(const QString &status);
+    void debugMessage(const QString &debug);
+    void errorMessage(const QString &error);
+
 private slots:
     void handleGMResponse(const QString &key, const QJsonValue &jVal);
 

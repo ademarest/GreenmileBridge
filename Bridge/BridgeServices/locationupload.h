@@ -10,12 +10,13 @@ class LocationUpload : public QObject
     Q_OBJECT
 public:
     explicit LocationUpload(QObject *parent = nullptr);
+    virtual ~LocationUpload();
     //QJsonObject getResults();
 
 signals:
+    void statusMessage(const QString &status);
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
-    void statusMessage(const QString &status);
     void finished(const QString &key, const QJsonObject &result);
 
 public slots:

@@ -18,6 +18,11 @@ RouteAssignmentCorrection::RouteAssignmentCorrection(QObject *parent) : QObject(
     connect(bridgeDB_, &BridgeDatabase::debugMessage, this, &RouteAssignmentCorrection::debugMessage);
 }
 
+RouteAssignmentCorrection::~RouteAssignmentCorrection()
+{
+
+}
+
 
 void RouteAssignmentCorrection::reset()
 {

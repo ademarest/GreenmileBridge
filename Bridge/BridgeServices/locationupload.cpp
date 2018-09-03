@@ -13,6 +13,11 @@ LocationUpload::LocationUpload(QObject *parent) : QObject(parent)
     connect(bridgeDB_, &BridgeDatabase::debugMessage, this, &LocationUpload::debugMessage);
 }
 
+LocationUpload::~LocationUpload()
+{
+
+}
+
 //QJsonObject LocationUpload::getResults()
 //{
 //    return uploadedLocations_;

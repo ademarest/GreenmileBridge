@@ -21,6 +21,11 @@ BridgeDataCollector::BridgeDataCollector(QObject *parent) : QObject(parent)
     queueTimer->start(1000);
 }
 
+BridgeDataCollector::~BridgeDataCollector()
+{
+
+}
+
 bool BridgeDataCollector::hasActiveJobs()
 {
     if(activeJobs_.isEmpty())

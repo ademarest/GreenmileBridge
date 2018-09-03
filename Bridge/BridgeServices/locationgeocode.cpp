@@ -13,6 +13,11 @@ LocationGeocode::LocationGeocode(QObject *parent) : QObject(parent)
     connect(bridgeDB_, &BridgeDatabase::debugMessage, this, &LocationGeocode::debugMessage);
 }
 
+LocationGeocode::~LocationGeocode()
+{
+
+}
+
 
 void LocationGeocode::reset()
 {

@@ -8,6 +8,11 @@ GoogleSheetsConnection::GoogleSheetsConnection(const QString &databaseName, QObj
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 }
 
+GoogleSheetsConnection::~GoogleSheetsConnection()
+{
+
+}
+
 
 QMap<QString, QVariantList> GoogleSheetsConnection::googleDataToSQL(bool hasHeader, const QStringList dataOrder, const QJsonObject &data)
 {

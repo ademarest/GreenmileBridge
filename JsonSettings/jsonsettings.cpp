@@ -4,6 +4,11 @@ JsonSettings::JsonSettings(QObject *parent) : QObject(parent)
 {
 }
 
+JsonSettings::~JsonSettings()
+{
+
+}
+
 
 QJsonObject JsonSettings::loadSettings(const QFile &dbFile,const QJsonObject &jsonSettings)
 {

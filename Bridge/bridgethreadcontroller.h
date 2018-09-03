@@ -10,7 +10,12 @@ class BridgeThreadController : public QObject
 public:
     explicit BridgeThreadController(QObject *parent = nullptr);
     ~BridgeThreadController();
+
 signals:
+    void statusMessage(const QString &status);
+    void debugMessage(const QString &debug);
+    void errorMessage(const QString &error);
+
     void started(const QString &key);
     void aborted(const QString &key);
     void rebuilt(const QString &key);
@@ -20,10 +25,6 @@ signals:
     void bridgeProgress(const int remainingWork, const int totalWork);
     void currentJobProgress(const int remainingWork, const int totalWork);
     void currentJobChanged(const QString &key);
-
-    void debugMessage(const QString &debug);
-    void errorMessage(const QString &error);
-    void statusMessage(const QString &status);
 
     void addRequest(const QString &key);
     void removeRequest(const QString &key);

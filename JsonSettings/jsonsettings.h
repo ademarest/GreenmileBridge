@@ -9,14 +9,17 @@ class JsonSettings : public QObject
 {
     Q_OBJECT
 public:
-    explicit JsonSettings(QObject *parent = nullptr);
+    explicit JsonSettings(QObject *parent = Q_NULLPTR);
+    virtual ~JsonSettings();
 
     QJsonObject loadSettings(const QFile &dbFile,const QJsonObject &jsonSettings);
     bool saveSettings(const QFile &dbFile, const QJsonObject &jsonSettings);
     bool doesDatabaseExist(const QFile &dbFile);
 
 signals:
-    void debugMessage(QString dbg);
+    void statusMessage(const QString &status);
+    void debugMessage(const QString &debug);
+    void errorMessage(const QString &error);
 
 public slots:
 

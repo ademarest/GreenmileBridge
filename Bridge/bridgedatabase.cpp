@@ -5,6 +5,11 @@ BridgeDatabase::BridgeDatabase(QObject *parent) : QObject(parent)
 
 }
 
+BridgeDatabase::~BridgeDatabase()
+{
+
+}
+
 bool BridgeDatabase::populateAS400LocationOverrideTimeWindows()
 {
     return false;

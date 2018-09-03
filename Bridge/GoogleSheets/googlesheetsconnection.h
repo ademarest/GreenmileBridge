@@ -13,15 +13,17 @@ class GoogleSheetsConnection : public QObject
     Q_OBJECT
 public:
     explicit GoogleSheetsConnection(const QString &databaseName, QObject *parent = nullptr);
+    virtual ~GoogleSheetsConnection();
+
     QMap<QString, QVariantList> googleDataToSQL(bool hasHeader, const QStringList dataOrder, const QJsonObject &data);
     void requestValuesFromAGoogleSheet(const QString &requestKey, const QString &sheetName);
     void changeDatabaseName(const QString &databaseName);
     QString databaseName();
 
 signals:
+    void statusMessage(const QString &status);
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
-    void statusMessage(const QString &status);
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
     void oauth2AlreadyGranted();
     void data(const QString &key, const QJsonObject &data);

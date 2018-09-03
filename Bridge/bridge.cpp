@@ -8,6 +8,11 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
     init();
 }
 
+Bridge::~Bridge()
+{
+
+}
+
 void Bridge::init()
 {
 

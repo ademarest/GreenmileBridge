@@ -9,13 +9,14 @@ class MRSConnection : public QObject
     Q_OBJECT
 public:
     explicit MRSConnection(const QString &databaseName, QObject *parent = nullptr);
+    virtual ~MRSConnection();
     void requestAssignments(const QString &key, const QDate &date);
     void requestAssignments(const QString &key, const QString &sheetName);
 
 signals:
+    void statusMessage(const QString &status);
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
-    void statusMessage(const QString &status);
     void mrsDailyScheduleSQL(const QString &key,const QMap<QString,QVariantList> &sql);
 
 private slots:

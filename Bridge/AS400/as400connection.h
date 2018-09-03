@@ -16,6 +16,8 @@ public:
                    const QString &password,
                    QObject *parent = nullptr);
 
+    virtual ~AS400();
+
     void init();
 
     bool getCustomerChains(const QString &key, const int chunkSize);
@@ -32,8 +34,9 @@ public:
 
 signals:
     void sqlResults(const QString &key, const QMap<QString,QVariantList> &sql);
-    void debugMessage(QString dbg);
-    void errorMessage(QString error);
+    void statusMessage(const QString &status);
+    void debugMessage(const QString &debug);
+    void errorMessage(const QString &error);
 
 private:
     bool queryAS400(const QString &key, const QString &queryString, const int chunkSize);
