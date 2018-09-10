@@ -8,11 +8,13 @@ GMConnection::GMConnection(QObject *parent) : QObject(parent)
     connect(connectionFrequencyTimer_, &QTimer::timeout, this, &GMConnection::processConnectionQueue);
 }
 
-GMConnection::GMConnection(const QString &serverAddress, const QString &username, const QString &password, QObject *parent) : QObject(parent)
+GMConnection::GMConnection(const QString &serverAddress, const QString &username, const QString &password, const int connectionFreqMS, const int maxActivceConnections, QObject *parent) : QObject(parent)
 {
-    jsonSettings_["serverAddress"] = QJsonValue(serverAddress);
-    jsonSettings_["username"]      = QJsonValue(username);
-    jsonSettings_["password"]      = QJsonValue(password);
+    jsonSettings_["serverAddress"]          = QJsonValue(serverAddress);
+    jsonSettings_["username"]               = QJsonValue(username);
+    jsonSettings_["password"]               = QJsonValue(password);
+    jsonSettings_["connectionFreqMS"]       = QJsonValue(connectionFreqMS);
+    jsonSettings_["maxActiveConnections"]   = QJsonValue(maxActivceConnections);
     settings_->saveSettings(QFile(dbPath_), jsonSettings_);
     checkQueueTimer->start(1000);
     connect(checkQueueTimer, &QTimer::timeout, this, &GMConnection::processConnectionQueue);
@@ -250,7 +252,7 @@ void GMConnection::addToConnectionQueue(const QNetworkAccessManager::Operation r
 void GMConnection::prepConnectionQueue()
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    connectionFrequencyTimer_->start(connectionFreqMS_);
+    connectionFrequencyTimer_->start(jsonSettings_["connectionFreqMS"].toInt());
     processConnectionQueue();
 }
 
@@ -265,7 +267,7 @@ void GMConnection::processConnectionQueue()
     if(!readyForNextConnection_)
         return;
 
-    if(numberOfActiveConnections_ > maxActiveConnections_)
+    if(numberOfActiveConnections_ > jsonSettings_["maxActiveConnections"].toInt())
     {
         qDebug() << "Too many connections! There's more than 100!";
         return;

@@ -40,6 +40,8 @@ void GreenmileConfigWidget::applySettingsToUI()
     ui->usernameLineEdit->setText(jsonSettings_["username"].toString());
     ui->passwordLineEdit->setText(jsonSettings_["password"].toString());
     ui->requestTimeoutSpinbox->setValue(jsonSettings_["requestTimeoutSec"].toInt());
+    ui->maxActiveConnectionsSpinBox->setValue(jsonSettings_["maxActiveConnections"].toInt());
+    ui->connectionFreqMSSpinBox->setValue(jsonSettings_["connectionFreqMS"].toInt());
 }
 
 void GreenmileConfigWidget::saveUItoSettings()
@@ -48,6 +50,8 @@ void GreenmileConfigWidget::saveUItoSettings()
     jsonSettings_["username"] = QJsonValue(ui->usernameLineEdit->text());
     jsonSettings_["password"] = QJsonValue(ui->passwordLineEdit->text());
     jsonSettings_["requestTimeoutSec"] = QJsonValue(ui->requestTimeoutSpinbox->value());
+    jsonSettings_["maxActiveConnections"] = QJsonValue(ui->maxActiveConnectionsSpinBox->value());
+    jsonSettings_["connectionFreqMS"] = QJsonValue(ui->connectionFreqMSSpinBox->value());
     settings_->saveSettings(QFile(dbPath_), jsonSettings_);
 }
 

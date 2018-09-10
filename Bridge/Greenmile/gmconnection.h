@@ -14,6 +14,8 @@ public:
     explicit GMConnection(  const QString &serverAddress,
                             const QString &username,
                             const QString &password,
+                            const int connectionFreqMS,
+                            const int maxActiveConnections,
                             QObject *parent = nullptr);
 
     virtual ~GMConnection();
@@ -68,24 +70,24 @@ private slots:
     void startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal);
     void requestTimedOut();
 private:
-    int connectionFreqMS_ = 100;
-    int numberOfActiveConnections_ = 0;
-    int maxActiveConnections_ = 10;
-
     void addToConnectionQueue(const QNetworkAccessManager::Operation requestType,
                               const QString &requestKey,
                               const QString &serverAddrTail,
                               const QByteArray &data = QByteArray(),
                               const QString &customOperation = QString());
 
+    int numberOfActiveConnections_ = 0;
     bool readyForNextConnection_    = true;
+
     QTimer *checkQueueTimer         = new QTimer(this);
     QString dbPath_                 = qApp->applicationDirPath() + "/gmconnection.db";
     JsonSettings *settings_         = new JsonSettings(this);
     QJsonObject jsonSettings_ {{"serverAddress",        QJsonValue("https://charliesproduce.greenmile.com")},
                                {"username",             QJsonValue("username")},
                                {"password",             QJsonValue("password")},
-                               {"requestTimeoutSec",    QJsonValue(40)}};
+                               {"requestTimeoutSec",    QJsonValue(40)},
+                               {"connectionFreqMS",     QJsonValue(100)},
+                               {"maxActiveConnections", QJsonValue(10)}};
 
     QNetworkAccessManager *qnam_    = new QNetworkAccessManager(this);
     QTimer *routeKeyResponseTimer_  = new QTimer(this);
