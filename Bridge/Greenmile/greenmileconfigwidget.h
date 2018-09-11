@@ -32,7 +32,9 @@ private:
     QJsonObject jsonSettings_ {{"serverAddress",        QJsonValue("https://charliesproduce.greenmile.com")},
                                {"username",             QJsonValue("username")},
                                {"password",             QJsonValue("password")},
-                               {"requestTimeoutSec",    QJsonValue(40)}};
+                               {"requestTimeoutSec",    QJsonValue(40)},
+                               {"maxActiveConnections", QJsonValue(10)},
+                               {"connectionFreqMS",     QJsonValue(100)}};
 
     bool noSettingsNullOrUndefined(const QJsonObject &settings);
     void applySettingsToUI();
