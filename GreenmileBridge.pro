@@ -47,7 +47,8 @@ SOURCES += \
     Bridge/BridgeServices/routeassignmentcorrection.cpp \
     Bridge/BridgeServices/routecheck.cpp \
     Bridge/bridgethreadcontroller.cpp \
-    LogWriter/logwriter.cpp
+    LogWriter/logwriter.cpp \
+    Bridge/Internet/httpconn.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -72,7 +73,8 @@ HEADERS += \
     Bridge/BridgeServices/routeassignmentcorrection.h \
     Bridge/BridgeServices/routecheck.h \
     Bridge/bridgethreadcontroller.h \
-    LogWriter/logwriter.h
+    LogWriter/logwriter.h \
+    Bridge/Internet/httpconn.h
 
 FORMS += \
         mainwindow.ui \
