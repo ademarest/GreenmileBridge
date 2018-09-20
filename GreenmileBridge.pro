@@ -48,7 +48,8 @@ SOURCES += \
     Bridge/BridgeServices/routecheck.cpp \
     Bridge/bridgethreadcontroller.cpp \
     LogWriter/logwriter.cpp \
-    Bridge/Internet/httpconn.cpp
+    Bridge/Internet/httpconn.cpp \
+    Bridge/Geocoding/censusgeocode.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -74,7 +75,8 @@ HEADERS += \
     Bridge/BridgeServices/routecheck.h \
     Bridge/bridgethreadcontroller.h \
     LogWriter/logwriter.h \
-    Bridge/Internet/httpconn.h
+    Bridge/Internet/httpconn.h \
+    Bridge/Geocoding/censusgeocode.h
 
 FORMS += \
         mainwindow.ui \

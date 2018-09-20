@@ -17,7 +17,7 @@ public:
                       const QString &password,
                       const QStringList &headers,
                       const int connectionFreqMS,
-                      const int maxActivceConnections,
+                      const int maxActiveConnections,
                       QObject *parent = nullptr);
 
     virtual ~HTTPConn();
@@ -33,7 +33,7 @@ signals:
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
-    void gmNetworkResponse(const QString &key, const QJsonValue &obj);
+    void networkResponse(const QString &key, const QJsonValue &obj);
 
 protected:
     void addToConnectionQueue(const QNetworkAccessManager::Operation requestType,

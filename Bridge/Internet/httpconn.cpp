@@ -5,7 +5,11 @@ HTTPConn::HTTPConn(const QString &databaseName, QObject *parent) : QObject(paren
     if(!databaseName.isEmpty())
     {
         usingTempDB_ = false;
-        dbPath_ = qApp->applicationDirPath() + databaseName;
+        dbPath_ = qApp->applicationDirPath() + "/" + databaseName;
+    }
+    else
+    {
+        emit debugMessage("Warning, no database name has been set. Using a temp db.");
     }
 
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
@@ -20,7 +24,7 @@ HTTPConn::HTTPConn(const QString &databaseName,
                    const QString &password,
                    const QStringList &headers,
                    const int connectionFreqMS,
-                   const int maxActivceConnections,
+                   const int maxActiveConnections,
                    QObject *parent) : QObject(parent)
 {
     QJsonArray jsonHeaders;
@@ -32,7 +36,7 @@ HTTPConn::HTTPConn(const QString &databaseName,
     if(!databaseName.isEmpty())
     {
         usingTempDB_ = false;
-        dbPath_ = qApp->applicationDirPath() + databaseName;
+        dbPath_ = qApp->applicationDirPath() + "/" + databaseName;
     }
 
     jsonSettings_["serverAddress"]          = QJsonValue(serverAddress);
@@ -40,7 +44,7 @@ HTTPConn::HTTPConn(const QString &databaseName,
     jsonSettings_["password"]               = QJsonValue(password);
     jsonSettings_["headers"]                = QJsonValue(jsonHeaders);
     jsonSettings_["connectionFreqMS"]       = QJsonValue(connectionFreqMS);
-    jsonSettings_["maxActiveConnections"]   = QJsonValue(maxActivceConnections);
+    jsonSettings_["maxActiveConnections"]   = QJsonValue(maxActiveConnections);
     settings_->saveSettings(QFile(dbPath_), jsonSettings_);
     checkQueueTimer_->start(checkQueueIntervalMS_);
     connect(checkQueueTimer_, &QTimer::timeout, this, &HTTPConn::processConnectionQueue);
@@ -48,6 +52,7 @@ HTTPConn::HTTPConn(const QString &databaseName,
 
 HTTPConn::~HTTPConn()
 {
+    qDebug() << "~HTTP";
     if(usingTempDB_)
     {
         QFile db(dbPath_);
@@ -155,6 +160,7 @@ void HTTPConn::processConnectionQueue()
         return;
     }
 
+    qDebug() << "START:HTTPConn::processConnectionQueue";
     QVariantMap requestMap      = connectionQueue_.dequeue();
     int requestType             = requestMap["requestType"].toInt();
     QString requestKey          = requestMap["requestKey"].toString();
@@ -197,6 +203,7 @@ void HTTPConn::processConnectionQueue()
             break;
         case QNetworkAccessManager::Operation::GetOperation :
             emit debugMessage("GetOperation not implemented yet.");
+            networkReplies_[requestKey] = networkManagers_[requestKey]->get(request);
             break;
         case QNetworkAccessManager::Operation::PutOperation :
             qDebug() << "put request" << requestKey;
@@ -226,14 +233,16 @@ void HTTPConn::processConnectionQueue()
     connect(networkTimers_  [requestKey],   &QTimer::timeout,                   this, &HTTPConn::requestTimedOut);
 
     networkRequestsInProgress_.insert(requestKey);
-
     networkTimers_[requestKey]->stop();
     networkTimers_[requestKey]->start(jsonSettings_["requestTimeoutSec"].toInt() * 1000);
     ++numberOfActiveConnections_;
+
+    qDebug() << "END:HTTPConn::processConnectionQueue";
 }
 
 void HTTPConn::handleNetworkReply(QNetworkReply *reply)
 {
+    qDebug() << "START:HTTPConn::handleNetworkReply";
     bool hasErrors = false;
     QString key = reply->objectName();
     QByteArray rawData;
@@ -258,6 +267,7 @@ void HTTPConn::handleNetworkReply(QNetworkReply *reply)
             emit statusMessage(key + " finished without errors.");
         }
         rawData = reply->readAll();
+        qDebug() << "http raw data... " << rawData;
         jDoc = QJsonDocument::fromJson(rawData);
     }
     networkRequestsInProgress_.remove(key);
@@ -276,21 +286,22 @@ void HTTPConn::handleNetworkReply(QNetworkReply *reply)
     {
         qDebug() << "GM Response for " + key + " was an array.";
         json = jDoc.array();
-        emit gmNetworkResponse(key, json);
+        emit networkResponse(key, json);
     }
     else if(jDoc.isObject())
     {
         qDebug() << "GM Response for " + key + " was an object.";
         jObj = jDoc.object();
-        emit gmNetworkResponse(key, jObj);
+        emit networkResponse(key, jObj);
     }
     else
     {
         qDebug() << "GM Response for " + key + " was not valid json.";
         qDebug() << "Raw data is " << rawData;
-        emit gmNetworkResponse(key, QJsonObject());
+        emit networkResponse(key, QJsonObject());
     }
 
+    qDebug() << "END:HTTPConn::handleNetworkReply";
 }
 
 void HTTPConn::startNetworkTimer(qint64 bytesReceived, qint64 bytesTotal)
@@ -326,13 +337,14 @@ void HTTPConn::requestTimedOut()
 
 QNetworkRequest HTTPConn::makeNetworkRequest(const QString &serverAddrTail)
 {
+    qDebug() << "START: HTTPConn::makeNetworkRequest";
     QNetworkRequest request;
     QString serverAddress   = jsonSettings_["serverAddress"].toString() + serverAddrTail;
     QString username        = jsonSettings_["username"].toString();
     QString password        = jsonSettings_["password"].toString();
 
     request.setUrl(QUrl(serverAddress));
-
+    qDebug() << serverAddress;
     if(!username.isEmpty() || !password.isEmpty())
     {
         QString concatenated = username + ":" + password;
@@ -348,5 +360,6 @@ QNetworkRequest HTTPConn::makeNetworkRequest(const QString &serverAddrTail)
                             reqJsonObj["headerValue"].toString().toUtf8());
     }
 
+    qDebug() << "END: HTTPConn::makeNetworkRequest";
     return request;
 }

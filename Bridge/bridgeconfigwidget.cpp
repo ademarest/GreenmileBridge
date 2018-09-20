@@ -7,6 +7,7 @@ BridgeConfigWidget::BridgeConfigWidget(QWidget *parent) :
 {
     ui->setupUi(this);
     connect(gmConn, &GMConnection::gmNetworkResponse, this, &BridgeConfigWidget::handleGMResponse);
+    connect(cgConn, &CensusGeocode::networkResponse, this, &BridgeConfigWidget::handleHTTPResponse);
     init();
 }
 
@@ -19,6 +20,7 @@ BridgeConfigWidget::~BridgeConfigWidget()
 void BridgeConfigWidget::init()
 {
     gmConn->requestAllOrganizationInfo("allOrganizationInfo");
+    cgConn->geocodeLocation("gooblegobble", "444 FERN ST", QString(), "Mabton", "wa", QString());
 }
 
 void BridgeConfigWidget::handleGMResponse(const QString &key, const QJsonValue &jVal)
@@ -28,6 +30,12 @@ void BridgeConfigWidget::handleGMResponse(const QString &key, const QJsonValue &
     {
         populateOrganizations(jVal);
     }
+}
+
+void BridgeConfigWidget::handleHTTPResponse(const QString &key, const QJsonValue &jVal)
+{
+    qDebug() << key << jVal;
+    cgConn->deleteLater();
 }
 
 void BridgeConfigWidget::populateOrganizations(const QJsonValue &jVal)
