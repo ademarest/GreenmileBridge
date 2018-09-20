@@ -46,7 +46,7 @@ void CensusGeocode::geocodeLocation(const QString &key,
     zipCode.replace(QString(" "), QString("+"));
 
     QStringList componentList = {address1, city, state};
-    addressURL.append(componentList.join(", "));
+    addressURL.append(componentList.join(","));
     addressURL.append("&benchmark=4&format=json");
     qDebug() << "Add geocode request to queue." << addressURL;
     addToConnectionQueue(QNetworkAccessManager::Operation::GetOperation, key, addressURL);
