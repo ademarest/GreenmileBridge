@@ -343,6 +343,7 @@ QNetworkRequest HTTPConn::makeNetworkRequest(const QString &serverAddrTail)
     QString username        = jsonSettings_["username"].toString();
     QString password        = jsonSettings_["password"].toString();
 
+    qDebug() << username << password << serverAddress << jsonSettings_["headers"].toArray();
     request.setUrl(QUrl(serverAddress));
     qDebug() << serverAddress;
     if(!username.isEmpty() || !password.isEmpty())

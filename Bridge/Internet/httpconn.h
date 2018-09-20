@@ -47,8 +47,8 @@ protected:
 
     JsonSettings *settings_ = new JsonSettings(this);
     QJsonObject jsonSettings_ {{"serverAddress",        QJsonValue("https://example.com")},
-                               {"username",             QJsonValue("username")},
-                               {"password",             QJsonValue("password")},
+                               {"username",             QJsonValue(QString())},
+                               {"password",             QJsonValue(QString())},
                                {"headers",              QJsonArray()},
                                {"requestTimeoutSec",    QJsonValue(40)},
                                {"connectionFreqMS",     QJsonValue(100)},
