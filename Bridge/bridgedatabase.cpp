@@ -70,6 +70,8 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &assignmentTableN
 QJsonObject BridgeDatabase::getGMLocationsWithBadGeocode(const QString &organizationKey)
 {
     QString query = "SELECT `id` as `location:id`, `key` AS `location:key`,`description` AS `location:description`,`addressLine1` AS `location:addressLine1`,`addressLine2` AS `location:addressLine2`,`city` AS `location:city`, `state` AS `location:state`,`zipCode` AS `location:zipCode`, `organization:id`, `locationType:id` FROM gmLocations WHERE gmLocations.`organization:key` = '"+organizationKey+"' AND gmLocations.`geocodingQuality` = 'UNSUCCESSFULL'";
+    //QString query = "SELECT `id` as `location:id`, `key` AS `location:key`,`description` AS `location:description`,`addressLine1` AS `location:addressLine1`,`addressLine2` AS `location:addressLine2`,`city` AS `location:city`, `state` AS `location:state`,`zipCode` AS `location:zipCode`, `organization:id`, `locationType:id` FROM gmLocations WHERE gmLocations.`organization:key` = '"+organizationKey+"' AND gmLocations.`latitude` = 0";
+
     QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile.");
     QJsonObject returnObj;
 
@@ -210,7 +212,7 @@ QJsonObject BridgeDatabase::getAssignmentsToUpdate(const QString &assignmentTabl
 QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
 {
     QString query = "SELECT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays`, `id` AS `location:id`, `locationType:id`, `organization:id` FROM as400LocationQuery LEFT JOIN gmLocations ON `key` = `location:key` WHERE gmLocations.`key` IN ( SELECT `location:key` FROM ( SELECT DISTINCT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays` FROM as400LocationQuery WHERE as400LocationQuery.`organization:key` = '"+organizationKey+"' EXCEPT SELECT DISTINCT `enabled`, `key`,`description`,`addressLine1`,`addressLine2`,`city`, `state`,`zipCode`,`deliveryDays` FROM gmLocations WHERE gmLocations.`organization:key` = '"+organizationKey+"'))";
-    qDebug() << query;
+    qDebug() << "BridgeDatabase::getLocationsToUpdate" <<  query;
     QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile.");
     QJsonObject returnObj;
 

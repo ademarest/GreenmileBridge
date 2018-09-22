@@ -60,10 +60,10 @@ void LocationUpload::UploadLocations(const QString &key, const QList<QVariantMap
         QString minRouteKey = vMap["minRouteKey"].toString();
         QString maxRouteKey = vMap["maxRouteKey"].toString();
 
-        qDebug() << "AM I HERE0?";
         QJsonObject locations = bridgeDB_->getLocationsToUpload(tableName, organizationKey, date, minRouteKey, maxRouteKey);
         mergeLocationsToUpload(locations);
     }
+
     applyGeocodesToLocations(geocodes);
 
     for(auto key:locationsToUpload_.keys())
@@ -97,9 +97,10 @@ void LocationUpload::UpdateLocations(const QString &key, const QList<QVariantMap
         QString organizationKey = vMap["organization:key"].toString();
 
         mergeLocationsToUpload(bridgeDB_->getLocationsToUpdate(organizationKey));
-        //mergeLocationsToUpload(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
+        mergeLocationsToUpload(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
     }
     applyGeocodesToLocations(geocodes);
+
 
     for(auto key:locationsToUpload_.keys())
     {
@@ -139,21 +140,13 @@ void LocationUpload::applyGeocodesToLocations(const QJsonObject &geocodes)
 {
     for(auto key:geocodes.keys())
     {
-
         QJsonObject jObj = locationsToUpload_[key].toObject();
-        //qDebug() << "location" << key << locationsToUpload_[key].toObject();
-        //qDebug() << "geocode" << key << geocodes[key];
 
-        if(geocodes[key]["status"].toString() == "OK")
-        {
-            jObj["geocodingQuality"]    = QJsonValue("AUTO");
-            jObj["latitude"]            = geocodes[key]["results"].toArray().first()["geometry"]["location"]["lat"];
-            jObj["longitude"]           = geocodes[key]["results"].toArray().first()["geometry"]["location"]["lng"];
-        }
-        else
-        {
-            jObj["geocodingQuality"]    = QJsonValue("UNSUCCESSFULL");
-        }
-        locationsToUpload_[key] = jObj;
+        jObj["geocodingQuality"]    = geocodes[key]["geocodingQuality"];
+        jObj["latitude"]            = geocodes[key]["latitude"];
+        jObj["longitude"]           = geocodes[key]["longitude"];
+        jObj["geocodingDate"]       = geocodes[key]["geocodingDate"];
+        qDebug() << "VERIFY" << jObj;
+        locationsToUpload_[key] = QJsonValue(jObj);
     }
 }

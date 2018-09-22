@@ -25,6 +25,7 @@ signals:
 private slots:
     void saveUItoSettings();
     void switchCensusSettings(bool state);
+    void switchArcGISSettings(bool state);
 
 private:
     Ui::GreenmileConfigWidget *ui;
@@ -40,6 +41,14 @@ private:
     QString censusDBPath_                 = qApp->applicationDirPath() + "/census.db";
     JsonSettings *censusSettings_         = new JsonSettings(this);
     QJsonObject censusJsonSettings_     {{"useCensus",           QJsonValue(false)},
+                                        {"serverAddress",        QJsonValue("https://geocoding.geo.census.gov")},
+                                        {"requestTimeoutSec",    QJsonValue(40)},
+                                        {"maxActiveConnections", QJsonValue(10)},
+                                        {"connectionFreqMS",     QJsonValue(100)}};
+
+    QString arcGISDBPath_                 = qApp->applicationDirPath() + "/arcgis.db";
+    JsonSettings *arcGISSettings_         = new JsonSettings(this);
+    QJsonObject arcGISJsonSettings_     {{"useArcGIS",           QJsonValue(false)},
                                         {"serverAddress",        QJsonValue("https://geocoding.geo.census.gov")},
                                         {"requestTimeoutSec",    QJsonValue(40)},
                                         {"maxActiveConnections", QJsonValue(10)},

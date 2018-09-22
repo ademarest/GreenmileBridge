@@ -3,6 +3,8 @@
 
 #include "Bridge/Greenmile/gmconnection.h"
 #include "Bridge/bridgedatabase.h"
+#include "Bridge/Geocoding/censusgeocode.h"
+#include "Bridge/Geocoding/arcgisgeocode.h"
 #include <QObject>
 
 class LocationGeocode : public QObject
@@ -26,9 +28,14 @@ public slots:
 
 private slots:
     void handleGMResponse(const QString &key, const QJsonValue &response);
+    void handleCensusResponse(const QString &key, const QJsonValue &response);
+    void handleArcGISResponse(const QString &key, const QJsonValue &response);
 
 private:
-    GMConnection *gmConn_ = new GMConnection(this);
+    GMConnection    *gmConn_        = new GMConnection(this);
+    CensusGeocode   *censusConn_    = new CensusGeocode("census.db", this);
+    ARCGISGeocode   *arcGISConn_    = new ARCGISGeocode("arcgis.db", this);
+
     BridgeDatabase *bridgeDB_ = new BridgeDatabase(this);
 
     QString currentKey_;

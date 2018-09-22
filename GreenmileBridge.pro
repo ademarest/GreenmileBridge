@@ -49,7 +49,8 @@ SOURCES += \
     Bridge/bridgethreadcontroller.cpp \
     LogWriter/logwriter.cpp \
     Bridge/Internet/httpconn.cpp \
-    Bridge/Geocoding/censusgeocode.cpp
+    Bridge/Geocoding/censusgeocode.cpp \
+    Bridge/Geocoding/arcgisgeocode.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -76,7 +77,8 @@ HEADERS += \
     Bridge/bridgethreadcontroller.h \
     LogWriter/logwriter.h \
     Bridge/Internet/httpconn.h \
-    Bridge/Geocoding/censusgeocode.h
+    Bridge/Geocoding/censusgeocode.h \
+    Bridge/Geocoding/arcgisgeocode.h
 
 FORMS += \
         mainwindow.ui \

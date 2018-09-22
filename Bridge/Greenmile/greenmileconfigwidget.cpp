@@ -8,6 +8,7 @@ GreenmileConfigWidget::GreenmileConfigWidget(QWidget *parent) :
     ui->setupUi(this);
     connect(ui->saveSettingsButton, &QPushButton::pressed,  this, &GreenmileConfigWidget::saveUItoSettings);
     connect(ui->useCensusCheckBox,  &QCheckBox::clicked,    this, &GreenmileConfigWidget::switchCensusSettings);
+    connect(ui->useArcGISCheckBox,  &QCheckBox::clicked,    this, &GreenmileConfigWidget::switchArcGISSettings);
     applySettingsToUI();
 }
 
@@ -50,10 +51,15 @@ void GreenmileConfigWidget::applySettingsToUI()
     ui->censusMaxActiveConnectionsSpinBox->setValue(censusJsonSettings_["maxActiveConnections"].toInt());
     ui->censusConnectionFreqMSSpinBox->setValue(censusJsonSettings_["connectionFreqMS"].toInt());
     ui->useCensusCheckBox->setChecked(censusJsonSettings_["useCensus"].toBool());
-    qDebug() << censusJsonSettings_["useCensus"].toBool();
-    qDebug() << "load" << censusJsonSettings_["useCensus"].toInt();
-
     switchCensusSettings(ui->useCensusCheckBox->isChecked());
+
+    arcGISJsonSettings_ = arcGISSettings_->loadSettings(QFile(arcGISDBPath_), arcGISJsonSettings_);
+    ui->arcGISAddressLineEdit->setText(arcGISJsonSettings_["serverAddress"].toString());
+    ui->arcGISRequestTimeoutSpinBox->setValue(arcGISJsonSettings_["requestTimeoutSec"].toInt());
+    ui->arcGISMaxActiveConnectionsSpinBox->setValue(arcGISJsonSettings_["maxActiveConnections"].toInt());
+    ui->arcGISConnectionFreqSpinBox->setValue(arcGISJsonSettings_["connectionFreqMS"].toInt());
+    ui->useArcGISCheckBox->setChecked(arcGISJsonSettings_["useArcGIS"].toBool());
+    switchArcGISSettings(ui->useArcGISCheckBox->isChecked());
 }
 
 void GreenmileConfigWidget::saveUItoSettings()
@@ -67,12 +73,19 @@ void GreenmileConfigWidget::saveUItoSettings()
     settings_->saveSettings(QFile(dbPath_), jsonSettings_);
 
     censusJsonSettings_["useCensus"] = QJsonValue(ui->useCensusCheckBox->isChecked());
-    qDebug() << "save" << QJsonValue(ui->useCensusCheckBox->isChecked());
     censusJsonSettings_["serverAddress"] = QJsonValue(ui->censusAddressLineEdit->text());
     censusJsonSettings_["requestTimeoutSec"] = QJsonValue(ui->censusRequestTimeoutSpinBox->value());
     censusJsonSettings_["maxActiveConnections"] = QJsonValue(ui->censusMaxActiveConnectionsSpinBox->value());
     censusJsonSettings_["connectionFreqMS"] = QJsonValue(ui->censusConnectionFreqMSSpinBox->value());
     censusSettings_->saveSettings(QFile(censusDBPath_), censusJsonSettings_);
+
+
+    arcGISJsonSettings_["useArcGIS"] = QJsonValue(ui->useArcGISCheckBox->isChecked());
+    arcGISJsonSettings_["serverAddress"] = QJsonValue(ui->arcGISAddressLineEdit->text());
+    arcGISJsonSettings_["requestTimeoutSec"] = QJsonValue(ui->arcGISRequestTimeoutSpinBox->value());
+    arcGISJsonSettings_["maxActiveConnections"] = QJsonValue(ui->arcGISMaxActiveConnectionsSpinBox->value());
+    arcGISJsonSettings_["connectionFreqMS"] = QJsonValue(ui->arcGISConnectionFreqSpinBox->value());
+    arcGISSettings_->saveSettings(QFile(arcGISDBPath_), arcGISJsonSettings_);
 }
 
 void GreenmileConfigWidget::switchCensusSettings(bool state)
@@ -85,6 +98,27 @@ void GreenmileConfigWidget::switchCensusSettings(bool state)
     ui->censusMaxActiveConnectionsSpinBox->setEnabled(state);
     ui->censusRequestTimeoutLabel->setEnabled(state);
     ui->censusRequestTimeoutSpinBox->setEnabled(state);
+    ui->useCensusCheckBox->setChecked(state);
+    if(state)
+    {
+        switchArcGISSettings(false);
+    }
 }
 
+void GreenmileConfigWidget::switchArcGISSettings(bool state)
+{
+    ui->arcGISAddressLabel->setEnabled(state);
+    ui->arcGISAddressLineEdit->setEnabled(state);
+    ui->arcGISConnectionFreqLabel->setEnabled(state);
+    ui->arcGISConnectionFreqSpinBox->setEnabled(state);
+    ui->arcGISMaxActiveConnectionsLabel->setEnabled(state);
+    ui->arcGISMaxActiveConnectionsSpinBox->setEnabled(state);
+    ui->arcGISRequestTimeoutLabel->setEnabled(state);
+    ui->arcGISRequestTimeoutSpinBox->setEnabled(state);
+    ui->useArcGISCheckBox->setChecked(state);
+    if(state)
+    {
+        switchCensusSettings(false);
+    }
+}
 

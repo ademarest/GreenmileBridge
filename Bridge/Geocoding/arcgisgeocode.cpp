@@ -1,10 +1,10 @@
-#include "censusgeocode.h"
+#include "arcgisgeocode.h"
 
-CensusGeocode::CensusGeocode(const QString &databaseName, QObject *parent) : HTTPConn(databaseName, parent)
+ARCGISGeocode::ARCGISGeocode(const QString &databaseName, QObject *parent) : HTTPConn(databaseName, parent)
 {
 }
 
-CensusGeocode::CensusGeocode(const QString &databaseName,
+ARCGISGeocode::ARCGISGeocode(const QString &databaseName,
                              const QString &serverAddress,
                              const QString &username,
                              const QString &password,
@@ -24,7 +24,7 @@ CensusGeocode::CensusGeocode(const QString &databaseName,
 
 }
 
-void CensusGeocode::geocodeLocation(const QString &key,
+void ARCGISGeocode::geocodeLocation(const QString &key,
                                     QString address1,
                                     QString address2,
                                     QString city,
@@ -33,43 +33,35 @@ void CensusGeocode::geocodeLocation(const QString &key,
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 
-    QString addressURL = "/geocoder/locations/onelineaddress?address=";
+    QString addressURL = "/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=";
+
     address1    = address1.simplified();
     address2    = address2.simplified();
     city        = city.simplified();
     state       = state.simplified();
     zipCode     = zipCode.simplified();
 
-    address1.replace(QString(" "), QString("+"));
-    address2.replace(QString(" "), QString("+"));
-    city.replace(QString(" "), QString("+"));
-    state.replace(QString(" "), QString("+"));
-    zipCode.replace(QString(" "), QString("+"));
-
     QStringList componentList = {address1, city, state};
     addressURL.append(componentList.join(","));
-    addressURL.append("&benchmark=4&format=json");
+    addressURL.append("&outFields=Match_addr,Addr_type");
     qDebug() << "Add geocode request to queue." << addressURL;
     addToConnectionQueue(QNetworkAccessManager::Operation::GetOperation, key, addressURL);
 }
 
 
-void CensusGeocode::geocodeLocation(const QString &key, const QJsonObject &locationJson)
+void ARCGISGeocode::geocodeLocation(const QString &key, const QJsonObject &locationJson)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 
-    QString addressURL =    "/geocoder/locations/onelineaddress?address=";
-    QString address1 =      locationJson["addressLine1"].toString();
-    QString city =          locationJson["city"].toString();
-    QString state =         locationJson["state"].toString();
+    QString addressURL = "/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=";
 
-    address1.replace(QString(" "), QString("+"));
-    city.replace(QString(" "), QString("+"));
-    state.replace(QString(" "), QString("+"));
+    QString address1 =      locationJson["addressLine1"].toString().simplified();
+    QString city =          locationJson["city"].toString().simplified();
+    QString state =         locationJson["state"].toString().simplified();
 
     QStringList componentList = {address1, city, state};
     addressURL.append(componentList.join(","));
-    addressURL.append("&benchmark=4&format=json");
+    addressURL.append("&outFields=Match_addr,Addr_type");
     qDebug() << "Add geocode request to queue." << addressURL;
     addToConnectionQueue(QNetworkAccessManager::Operation::GetOperation, key, addressURL);
 }

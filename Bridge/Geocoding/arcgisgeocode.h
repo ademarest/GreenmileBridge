@@ -1,15 +1,14 @@
-#ifndef CENSUSGEOCODE_H
-#define CENSUSGEOCODE_H
-
+#ifndef ARCGISGEOCODE_H
+#define ARCGISGEOCODE_H
 #include "Bridge/Internet/httpconn.h"
 
-class CensusGeocode : public HTTPConn
+class ARCGISGeocode : public HTTPConn
 {
     Q_OBJECT
 public:
-    explicit CensusGeocode(const QString &databaseName, QObject *parent = nullptr);
+    explicit ARCGISGeocode(const QString &databaseName, QObject *parent = nullptr);
 
-    explicit CensusGeocode(const QString &databaseName,
+    explicit ARCGISGeocode(const QString &databaseName,
                            const QString &serverAddress,
                            const QString &username,
                            const QString &password,
@@ -18,7 +17,7 @@ public:
                            const int maxActiveConnections,
                            QObject *parent = nullptr);
 
-    virtual ~CensusGeocode(){qDebug() << "~CGD";}
+    virtual ~ARCGISGeocode(){qDebug() << "~CGD";}
 
     void geocodeLocation(const QString &key,
                          QString address1,
@@ -30,4 +29,4 @@ public:
     void geocodeLocation(const QString &key, const QJsonObject &locationJson);
 };
 
-#endif // CENSUSGEOCODE_H
+#endif // ARCGISGEOCODE_H

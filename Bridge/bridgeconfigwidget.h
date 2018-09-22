@@ -24,17 +24,12 @@ signals:
 
 private slots:
     void handleGMResponse(const QString &key, const QJsonValue &jVal);
-    void handleHTTPResponse(const QString &key, const QJsonValue &jVal);
 
 private:
     Ui::BridgeConfigWidget *ui;
     void init();
     GMConnection *gmConn = new GMConnection(this);
     void populateOrganizations(const QJsonValue &jVal);
-
-    //TEST
-    CensusGeocode * cgConn = new CensusGeocode("census.db", this);
-
 };
 
 #endif // BRIDGECONFIGWIDGET_H
