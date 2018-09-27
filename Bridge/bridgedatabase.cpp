@@ -278,19 +278,20 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
             QString stopKeyTmp = sql["stop:baseLineSequenceNum"][i].toString() + sql["location:id"][i].toString();
             int stopKey = stopKeyTmp.toInt();
             qDebug() << "stopKeyTmp" << stopKeyTmp;
+
+
+            if(sql["startsPreviousDay"][i].isNull())
+            {
+                startsPrevDay = false;
+            }
+            else
+            {
+                startsPrevDay = true;
+            }
+
             for(auto key:sql.keys())
             {
                 splitKey = key.split(":");
-                if(splitKey.size() != 2)
-                {
-                    if(key == "startsPreviousDay")
-                    {
-                        if(sql[key][i].isNull())
-                            startsPrevDay = false;
-                        else
-                            startsPrevDay = true;
-                    }
-                }
                 if(splitKey.size() == 2)
                 {
 
