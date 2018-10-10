@@ -73,7 +73,7 @@ void BridgeDataCollector::processQueue()
 void BridgeDataCollector::beginGathering(const QVariantMap &request)
 {
     QStringList sources;
-    QStringList sourceOverrides = request["sourPOceOverrides"].toStringList();
+    QStringList sourceOverrides = request["sourceOverrides"].toStringList();
     QDate date = request["date"].toDate();
     QString key = request["key"].toString();
     int monthsUntilCustDisabled = request["monthsUntilCustDisabled"].toInt();
@@ -95,6 +95,8 @@ void BridgeDataCollector::beginGathering(const QVariantMap &request)
         }
     }
 
+    qDebug() << "Source order" << sources;
+
     prepDatabases(sources);
     for(auto source : sources)
     {
@@ -112,7 +114,7 @@ void BridgeDataCollector::beginGathering(const QVariantMap &request)
             activeJobs_.insert(source);
             totalJobs_ = activeJobs_.size();
             emit progress(activeJobs_.size(), totalJobs_);
-            dlmrsConn->requestAssignments("dlmrsDailyAssignments", "Today");
+            dlmrsConn->requestAssignments("dlmrsDailyAssignments", date);
             continue;
         }
 

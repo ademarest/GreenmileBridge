@@ -97,7 +97,7 @@ void LocationUpload::UpdateLocations(const QString &key, const QList<QVariantMap
         QString organizationKey = vMap["organization:key"].toString();
 
         mergeLocationsToUpload(bridgeDB_->getLocationsToUpdate(organizationKey));
-        mergeLocationsToUpload(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
+        //mergeLocationsToUpload(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
     }
     applyGeocodesToLocations(geocodes);
 
