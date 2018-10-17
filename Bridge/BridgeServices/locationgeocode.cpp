@@ -95,7 +95,7 @@ void LocationGeocode::GeocodeUpdateLocations(const QString &key, const QList<QVa
     {
         QString organizationKey = vMap["organization:key"].toString();
         mergeLocationsToGeocode(bridgeDB_->getLocationsToUpdate(organizationKey));
-        //mergeLocationsToGeocode(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
+        mergeLocationsToGeocode(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
     }
 
     qDebug() << "Size of locations to geocode is..." << locationsToGeocode_.size();

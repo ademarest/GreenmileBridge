@@ -119,7 +119,7 @@ void Bridge::processQueue()
         addActiveJob(jobKey);
         startDataCollection(jobKey, currentRequest_["date"].toDate(), currentRequest_["monthsUntilCustDisabled"].toInt());
 
-        bridgeMalfunctionTimer->start(4500000);
+        bridgeMalfunctionTimer->start(1800000);
     }
 }
 

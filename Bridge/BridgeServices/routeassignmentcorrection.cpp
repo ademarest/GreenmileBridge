@@ -167,7 +167,6 @@ void RouteAssignmentCorrection::uploadAssignments()
             gmAssignConn_->assignEquipmentToRoute(routeEquipmentAssignmentKey, routeEquipmentAssignmentObj);
         }
     }
-
     for(auto key:routeAssignmentsToCorrect_.keys())
     {
         QStringList splitKey = key.split(":");
@@ -188,6 +187,13 @@ void RouteAssignmentCorrection::uploadAssignments()
             activeJobs_.insert(routeDriverAssignmentKey);
             gmAssignConn_->assignDriverToRoute(routeDriverAssignmentKey, routeDriverAssignmentObj);
         }
+    }
+
+    if(activeJobs_.empty())
+    {
+        qDebug() << "finished assignments";
+        emit finished(currentKey_, correctedRouteAssignments_);
+        reset();
     }
 }
 
