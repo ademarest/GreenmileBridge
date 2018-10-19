@@ -17,6 +17,7 @@ signals:
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
     void finished(const QString &key, const QJsonObject &result);
+    void failed(const QString &key, const QString &reason);
 
 public slots:
     void UploadRoutes(const QString &key, const QList<QVariantMap> &argList);

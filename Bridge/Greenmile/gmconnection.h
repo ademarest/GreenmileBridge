@@ -56,8 +56,8 @@ signals:
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
-
     void gmNetworkResponse(const QString &key, const QJsonValue &obj);
+    void failed(const QString &key, const QString &reason);
 
 public slots:
 

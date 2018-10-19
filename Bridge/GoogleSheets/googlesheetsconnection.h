@@ -27,6 +27,7 @@ signals:
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
     void oauth2AlreadyGranted();
     void data(const QString &key, const QJsonObject &data);
+    void failed(const QString &key, const QString &reason);
 
 public slots:
     void loadSettings();

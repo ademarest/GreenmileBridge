@@ -275,9 +275,9 @@ void GMConnection::processConnectionQueue()
 
     if(connectionQueue_.isEmpty())
     {
-        emit debugMessage("GMConnection::processConnectionQueue(): "
-                          "Greenmile connection queue is empty. "
-                          "Will not attempt to dequeue.");
+//        emit debugMessage("GMConnection::processConnectionQueue(): "
+//                          "Greenmile connection queue is empty. "
+//                          "Will not attempt to dequeue.");
 
         connectionFrequencyTimer_->stop();
         readyForNextConnection_ = true;
@@ -377,11 +377,14 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
     QJsonArray json;
     QJsonObject jObj;
     QJsonDocument jDoc;
+
     if(reply->error() != QNetworkReply::NoError)
     {
         hasErrors = true;
         emit errorMessage(key + " finished with errors. " + reply->errorString());
         emit errorMessage(key + " server response was " + reply->readAll());
+        emit failed(key, reply->errorString());
+
         qDebug() << reply->error();
     }
     if(reply->isOpen())
@@ -397,6 +400,7 @@ void GMConnection::handleNetworkReply(QNetworkReply *reply)
         rawData = reply->readAll();
         jDoc = QJsonDocument::fromJson(rawData);
     }
+
     networkRequestsInProgress_.remove(key);
     networkTimers_[key]->stop();
     networkTimers_[key]->deleteLater();
@@ -454,7 +458,7 @@ void GMConnection::requestTimedOut()
     QString key = sender()->objectName();
     emit statusMessage("Network request for Greenmile " + key + " has timed out.");
     emit statusMessage("Aborting network call for Greenmile " + key + ".");
-
+    emit failed(key, "Request timed out.");
     //Calling abort also emits finished.
     networkReplies_[key]->abort();
 }

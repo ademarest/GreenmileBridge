@@ -35,6 +35,8 @@ public:
                                      const QString &minRouteString = QString(),
                                      const QString &maxRouteString = QString());
 
+    QJsonObject getStopsToDelete();
+
     QJsonObject getGMLocationsWithBadGeocode(const QString &organizationKey);
 
     QJsonArray getDriversToUpdate();
@@ -64,6 +66,8 @@ signals:
     void statusMessage(const QString &status);
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
+    void failed(const QString &key, const QString &reason);
+    void emptyResultSet(const QString &key);
     void asyncSqlResults(const bool isFirstRun,
                          const QString &queryKey,
                          const QMap<QString, QVariantList> &sqlResults);

@@ -6,6 +6,10 @@ MRSConnection::MRSConnection(const QString &databaseName, QObject *parent) : QOb
     googleSheets_ = new GoogleSheetsConnection(databaseName, this);
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
     connect(googleSheets_, &GoogleSheetsConnection::data, this, &MRSConnection::handleNetworkReply);
+    connect(googleSheets_, &GoogleSheetsConnection::failed, this, &MRSConnection::failed);
+    connect(googleSheets_, &GoogleSheetsConnection::statusMessage, this, &MRSConnection::statusMessage);
+    connect(googleSheets_, &GoogleSheetsConnection::debugMessage, this, &MRSConnection::debugMessage);
+    connect(googleSheets_, &GoogleSheetsConnection::errorMessage, this, &MRSConnection::errorMessage);
 }
 
 MRSConnection::~MRSConnection()
@@ -26,7 +30,10 @@ void MRSConnection::requestAssignments(const QString &key, const QString &sheetN
 void MRSConnection::handleNetworkReply(const QString &key, const QJsonObject &data)
 {
     if(data.isEmpty())
+    {
         emit errorMessage("Empty result set for " + key + ". Check network connections.");
+        emit failed(key, "Empty result set for " + key + ". Check network connections.");
+    }
     else
     {
         emit statusMessage("Google sheets retrieved for " + key + ".");

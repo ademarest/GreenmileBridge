@@ -27,8 +27,29 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &assignmentTableN
     if(minRouteString.isNull() || maxRouteString.isNull())
         routeKeyBoundaries = QString();
 
-    qDebug() << "AM I HERE?";
     QJsonObject locationObj;
+
+    QString gmTestQuery = "SELECT * FROM gmLocations";
+    QMap<QString,QVariantList> gmTestSQL = executeQuery(gmTestQuery, "Determining if GM locations exist.");
+
+    QString as400TestQuery = "SELECT * FROM as400LocationQuery";
+    QMap<QString,QVariantList> as400TestSQL = executeQuery(as400TestQuery, "Determining if GM locations exist.");
+
+    if(gmTestSQL.isEmpty())
+    {
+        emit errorMessage("Error: Greenmile Locations are empty.");
+        //failed("Get locations to upload.", "Greenmile locations were empty.");
+        return QJsonObject();
+    }
+
+    if(as400TestQuery.isEmpty())
+    {
+        emit errorMessage("Error: AS400 Locations are empty.");
+        //failed("Get locations to upload.", "AS400 locations were empty.");
+        return QJsonObject();
+    }
+
+
     QString query = "SELECT DISTINCT "
                     "as400RouteQuery.`location:key` as `key`,"
                     "as400RouteQuery.`location:addressLine1` as `addressLine1`,"
@@ -65,6 +86,23 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &assignmentTableN
         qDebug() << "sql empty";
 
     return locationObj;
+}
+
+QJsonObject BridgeDatabase::getStopsToDelete()
+{
+    QString query = "SELECT routeQuery.`order:number` as `order:number`, routeQuery.`order:pieces` as `order:plannedSize1`, routeQuery.`order:cube` as `order:plannedSize2`, routeQuery.`order:weight` as `order:plannedSize3`, routeQuery.`route:date`, routeQuery.`route:key`, routeQuery.`stop:baseLineSequenceNum`, gmOrg.`id` as `organization:id`, `gmDriverInfo`.`id` as `driver:id`, `gmEquipmentInfo`.`id` as `equipment:id`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedArrival`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedComplete`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedDeparture`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedStart`, `rst`.`avgStartsPrev` AS `startsPreviousDay`, `gmLoc`.`id` as `origin:id`, `gmLoc`.`id` as `destination:id`, `gmLocID`.`id` as `location:id` FROM as400RouteQuery `routeQuery` LEFT JOIN gmOrganizations `gmOrg` ON gmOrg.`key` = routeQuery.`organization:key` LEFT JOIN dlmrsDailyAssignments `dailyAssignment` ON `routeQuery`.`route:key` = `dailyAssignment`.`route:key` AND `routeQuery`.`route:date` = `dailyAssignment`.`route:date` AND `routeQuery`.`organization:key` = `dailyAssignment`.`organization:key` LEFT JOIN drivers `mrsDataDrivers` ON `dailyAssignment`.`driver:name` = `mrsDataDrivers`.`employeeName` LEFT JOIN gmDrivers `gmDriverInfo` ON `gmDriverInfo`.`login` = `mrsDataDrivers`.`employeeNumber` LEFT JOIN gmEquipment `gmEquipmentInfo` ON `gmEquipmentInfo`.`key` = `dailyAssignment`.`truck:key` LEFT JOIN routeStartTimes `rst` ON `rst`.`route` = `routeQuery`.`route:key` LEFT JOIN gmLocations `gmLoc` ON `gmLoc`.`key` = `routeQuery`.`organization:key` LEFT JOIN gmLocations `gmLocID` ON `gmLocID`.`key` = `routeQuery`.`location:key` WHERE `routeQuery`.`organization:key` = \"SEATTLE\" AND `routeQuery`.`route:date` = \"2018-10-17\" AND `routeQuery`.`route:key` IN (SELECT `key` FROM gmRoutes WHERE `organization:key` = \"SEATTLE\" AND `date` = \"2018-10-17\") ";
+    QMap<QString, QVariantList> sql = executeQuery(query, "Performing route check.");
+    QJsonObject assembledAS400Routes = assembleUploadRouteFromQuery(sql);
+    for(auto key:assembledAS400Routes.keys())
+    {
+        if(key.contains("routeUpload"))
+        {
+            qDebug() << assembledAS400Routes[key];
+        }
+    }
+
+    qDebug() << "keeyz" << assembledAS400Routes.keys();
+    return QJsonObject();
 }
 
 QJsonObject BridgeDatabase::getGMLocationsWithBadGeocode(const QString &organizationKey)
@@ -217,6 +255,27 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
     qDebug() << "BridgeDatabase::getLocationsToUpdate" <<  query;
     QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile.");
     QJsonObject returnObj;
+
+    QString gmTestQuery = "SELECT * FROM gmLocations";
+    QMap<QString,QVariantList> gmTestSQL = executeQuery(gmTestQuery, "Determining if GM locations exist.");
+
+    QString as400TestQuery = "SELECT * FROM as400LocationQuery";
+    QMap<QString,QVariantList> as400TestSQL = executeQuery(as400TestQuery, "Determining if GM locations exist.");
+
+    if(gmTestSQL.isEmpty())
+    {
+        emit errorMessage("Error: Greenmile Locations are empty.");
+        //failed("Get locations to upload.", "Greenmile locations were empty.");
+        return QJsonObject();
+    }
+
+    if(as400TestQuery.isEmpty())
+    {
+        emit errorMessage("Error: AS400 Locations are empty.");
+        //failed("Get locations to upload.", "AS400 locations were empty.");
+        return QJsonObject();
+    }
+
 
     if(!sql.empty())
     {

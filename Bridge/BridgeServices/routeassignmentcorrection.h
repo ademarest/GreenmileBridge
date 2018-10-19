@@ -16,8 +16,9 @@ signals:
     void statusMessage(const QString &status);
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
-
     void finished(const QString &key, const QJsonObject &result);
+    void failed(const QString &key, const QString &reason);
+
 
 public slots:
     void CorrectRouteAssignments(const QString &key, const QList<QVariantMap> &argList);

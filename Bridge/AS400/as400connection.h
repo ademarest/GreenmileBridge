@@ -34,6 +34,9 @@ public:
 
 signals:
     void sqlResults(const QString &key, const QMap<QString,QVariantList> &sql);
+    void failed(const QString &key, const QString &reason);
+    void emptyResultSet(const QString &key);
+
     void statusMessage(const QString &status);
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);

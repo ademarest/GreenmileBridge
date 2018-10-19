@@ -173,7 +173,7 @@ bool AS400::queryAS400(const QString &key, const QString &queryString, const int
                 success = false;
                 emit errorMessage("AS400 Query Error: " + query.lastError().text());
                 emit errorMessage("Emitting empty result set.");
-
+                emit failed(key, query.lastError().text());
                 qDebug() << query.lastError().text();
                 emit sqlResults(key, QMap<QString,QVariantList>());
             }
@@ -184,7 +184,7 @@ bool AS400::queryAS400(const QString &key, const QString &queryString, const int
             success = false;
             emit errorMessage("AS400 Error: " + odbc.lastError().text());
             emit errorMessage("Emitting empty result set.");
-
+            emit failed(key, odbc.lastError().text());
             qDebug() << "AS400 Error: " + odbc.lastError().text();
             emit sqlResults(key, QMap<QString,QVariantList>());
         }
@@ -198,8 +198,15 @@ void AS400::processQuery(const QString &key, QSqlQuery &query, const int chunkSi
 {
     bool firstRun = true;
     int recordCounter = 0;
+    int maxRecords = 0;
     QMap<QString,QVariantList> sqlData;
 
+    while(query.next())
+    {
+        ++maxRecords;
+    }
+    query.first();
+    query.previous();
     while(query.next())
     {
         if(recordCounter == chunkSize && chunkSize != 0)
@@ -208,6 +215,7 @@ void AS400::processQuery(const QString &key, QSqlQuery &query, const int chunkSi
             {
                 emit debugMessage("AS400 query returned an empty result set.");
                 qDebug() << "AS400 query returned an empty result set.";
+                emit emptyResultSet(key);
                 emit sqlResults(key, sqlData);
                 qDebug() << "AS400 First run " << firstRun;
                 return;
@@ -235,6 +243,11 @@ void AS400::processQuery(const QString &key, QSqlQuery &query, const int chunkSi
         ++recordCounter;
     }
 
+    if(maxRecords != recordCounter)
+    {
+        emit errorMessage("Error! Lost connection midway through AS400 query. Aborting.");
+        emit failed(key, "Error! Lost connection midway through AS400 query. Aborting. " + QString::number(recordCounter) + "/" + QString::number(maxRecords) + " records imported.");
+    }
     //Count the amt of records.
     if(sqlData.isEmpty())
     {
@@ -251,6 +264,9 @@ void AS400::processQuery(const QString &key, QSqlQuery &query, const int chunkSi
         sqlData[key].clear();
 
     sqlData.clear();
+
+    qDebug() << "End active?" << query.isActive();
+
     return;
 }
 

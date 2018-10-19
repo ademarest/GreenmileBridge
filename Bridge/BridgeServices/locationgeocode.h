@@ -21,6 +21,7 @@ signals:
     void errorMessage(const QString &error);
     void progress();
     void finished(const QString &key, const QJsonObject &result);
+    void failed(const QString &key, const QString &reason);
 
 public slots:
     void GeocodeLocations(const QString &key, const QList<QVariantMap> &argList);

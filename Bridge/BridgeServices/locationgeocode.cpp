@@ -6,13 +6,17 @@ LocationGeocode::LocationGeocode(QObject *parent) : QObject(parent)
     connect(censusConn_, &CensusGeocode::networkResponse, this, &LocationGeocode::handleCensusResponse);
     connect(arcGISConn_, &ARCGISGeocode::networkResponse, this, &LocationGeocode::handleArcGISResponse);
 
-    connect(gmConn_, &GMConnection::statusMessage, this, &LocationGeocode::statusMessage);
-    connect(gmConn_, &GMConnection::errorMessage, this, &LocationGeocode::errorMessage);
-    connect(gmConn_, &GMConnection::debugMessage, this, &LocationGeocode::debugMessage);
+    connect(gmConn_, &GMConnection::statusMessage,  this, &LocationGeocode::statusMessage);
+    connect(gmConn_, &GMConnection::errorMessage,   this, &LocationGeocode::errorMessage);
+    connect(gmConn_, &GMConnection::debugMessage,   this, &LocationGeocode::debugMessage);
+    connect(gmConn_, &GMConnection::failed,         this, &LocationGeocode::failed);
 
     //connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &LocationGeocode::statusMessage);
-    connect(bridgeDB_, &BridgeDatabase::errorMessage, this, &LocationGeocode::errorMessage);
-    connect(bridgeDB_, &BridgeDatabase::debugMessage, this, &LocationGeocode::debugMessage);
+    connect(bridgeDB_, &BridgeDatabase::errorMessage,   this, &LocationGeocode::errorMessage);
+    connect(bridgeDB_, &BridgeDatabase::statusMessage,  this, &LocationGeocode::statusMessage);
+    connect(bridgeDB_, &BridgeDatabase::debugMessage,   this, &LocationGeocode::debugMessage);
+    connect(bridgeDB_, &BridgeDatabase::failed,         this, &LocationGeocode::failed);
+
 }
 
 LocationGeocode::~LocationGeocode()
@@ -95,7 +99,7 @@ void LocationGeocode::GeocodeUpdateLocations(const QString &key, const QList<QVa
     {
         QString organizationKey = vMap["organization:key"].toString();
         mergeLocationsToGeocode(bridgeDB_->getLocationsToUpdate(organizationKey));
-        mergeLocationsToGeocode(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
+        //mergeLocationsToGeocode(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
     }
 
     qDebug() << "Size of locations to geocode is..." << locationsToGeocode_.size();

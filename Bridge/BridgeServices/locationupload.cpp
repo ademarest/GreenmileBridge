@@ -4,13 +4,17 @@ LocationUpload::LocationUpload(QObject *parent) : QObject(parent)
 {
     connect(gmConn_, &GMConnection::gmNetworkResponse, this, &LocationUpload::handleGMResponse);
 
-    connect(gmConn_, &GMConnection::statusMessage, this, &LocationUpload::statusMessage);
-    connect(gmConn_, &GMConnection::errorMessage, this, &LocationUpload::errorMessage);
-    connect(gmConn_, &GMConnection::debugMessage, this, &LocationUpload::debugMessage);
+    connect(gmConn_,    &GMConnection::statusMessage,   this, &LocationUpload::statusMessage);
+    connect(gmConn_,    &GMConnection::errorMessage,    this, &LocationUpload::errorMessage);
+    connect(gmConn_,    &GMConnection::debugMessage,    this, &LocationUpload::debugMessage);
+    connect(gmConn_,    &GMConnection::failed,          this, &LocationUpload::failed);
 
     //connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &LocationUpload::statusMessage);
     connect(bridgeDB_, &BridgeDatabase::errorMessage, this, &LocationUpload::errorMessage);
+    connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &LocationUpload::statusMessage);
     connect(bridgeDB_, &BridgeDatabase::debugMessage, this, &LocationUpload::debugMessage);
+    connect(bridgeDB_, &BridgeDatabase::failed, this, &LocationUpload::failed);
+
 }
 
 LocationUpload::~LocationUpload()
@@ -97,7 +101,7 @@ void LocationUpload::UpdateLocations(const QString &key, const QList<QVariantMap
         QString organizationKey = vMap["organization:key"].toString();
 
         mergeLocationsToUpload(bridgeDB_->getLocationsToUpdate(organizationKey));
-        mergeLocationsToUpload(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
+        //mergeLocationsToUpload(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
     }
     applyGeocodesToLocations(geocodes);
 

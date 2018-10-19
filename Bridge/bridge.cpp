@@ -20,15 +20,18 @@ void Bridge::init()
     SELECT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays`, `id` FROM as400LocationQuery LEFT JOIN gmLocations ON `key` = `location:key` WHERE gmLocations.`key` IN ( SELECT `location:key` FROM ( SELECT DISTINCT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays` FROM as400LocationQuery WHERE as400LocationQuery.`organization:key` = 'SEATTLE' EXCEPT SELECT DISTINCT `enabled`, `key`,`description`,`addressLine1`,`addressLine2`,`city`, `state`,`zipCode`,`deliveryDays` FROM gmLocations WHERE gmLocations.`organization:key` = 'SEATTLE' ) )
     */
 
-    qDebug() << settings_;
-
     connect(dataCollector, &BridgeDataCollector::finished, this, &Bridge::finishedDataCollection);
+    connect(dataCollector, &BridgeDataCollector::failed, this, &Bridge::handleComponentFailure);
 
     connect(locationUpdateGeocode_, &LocationGeocode::finished, this,   &Bridge::finishedLocationUpdateGeocode);
+    connect(locationUpdateGeocode_, &LocationGeocode::failed, this,     &Bridge::handleComponentFailure);
     connect(locationUpdate_,        &LocationUpload::finished, this,    &Bridge::finishedLocationUpdate);
+    connect(locationUpdate_,        &LocationUpload::failed, this,      &Bridge::handleComponentFailure);
 
     connect(locationUploadGeocode_, &LocationGeocode::finished, this,   &Bridge::finishedLocationUploadGeocode);
+    connect(locationUploadGeocode_, &LocationGeocode::failed, this,     &Bridge::handleComponentFailure);
     connect(locationUpload_,        &LocationUpload::finished, this,    &Bridge::finishedLocationUpload);
+    connect(locationUpload_,        &LocationUpload::failed, this,      &Bridge::handleComponentFailure);
 
     connect(routeCheck_, &RouteCheck::finished, this, &Bridge::finishedRouteCheck);
     connect(routeUpload_, &RouteUpload::finished, this, &Bridge::finishedRouteUpload);
@@ -36,24 +39,33 @@ void Bridge::init()
 
     connect(dataCollector, &BridgeDataCollector::progress, this, &Bridge::currentJobProgress);
     connect(dataCollector, &BridgeDataCollector::statusMessage, this, &Bridge::statusMessage);
+    connect(dataCollector, &BridgeDataCollector::debugMessage, this, &Bridge::debugMessage);
     connect(dataCollector, &BridgeDataCollector::errorMessage, this, &Bridge::errorMessage);
 
     connect(locationUploadGeocode_, &LocationGeocode::statusMessage, this, &Bridge::statusMessage);
+    connect(locationUploadGeocode_, &LocationGeocode::debugMessage, this, &Bridge::debugMessage);
     connect(locationUploadGeocode_, &LocationGeocode::errorMessage, this, &Bridge::errorMessage);
 
     connect(locationUpload_, &LocationUpload::statusMessage, this, &Bridge::statusMessage);
+    connect(locationUpload_, &LocationUpload::debugMessage, this, &Bridge::debugMessage);
     connect(locationUpload_, &LocationUpload::errorMessage, this, &Bridge::errorMessage);
 
     connect(routeCheck_, &RouteCheck::statusMessage, this, &Bridge::statusMessage);
+    connect(routeCheck_, &RouteCheck::debugMessage, this, &Bridge::debugMessage);
     connect(routeCheck_, &RouteCheck::errorMessage, this, &Bridge::errorMessage);
 
     connect(routeUpload_, &RouteUpload::statusMessage, this, &Bridge::statusMessage);
+    connect(routeUpload_, &RouteUpload::debugMessage, this, &Bridge::debugMessage);
     connect(routeUpload_, &RouteUpload::errorMessage, this, &Bridge::errorMessage);
 
     connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::statusMessage, this, &Bridge::statusMessage);
     connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::errorMessage, this, &Bridge::errorMessage);
 
-    bridgeTimer->start(600000);
+    connect(this, &Bridge::statusMessage, logger_, &LogWriter::writeLogEntry);
+    connect(this, &Bridge::debugMessage, logger_, &LogWriter::writeLogEntry);
+    connect(this, &Bridge::errorMessage, logger_, &LogWriter::writeLogEntry);
+
+    bridgeTimer->start(400000);
     queueTimer->start(1000);
 }
 
@@ -100,8 +112,15 @@ void Bridge::removeRequest(const QString &key)
             requestQueue_.removeAt(i);
 }
 
+void Bridge::handleComponentFailure(const QString &key, const QString &reason)
+{
+    emit errorMessage(key + " failed. Aborting bridge. " + reason);
+    abort();
+}
+
 void Bridge::processQueue()
 {
+
     if(hasActiveJobs() || requestQueue_.isEmpty())
         return;
     else
@@ -283,6 +302,7 @@ void Bridge::handleJobCompletion(const QString &key)
 
 void Bridge::abort()
 {
+    qDebug() << "Abort";
     QString key = currentRequest_["key"].toString();
     emit errorMessage("ERROR: " + key + " ABORTED.");
 
@@ -304,6 +324,7 @@ void Bridge::abort()
     routeCheck_->deleteLater();
     routeUpload_->deleteLater();
     routeAssignmentCorrection_->deleteLater();
+    logger_->deleteLater();
 
     totalJobCount_ = 0;
     activeJobCount_ = 0;
@@ -326,13 +347,18 @@ void Bridge::rebuild(const QString &key)
     routeCheck_                 = new RouteCheck(this);
     routeUpload_                = new RouteUpload(this);
     routeAssignmentCorrection_  = new RouteAssignmentCorrection(this);
+    logger_                     = new LogWriter(this);
 
     init();
 
     emit statusMessage("Bridge has been reset. Restarting queue.");
+    qDebug() << 12;
     emit rebuilt(key);
+    qDebug() << 13;
     bridgeTimer->start(600000);
+    qDebug() << 14;
     queueTimer->start(1000);
+    qDebug() << 14.5;
 }
 
 void Bridge::applyScheduleHierarchy()

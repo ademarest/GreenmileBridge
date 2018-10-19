@@ -8,6 +8,12 @@ BridgeDataCollector::BridgeDataCollector(QObject *parent) : QObject(parent)
     connect(gmConn, &GMConnection::gmNetworkResponse, this, &BridgeDataCollector::handleJsonResponse);
     connect(as400, &AS400::sqlResults, this, &BridgeDataCollector::handleSQLResponse);
 
+    connect(mrsConn,        &MRSConnection::failed,             this, &BridgeDataCollector::handleComponentFailure);
+    connect(dlmrsConn,      &MRSConnection::failed,             this, &BridgeDataCollector::handleComponentFailure);
+    connect(routeSheetData, &GoogleSheetsConnection::failed,    this, &BridgeDataCollector::handleComponentFailure);
+    connect(gmConn,         &GMConnection::failed,              this, &BridgeDataCollector::handleComponentFailure);
+    connect(as400,          &AS400::failed,                     this, &BridgeDataCollector::handleComponentFailure);
+
     //connect(bridgeDB, &BridgeDatabase::statusMessage, this, &BridgeDataCollector::statusMessage);
     connect(bridgeDB, &BridgeDatabase::errorMessage, this, &BridgeDataCollector::errorMessage);
     connect(bridgeDB, &BridgeDatabase::debugMessage, this, &BridgeDataCollector::debugMessage);
@@ -276,6 +282,12 @@ void BridgeDataCollector::handleJsonResponse(const QString &key, const QJsonValu
     handleJobCompletion(key);
 }
 
+void BridgeDataCollector::handleComponentFailure(const QString &key, const QString &reason)
+{
+    emit errorMessage("Failed to complete an information gathering task." + key + " Error: " + reason);
+    emit failed(key, reason);
+}
+
 void BridgeDataCollector::handleJobCompletion(const QString &key)
 {
     activeJobs_.remove(key);
@@ -286,6 +298,8 @@ void BridgeDataCollector::handleJobCompletion(const QString &key)
     {
         emit statusMessage("Completed data collection for " + key + ".");
         emit finished(currentKey_);
+        //QList<QString> crash;
+        //QString crashy = crash.first();
         currentKey_.clear();
     }
 }

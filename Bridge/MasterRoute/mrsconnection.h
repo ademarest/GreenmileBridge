@@ -18,6 +18,7 @@ signals:
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
     void mrsDailyScheduleSQL(const QString &key,const QMap<QString,QVariantList> &sql);
+    void failed(const QString &key, const QString &reason);
 
 private slots:
     void handleNetworkReply(const QString &key, const QJsonObject &data);

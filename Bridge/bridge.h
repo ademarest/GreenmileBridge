@@ -12,6 +12,7 @@
 #include "Bridge/BridgeServices/routeassignmentcorrection.h"
 #include "Bridge/BridgeServices/routecheck.h"
 #include "Greenmile/gmconnection.h"
+#include "LogWriter/logwriter.h"
 
 class Bridge : public QObject
 {
@@ -39,6 +40,7 @@ public slots:
     void addRequest(const QString &key);
     bool hasActiveJobs();
     void removeRequest(const QString &key);
+    void handleComponentFailure(const QString &key, const QString &reason);
     void abort();
 
 private slots:
@@ -97,6 +99,7 @@ private:
     RouteUpload *routeUpload_ = new RouteUpload(this);
     RouteAssignmentCorrection *routeAssignmentCorrection_ = new RouteAssignmentCorrection(this);
     RouteCheck *routeCheck_ = new RouteCheck(this);
+    LogWriter *logger_ = new LogWriter(this);
     //END BRIDGE MEMBER SUBSECTION
 
     void init();

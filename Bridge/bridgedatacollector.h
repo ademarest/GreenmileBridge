@@ -24,12 +24,14 @@ signals:
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
 
+    void failed(const QString &key, const QString &reason);
     void finished(const QString &key);
     void progress(const int remainingJobs, const int totalJobs);
 
 private slots:
     void handleSQLResponse(const QString &key, const QMap<QString, QVariantList> &sql);
     void handleJsonResponse(const QString &key, const QJsonValue &jVal);
+    void handleComponentFailure(const QString &key, const QString &reason);
 
 public slots:
 

@@ -7,7 +7,7 @@ RouteUpload::RouteUpload(QObject *parent) : QObject(parent)
     connect(gmConn_, &GMConnection::errorMessage, this, &RouteUpload::errorMessage);
     connect(gmConn_, &GMConnection::debugMessage, this, &RouteUpload::debugMessage);
 
-    //connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &RouteUpload::statusMessage);
+    connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &RouteUpload::statusMessage);
     connect(bridgeDB_, &BridgeDatabase::errorMessage, this, &RouteUpload::errorMessage);
     connect(bridgeDB_, &BridgeDatabase::debugMessage, this, &RouteUpload::debugMessage);
 }

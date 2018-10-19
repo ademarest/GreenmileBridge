@@ -254,6 +254,7 @@ void HTTPConn::handleNetworkReply(QNetworkReply *reply)
         hasErrors = true;
         emit errorMessage(key + " finished with errors. " + reply->errorString());
         emit errorMessage(key + " server response was " + reply->readAll());
+        emit failed(key, reply->errorString());
         qDebug() << reply->error();
     }
     if(reply->isOpen())
@@ -330,7 +331,7 @@ void HTTPConn::requestTimedOut()
     QString key = sender()->objectName();
     emit statusMessage("Network request " + key + " has timed out.");
     emit statusMessage("Aborting network call " + key + ".");
-
+    emit failed(key, "Request timed out.");
     //Calling abort also emits finished.
     networkReplies_[key]->abort();
 }

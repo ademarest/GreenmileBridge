@@ -15,6 +15,7 @@ RouteAssignmentCorrection::RouteAssignmentCorrection(QObject *parent) : QObject(
 
     //connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &RouteAssignmentCorrection::statusMessage);
     connect(bridgeDB_, &BridgeDatabase::errorMessage, this, &RouteAssignmentCorrection::errorMessage);
+    connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &RouteAssignmentCorrection::statusMessage);
     connect(bridgeDB_, &BridgeDatabase::debugMessage, this, &RouteAssignmentCorrection::debugMessage);
 }
 

@@ -34,6 +34,7 @@ signals:
     void errorMessage(const QString &error);
     void downloadProgess(qint64 bytesReceived, qint64 bytesTotal);
     void networkResponse(const QString &key, const QJsonValue &obj);
+    void failed(const QString &key, const QString &reason);
 
 protected:
     void addToConnectionQueue(const QNetworkAccessManager::Operation requestType,

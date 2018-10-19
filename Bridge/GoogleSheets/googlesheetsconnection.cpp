@@ -86,6 +86,14 @@ void GoogleSheetsConnection::handleNetworkReply(QNetworkReply *reply)
 {
     QString key = reply->objectName();
 
+    if(reply->error() != QNetworkReply::NoError)
+    {
+        emit errorMessage(key + " finished with errors. " + reply->errorString());
+        emit errorMessage(key + " server response was " + reply->readAll());
+        emit failed(key, reply->errorString());
+        qDebug() << reply->error();
+    }
+
     if(reply->isOpen())
     {
         QJsonObject json = QJsonDocument::fromJson(reply->readAll()).object();
@@ -94,6 +102,7 @@ void GoogleSheetsConnection::handleNetworkReply(QNetworkReply *reply)
         {
             emit statusMessage("Empty result set for " + key + ". Check network connections.");
             emit statusMessage(reply->errorString());
+            emit failed(key, reply->errorString());
         }
         else
         {
@@ -117,6 +126,7 @@ void GoogleSheetsConnection::oauth2RequestTimedOut()
 {
     QString key = sender()->objectName();
     emit statusMessage("OAuth2 authentication request for " + key + " has timed out.");
+    emit failed(key, "Request timed out.");
 
     networkOAuth2Flows_[key]->deleteLater();
     networkOAuth2ReplyHandlers_[key]->deleteLater();

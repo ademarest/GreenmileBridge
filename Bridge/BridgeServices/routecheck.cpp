@@ -7,7 +7,7 @@ RouteCheck::RouteCheck(QObject *parent) : QObject(parent)
     connect(gmConn_, &GMConnection::errorMessage, this, &RouteCheck::errorMessage);
     connect(gmConn_, &GMConnection::debugMessage, this, &RouteCheck::debugMessage);
 
-    //connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &RouteCheck::statusMessage);
+    connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &RouteCheck::statusMessage);
     connect(bridgeDB_, &BridgeDatabase::errorMessage, this, &RouteCheck::errorMessage);
     connect(bridgeDB_, &BridgeDatabase::debugMessage, this, &RouteCheck::debugMessage);
 }
@@ -54,6 +54,7 @@ void RouteCheck::deleteIncorrectRoutes(const QString &key, const QList<QVariantM
         QDate date = vMap["date"].toDate();
 
         mergeRoutesToDelete(bridgeDB_->getRoutesToDelete(tableName, organizationKey, date));
+        bridgeDB_->getStopsToDelete();
     }
 
     for(auto key:routesToDelete_.keys())
