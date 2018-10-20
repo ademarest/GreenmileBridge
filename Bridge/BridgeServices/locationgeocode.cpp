@@ -17,6 +17,10 @@ LocationGeocode::LocationGeocode(QObject *parent) : QObject(parent)
     connect(bridgeDB_, &BridgeDatabase::debugMessage,   this, &LocationGeocode::debugMessage);
     connect(bridgeDB_, &BridgeDatabase::failed,         this, &LocationGeocode::failed);
 
+    connect(arcGISConn_, &ARCGISGeocode::errorMessage, this, &LocationGeocode::errorMessage);
+    connect(arcGISConn_, &ARCGISGeocode::debugMessage, this, &LocationGeocode::debugMessage);
+    connect(arcGISConn_, &ARCGISGeocode::statusMessage, this, &LocationGeocode::statusMessage);
+    connect(arcGISConn_, &ARCGISGeocode::failed, this, &LocationGeocode::failed);
 }
 
 LocationGeocode::~LocationGeocode()

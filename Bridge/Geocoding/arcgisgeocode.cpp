@@ -44,6 +44,8 @@ void ARCGISGeocode::geocodeLocation(const QString &key,
     QStringList componentList = {address1, city, state};
     addressURL.append(componentList.join(","));
     addressURL.append("&outFields=Match_addr,Addr_type");
+
+    emit debugMessage("Add geocode request to queue." + addressURL);
     qDebug() << "Add geocode request to queue." << addressURL;
     addToConnectionQueue(QNetworkAccessManager::Operation::GetOperation, key, addressURL);
 }
@@ -62,6 +64,9 @@ void ARCGISGeocode::geocodeLocation(const QString &key, const QJsonObject &locat
     QStringList componentList = {address1, city, state};
     addressURL.append(componentList.join(","));
     addressURL.append("&outFields=Match_addr,Addr_type");
+
+    emit debugMessage("Add geocode request to queue." + addressURL);
     qDebug() << "Add geocode request to queue." << addressURL;
+
     addToConnectionQueue(QNetworkAccessManager::Operation::GetOperation, key, addressURL);
 }

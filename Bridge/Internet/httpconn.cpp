@@ -151,9 +151,11 @@ void HTTPConn::processConnectionQueue()
 
     if(connectionQueue_.isEmpty())
     {
-        emit debugMessage("HTTPConn::processConnectionQueue(): "
-                          "Connection queue is empty. "
-                          "Will not attempt to dequeue.");
+//        Gets spammy real fast.
+//
+//        emit debugMessage("HTTPConn::processConnectionQueue(): "
+//                          "Connection queue is empty. "
+//                          "Will not attempt to dequeue.");
 
         connectionFrequencyTimer_->stop();
         readyForNextConnection_ = true;
@@ -161,6 +163,8 @@ void HTTPConn::processConnectionQueue()
     }
 
     qDebug() << "START:HTTPConn::processConnectionQueue";
+    emit debugMessage("START:HTTPConn::processConnectionQueue");
+
     QVariantMap requestMap      = connectionQueue_.dequeue();
     int requestType             = requestMap["requestType"].toInt();
     QString requestKey          = requestMap["requestKey"].toString();
@@ -168,6 +172,7 @@ void HTTPConn::processConnectionQueue()
     QByteArray data             = requestMap["data"].toByteArray();
     QString customOperation   = requestMap["customOperation"].toByteArray();
 
+    emit statusMessage("START:HTTPConn::" + requestKey);
 
     if(networkRequestsInProgress_.contains(requestKey))
     {
@@ -202,25 +207,27 @@ void HTTPConn::processConnectionQueue()
             emit debugMessage("HeadOperation not implemented yet.");
             break;
         case QNetworkAccessManager::Operation::GetOperation :
-            emit debugMessage("GetOperation not implemented yet.");
+            emit debugMessage("Get request:" + requestKey);
             networkReplies_[requestKey] = networkManagers_[requestKey]->get(request);
             break;
         case QNetworkAccessManager::Operation::PutOperation :
-            qDebug() << "put request" << requestKey;
+            emit debugMessage("PUT request:" + requestKey);
             networkReplies_[requestKey] = networkManagers_[requestKey]->put(request, data);
             break;
         case QNetworkAccessManager::Operation::PostOperation :
-            qDebug() << "post request" << requestKey;
+            emit debugMessage("POST request:" + requestKey);
             networkReplies_[requestKey] = networkManagers_[requestKey]->post(request,data);
             break;
         case QNetworkAccessManager::Operation::DeleteOperation :
-            qDebug() << "delete request" << requestKey;
+            emit debugMessage("DELETE request:" + requestKey);
             networkReplies_[requestKey] = networkManagers_[requestKey]->deleteResource(request);
             break;
         case QNetworkAccessManager::Operation::CustomOperation :
+            emit debugMessage("CUSTOM request:" + requestKey);
             networkReplies_[requestKey] = networkManagers_[requestKey]->sendCustomRequest(request, customOperation.toLatin1(), networkBuffers_[requestKey]);
             break;
         case QNetworkAccessManager::Operation::UnknownOperation :
+            emit debugMessage("Unknown request not impletmented.");
             emit debugMessage("UnknownOperation not implemented yet.");
             break;
     }
@@ -238,11 +245,13 @@ void HTTPConn::processConnectionQueue()
     ++numberOfActiveConnections_;
 
     qDebug() << "END:HTTPConn::processConnectionQueue";
+    emit debugMessage("END:HTTPConn::processConnectionQueue");
 }
 
 void HTTPConn::handleNetworkReply(QNetworkReply *reply)
 {
     qDebug() << "START:HTTPConn::handleNetworkReply";
+    emit debugMessage("START:HTTPConn::handleNetworkReply");
     bool hasErrors = false;
     QString key = reply->objectName();
     QByteArray rawData;

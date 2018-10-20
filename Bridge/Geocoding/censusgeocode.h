@@ -18,7 +18,7 @@ public:
                            const int maxActiveConnections,
                            QObject *parent = nullptr);
 
-    virtual ~CensusGeocode(){qDebug() << "~CGD";}
+    virtual ~CensusGeocode(){}
 
     void geocodeLocation(const QString &key,
                          QString address1,

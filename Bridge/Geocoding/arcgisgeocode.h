@@ -17,7 +17,7 @@ public:
                            const int maxActiveConnections,
                            QObject *parent = nullptr);
 
-    virtual ~ARCGISGeocode(){qDebug() << "~CGD";}
+    virtual ~ARCGISGeocode(){}
 
     void geocodeLocation(const QString &key,
                          QString address1,
