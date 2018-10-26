@@ -21,8 +21,8 @@ void RouteUpload::reset()
 {
     if(!activeJobs_.isEmpty())
     {
-        errorMessage("Geocoding in progress. Try again once current request is finished.");
-        qDebug() << "Geocoding in progress. Try again once current request is finished.";
+        errorMessage("Route upload in progress. Try again once current request is finished.");
+        qDebug() << "Route upload in progress. Try again once current request is finished.";
         return;
     }
 
@@ -38,8 +38,8 @@ void RouteUpload::UploadRoutes(const QString &key, const QList<QVariantMap> &arg
 
     if(!activeJobs_.isEmpty())
     {
-        errorMessage("Geocoding in progress. Try again once current request is finished.");
-        qDebug() << "Geocoding in progress. Try again once current request is finished.";
+        errorMessage("Route upload in progress. Try again once current request is finished.");
+        qDebug() << "Route upload in progress. Try again once current request is finished.";
         return;
     }
 
