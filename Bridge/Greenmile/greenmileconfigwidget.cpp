@@ -64,12 +64,12 @@ void GreenmileConfigWidget::applySettingsToUI()
 
 void GreenmileConfigWidget::saveUItoSettings()
 {
-    jsonSettings_["serverAddress"] = QJsonValue(ui->serverAddressLineEdit->text());
-    jsonSettings_["username"] = QJsonValue(ui->usernameLineEdit->text());
-    jsonSettings_["password"] = QJsonValue(ui->passwordLineEdit->text());
-    jsonSettings_["requestTimeoutSec"] = QJsonValue(ui->requestTimeoutSpinbox->value());
-    jsonSettings_["maxActiveConnections"] = QJsonValue(ui->maxActiveConnectionsSpinBox->value());
-    jsonSettings_["connectionFreqMS"] = QJsonValue(ui->connectionFreqMSSpinBox->value());
+    jsonSettings_["serverAddress"]          = QJsonValue(ui->serverAddressLineEdit->text());
+    jsonSettings_["username"]               = QJsonValue(ui->usernameLineEdit->text());
+    jsonSettings_["password"]               = QJsonValue(ui->passwordLineEdit->text());
+    jsonSettings_["requestTimeoutSec"]      = QJsonValue(ui->requestTimeoutSpinbox->value());
+    jsonSettings_["maxActiveConnections"]   = QJsonValue(ui->maxActiveConnectionsSpinBox->value());
+    jsonSettings_["connectionFreqMS"]       = QJsonValue(ui->connectionFreqMSSpinBox->value());
     settings_->saveSettings(QFile(dbPath_), jsonSettings_);
 
     censusJsonSettings_["useCensus"] = QJsonValue(ui->useCensusCheckBox->isChecked());
@@ -78,7 +78,6 @@ void GreenmileConfigWidget::saveUItoSettings()
     censusJsonSettings_["maxActiveConnections"] = QJsonValue(ui->censusMaxActiveConnectionsSpinBox->value());
     censusJsonSettings_["connectionFreqMS"] = QJsonValue(ui->censusConnectionFreqMSSpinBox->value());
     censusSettings_->saveSettings(QFile(censusDBPath_), censusJsonSettings_);
-
 
     arcGISJsonSettings_["useArcGIS"] = QJsonValue(ui->useArcGISCheckBox->isChecked());
     arcGISJsonSettings_["serverAddress"] = QJsonValue(ui->arcGISAddressLineEdit->text());

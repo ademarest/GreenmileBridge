@@ -42,13 +42,21 @@ void Bridge::init()
     connect(dataCollector, &BridgeDataCollector::debugMessage, this, &Bridge::debugMessage);
     connect(dataCollector, &BridgeDataCollector::errorMessage, this, &Bridge::errorMessage);
 
-    connect(locationUploadGeocode_, &LocationGeocode::statusMessage, this, &Bridge::statusMessage);
-    connect(locationUploadGeocode_, &LocationGeocode::debugMessage, this, &Bridge::debugMessage);
-    connect(locationUploadGeocode_, &LocationGeocode::errorMessage, this, &Bridge::errorMessage);
+    connect(locationUploadGeocode_, &LocationGeocode::statusMessage,    this, &Bridge::statusMessage);
+    connect(locationUploadGeocode_, &LocationGeocode::debugMessage,     this, &Bridge::debugMessage);
+    connect(locationUploadGeocode_, &LocationGeocode::errorMessage,     this, &Bridge::errorMessage);
 
-    connect(locationUpload_, &LocationUpload::statusMessage, this, &Bridge::statusMessage);
-    connect(locationUpload_, &LocationUpload::debugMessage, this, &Bridge::debugMessage);
-    connect(locationUpload_, &LocationUpload::errorMessage, this, &Bridge::errorMessage);
+    connect(locationUpload_, &LocationUpload::statusMessage,    this, &Bridge::statusMessage);
+    connect(locationUpload_, &LocationUpload::debugMessage,     this, &Bridge::debugMessage);
+    connect(locationUpload_, &LocationUpload::errorMessage,     this, &Bridge::errorMessage);
+
+    connect(locationUpdateGeocode_, &LocationGeocode::statusMessage,    this, &Bridge::statusMessage);
+    connect(locationUpdateGeocode_, &LocationGeocode::debugMessage,     this, &Bridge::debugMessage);
+    connect(locationUpdateGeocode_, &LocationGeocode::errorMessage,     this, &Bridge::errorMessage);
+
+    connect(locationUpdate_, &LocationUpload::statusMessage,    this, &Bridge::statusMessage);
+    connect(locationUpdate_, &LocationUpload::debugMessage,     this, &Bridge::debugMessage);
+    connect(locationUpdate_, &LocationUpload::errorMessage,     this, &Bridge::errorMessage);
 
     connect(routeCheck_, &RouteCheck::statusMessage, this, &Bridge::statusMessage);
     connect(routeCheck_, &RouteCheck::debugMessage, this, &Bridge::debugMessage);

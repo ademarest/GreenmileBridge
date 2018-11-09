@@ -298,8 +298,6 @@ void BridgeDataCollector::handleJobCompletion(const QString &key)
     {
         emit statusMessage("Completed data collection for " + key + ".");
         emit finished(currentKey_);
-        //QList<QString> crash;
-        //QString crashy = crash.first();
         currentKey_.clear();
     }
 }

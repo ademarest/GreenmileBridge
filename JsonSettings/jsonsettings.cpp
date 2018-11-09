@@ -173,7 +173,7 @@ void JsonSettings::makeSQLQuery(QSqlQuery &query, const QJsonObject &jsonSetting
 
         case QJsonValue::Bool:
             jsonKeys.append(key);
-            jsonValues.append(QString::number(jsonSettings[key].toInt()));
+            jsonValues.append(QString::number(int(jsonSettings[key].toBool())));
             jsonTypes.append(QJsonValue::Bool);
             break;
 
