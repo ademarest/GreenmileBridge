@@ -50,7 +50,8 @@ SOURCES += \
     LogWriter/logwriter.cpp \
     Bridge/Internet/httpconn.cpp \
     Bridge/Geocoding/censusgeocode.cpp \
-    Bridge/Geocoding/arcgisgeocode.cpp
+    Bridge/Geocoding/arcgisgeocode.cpp \
+    GenericUI/listcontrolwidget.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -78,7 +79,8 @@ HEADERS += \
     LogWriter/logwriter.h \
     Bridge/Internet/httpconn.h \
     Bridge/Geocoding/censusgeocode.h \
-    Bridge/Geocoding/arcgisgeocode.h
+    Bridge/Geocoding/arcgisgeocode.h \
+    GenericUI/listcontrolwidget.h
 
 FORMS += \
         mainwindow.ui \
@@ -87,4 +89,5 @@ FORMS += \
     Bridge/MasterRoute/masterroutesheetconfigwidget.ui \
     Bridge/AS400/as400configwidget.ui \
     Bridge/MasterRouteData/masterroutesheetdataconfigwidget.ui \
-    Bridge/bridgeconfigwidget.ui
+    Bridge/bridgeconfigwidget.ui \
+    GenericUI/listcontrolwidget.ui
