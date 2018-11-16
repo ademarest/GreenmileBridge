@@ -7,13 +7,13 @@ LocationUpload::LocationUpload(QObject *parent) : QObject(parent)
     connect(gmConn_,    &GMConnection::statusMessage,   this, &LocationUpload::statusMessage);
     connect(gmConn_,    &GMConnection::errorMessage,    this, &LocationUpload::errorMessage);
     connect(gmConn_,    &GMConnection::debugMessage,    this, &LocationUpload::debugMessage);
-    connect(gmConn_,    &GMConnection::failed,          this, &LocationUpload::failed);
+    connect(gmConn_,    &GMConnection::failed,          this, &LocationUpload::handleFailure);
 
     //connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &LocationUpload::statusMessage);
     connect(bridgeDB_, &BridgeDatabase::errorMessage, this, &LocationUpload::errorMessage);
     connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &LocationUpload::statusMessage);
     connect(bridgeDB_, &BridgeDatabase::debugMessage, this, &LocationUpload::debugMessage);
-    connect(bridgeDB_, &BridgeDatabase::failed, this, &LocationUpload::failed);
+    connect(bridgeDB_, &BridgeDatabase::failed, this, &LocationUpload::handleFailure);
 
 }
 
@@ -58,12 +58,12 @@ void LocationUpload::UploadLocations(const QString &key, const QList<QVariantMap
 
     for(auto vMap:argList)
     {
-        QString tableName = vMap["tableName"].toString();
+        QString tableName       = vMap["tableName"].toString();
         QString organizationKey = vMap["organization:key"].toString();
-        QDate date = vMap["date"].toDate();
-        QString minRouteKey = vMap["minRouteKey"].toString();
-        QString maxRouteKey = vMap["maxRouteKey"].toString();
-        QJsonObject locations = bridgeDB_->getLocationsToUpload(tableName, organizationKey, date, minRouteKey, maxRouteKey);
+        QDate date              = vMap["date"].toDate();
+        QString minRouteKey     = vMap["minRouteKey"].toString();
+        QString maxRouteKey     = vMap["maxRouteKey"].toString();
+        QJsonObject locations   = bridgeDB_->getLocationsToUpload(tableName, organizationKey, date, minRouteKey, maxRouteKey);
         mergeLocationsToUpload(locations);
     }
 
@@ -86,8 +86,7 @@ void LocationUpload::UpdateLocations(const QString &key, const QList<QVariantMap
 {
     if(!activeJobs_.isEmpty())
     {
-        errorMessage("Location upload in progress. Try again once current request is finished.");
-        qDebug() << "Location upload in progress. Try again once current request is finished.";
+        errorMessage("Location update in progress. Try again once current request is finished.");
         return;
     }
 
@@ -102,8 +101,11 @@ void LocationUpload::UpdateLocations(const QString &key, const QList<QVariantMap
         mergeLocationsToUpload(bridgeDB_->getLocationsToUpdate(organizationKey));
         //mergeLocationsToUpload(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
     }
-    applyGeocodesToLocations(geocodes);
 
+    if(failState_)
+        emit failed("Location database error.", "Failed in initial location update.");
+
+    applyGeocodesToLocations(geocodes);
 
     for(auto key:locationsToUpload_.keys())
     {
@@ -131,6 +133,11 @@ void LocationUpload::handleGMResponse(const QString &key, const QJsonValue &resp
     }
 }
 
+void LocationUpload::handleFailure(const QString &key, const QString &reason)
+{
+    failState_ = true;
+}
+
 void LocationUpload::mergeLocationsToUpload(const QJsonObject &locations)
 {
     for(auto key:locations.keys())
@@ -149,7 +156,6 @@ void LocationUpload::applyGeocodesToLocations(const QJsonObject &geocodes)
         jObj["latitude"]            = geocodes[key]["latitude"];
         jObj["longitude"]           = geocodes[key]["longitude"];
         jObj["geocodingDate"]       = geocodes[key]["geocodingDate"];
-        qDebug() << "VERIFY" << jObj;
         locationsToUpload_[key] = QJsonValue(jObj);
     }
 }

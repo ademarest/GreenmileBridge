@@ -9,18 +9,18 @@ LocationGeocode::LocationGeocode(QObject *parent) : QObject(parent)
     connect(gmConn_, &GMConnection::statusMessage,  this, &LocationGeocode::statusMessage);
     connect(gmConn_, &GMConnection::errorMessage,   this, &LocationGeocode::errorMessage);
     connect(gmConn_, &GMConnection::debugMessage,   this, &LocationGeocode::debugMessage);
-    connect(gmConn_, &GMConnection::failed,         this, &LocationGeocode::failed);
+    connect(gmConn_, &GMConnection::failed,         this, &LocationGeocode::handleFailure);
 
     //connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &LocationGeocode::statusMessage);
     connect(bridgeDB_, &BridgeDatabase::errorMessage,   this, &LocationGeocode::errorMessage);
     connect(bridgeDB_, &BridgeDatabase::statusMessage,  this, &LocationGeocode::statusMessage);
     connect(bridgeDB_, &BridgeDatabase::debugMessage,   this, &LocationGeocode::debugMessage);
-    connect(bridgeDB_, &BridgeDatabase::failed,         this, &LocationGeocode::failed);
+    connect(bridgeDB_, &BridgeDatabase::failed,         this, &LocationGeocode::handleFailure);
 
     connect(arcGISConn_, &ARCGISGeocode::errorMessage, this, &LocationGeocode::errorMessage);
     connect(arcGISConn_, &ARCGISGeocode::debugMessage, this, &LocationGeocode::debugMessage);
     connect(arcGISConn_, &ARCGISGeocode::statusMessage, this, &LocationGeocode::statusMessage);
-    connect(arcGISConn_, &ARCGISGeocode::failed, this, &LocationGeocode::failed);
+    connect(arcGISConn_, &ARCGISGeocode::failed, this, &LocationGeocode::handleFailure);
 }
 
 LocationGeocode::~LocationGeocode()
@@ -70,6 +70,9 @@ void LocationGeocode::GeocodeLocations(const QString &key, const QList<QVariantM
         mergeLocationsToGeocode(bridgeDB_->getLocationsToUpload(tableName, organizationKey, date, minRouteKey, maxRouteKey));
     }
 
+    if(failState_)
+        emit failed("Location database error.", "Failed in location geocode.");
+
     for(auto key:locationsToGeocode_.keys())
     {
         activeJobs_.insert(key);
@@ -102,7 +105,7 @@ void LocationGeocode::GeocodeUpdateLocations(const QString &key, const QList<QVa
     for(auto vMap:argList)
     {
         QString organizationKey = vMap["organization:key"].toString();
-        mergeLocationsToGeocode(bridgeDB_->getLocationsToUpdate(organizationKey));
+        mergeLocationsToGeocode(bridgeDB_->getLocationsToUpdateGeocodes(organizationKey));
         //mergeLocationsToGeocode(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
     }
 
@@ -207,6 +210,11 @@ void LocationGeocode::handleArcGISResponse(const QString &key, const QJsonValue 
         emit finished(currentKey_, geocodedLocations_);
         reset();
     }
+}
+
+void LocationGeocode::handleFailure(const QString &key, const QString &reason)
+{
+    failState_ = true;
 }
 
 void LocationGeocode::mergeLocationsToGeocode(const QJsonObject &locations)

@@ -22,33 +22,17 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &assignmentTableN
                                                  const QString &maxRouteString)
 {
     //QJsonArray responseArray;
+    if(!locationsExist())
+    {
+        return QJsonObject();
+    }
+
     QString routeKeyBoundaries = " AND `route:key` > \""+minRouteString+"\" AND `route:key` < \""+maxRouteString+"\"";
 
     if(minRouteString.isNull() || maxRouteString.isNull())
         routeKeyBoundaries = QString();
 
     QJsonObject locationObj;
-
-    QString gmTestQuery = "SELECT * FROM gmLocations";
-    QMap<QString,QVariantList> gmTestSQL = executeQuery(gmTestQuery, "Determining if GM locations exist in BridgeDatabase::getLocationsToUpload()");
-
-    QString as400TestQuery = "SELECT * FROM as400LocationQuery";
-    QMap<QString,QVariantList> as400TestSQL = executeQuery(as400TestQuery, "Determining if AS400 locations exist in BridgeDatabase::getLocationsToUpload()");
-
-    if(gmTestSQL.isEmpty())
-    {
-        emit errorMessage("Error: Greenmile Locations are empty. Emitting empty result set.");
-        //failed("Get locations to upload.", "Greenmile locations were empty.");
-        return QJsonObject();
-    }
-
-    if(as400TestQuery.isEmpty())
-    {
-        emit errorMessage("Error: AS400 Locations are empty. Emitting empty result set.");
-        //failed("Get locations to upload.", "AS400 locations were empty.");
-        return QJsonObject();
-    }
-
 
     QString query = "SELECT DISTINCT "
                     "as400RouteQuery.`location:key` as `key`,"
@@ -76,14 +60,8 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &assignmentTableN
 //                    "FROM as400LocationQuery WHERE `organization:key` = \""+organizationKey+"\" AND `location:key` NOT IN (SELECT `key` FROM gmLocations)";
 
 
-    qDebug() << query;
     emit debugMessage(query);
-    //qDebug() << query;
     QMap<QString,QVariantList> sql = executeQuery(query, "Finding locations to upload in in getLocationsToUpload()");
-//    QList<QString> crash;
-//    QString crashit = crash.first();
-    //qDebug() << "sql empty check";
-    //qDebug() << sql;
     if(!sql.empty())
     {
         for(int i = 0; i < sql.first().size(); ++i)
@@ -103,6 +81,36 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &assignmentTableN
         qDebug() << "sql empty";
 
     return locationObj;
+}
+
+bool BridgeDatabase::locationsExist()
+{
+    QString gmTestQuery     = "SELECT COUNT(`id`) as `test` FROM gmLocations";
+    QString as400TestQuery  = "SELECT COUNT(`location:key`) as `test` FROM as400LocationQuery";
+
+    QMap<QString,QVariantList> gmTestSQL    = executeQuery(gmTestQuery,     "Determining if GM locations exist.");
+    QMap<QString,QVariantList> as400TestSQL = executeQuery(as400TestQuery,  "Determining if AS400 locations exist.");
+
+    if(gmTestSQL["test"].first().toInt() == 0)
+    {
+        emit errorMessage("Error: Greenmile Locations are empty. Emitting empty result set.");
+        //have to work out why this fails and crashes...
+        emit failed("Get locations to upload.", "Greenmile locations were empty.");
+        return false;
+    }
+
+    if(as400TestSQL["test"].first().toInt() == 0)
+    {
+        emit errorMessage("Error: AS400 Locations are empty. Emitting empty result set.");
+        //have to work out why this fails and crashes...
+        emit failed("Get locations to upload.", "AS400 locations were empty.");
+        return false;
+    }
+
+    qDebug() << "BING" << gmTestSQL;
+    qDebug() << "BONG" << as400TestSQL;
+
+    return true;
 }
 
 QJsonObject BridgeDatabase::getStopsToDelete()
@@ -274,31 +282,58 @@ QJsonObject BridgeDatabase::getAssignmentsToUpdate(const QString &assignmentTabl
 
 QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
 {
-    QString query = "SELECT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays`, `id` AS `location:id`, `locationType:id`, `organization:id` FROM as400LocationQuery LEFT JOIN gmLocations ON `key` = `location:key` WHERE gmLocations.`key` IN ( SELECT `location:key` FROM ( SELECT DISTINCT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays` FROM as400LocationQuery WHERE as400LocationQuery.`organization:key` = '"+organizationKey+"' EXCEPT SELECT DISTINCT `enabled`, `key`,`description`,`addressLine1`,`addressLine2`,`city`, `state`,`zipCode`,`deliveryDays` FROM gmLocations WHERE gmLocations.`organization:key` = '"+organizationKey+"'))";
-    qDebug() << "BridgeDatabase::getLocationsToUpdate" <<  query;
-    QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile. BridgeDatabase::getLocationsToUpdate()");
+    if(!locationsExist())
+        return QJsonObject();
+
     QJsonObject returnObj;
+    QString query = "SELECT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays`, `id` AS `location:id`, `locationType:id`, `organization:id` FROM as400LocationQuery LEFT JOIN gmLocations ON `key` = `location:key` WHERE gmLocations.`key` IN ( SELECT `location:key` FROM ( SELECT DISTINCT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays` FROM as400LocationQuery WHERE as400LocationQuery.`organization:key` = '"+organizationKey+"' EXCEPT SELECT DISTINCT `enabled`, `key`,`description`,`addressLine1`,`addressLine2`,`city`, `state`,`zipCode`,`deliveryDays` FROM gmLocations WHERE gmLocations.`organization:key` = '"+organizationKey+"'))";    
+    QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile. BridgeDatabase::getLocationsToUpdate()");
+    qDebug() << "BridgeDatabase::getLocationsToUpdate" <<  query;
 
-    QString gmTestQuery = "SELECT * FROM gmLocations";
-    QMap<QString,QVariantList> gmTestSQL = executeQuery(gmTestQuery, "Determining if GM locations exist BridgeDatabase::getLocationsToUpdate().");
-
-    QString as400TestQuery = "SELECT * FROM as400LocationQuery";
-    QMap<QString,QVariantList> as400TestSQL = executeQuery(as400TestQuery, "Determining if AS400 locations exist in BridgeDatabase::getLocationsToUpdate().");
-
-    if(gmTestSQL.isEmpty())
+    if(!sql.empty())
     {
-        emit errorMessage("Error: Greenmile Locations are empty. Returning empty result set BridgeDatabase::getLocationsToUpdate().");
-        //failed("Get locations to upload.", "Greenmile locations were empty.");
-        return QJsonObject();
-    }
+        for(int i = 0; i < sql.first().size(); ++i)
+        {
+            QString locationKey;
+            QStringList locationKeyList;
 
-    if(as400TestQuery.isEmpty())
-    {
-        emit errorMessage("Error: AS400 Locations are empty. Returning empty result set BridgeDatabase::getLocationsToUpdate().");
-        //failed("Get locations to upload.", "AS400 locations were empty.");
-        return QJsonObject();
-    }
+            QJsonObject locationObj;
+            QJsonObject locationTypeObj;
+            QJsonObject organizationObj;
 
+            for(auto key:sql.keys())
+            {
+                QStringList splitKey = key.split(":");
+                if(splitKey.first() == "location")
+                    locationObj[splitKey.last()] = sql[key][i].toJsonValue();
+                if(splitKey.first() == "locationType")
+                    locationTypeObj[splitKey.last()] = sql[key][i].toJsonValue();
+                if(splitKey.first() == "organization")
+                    organizationObj[splitKey.last()] = sql[key][i].toJsonValue();
+            }
+
+            locationKeyList << "locationToUpdate"
+                                << QString::number(locationObj["id"].toInt())
+                                << QString::number(organizationObj["id"].toInt());
+
+            locationKey = locationKeyList.join(":");
+            locationObj["organization"] =   QJsonValue(organizationObj);
+            locationObj["locationType"] =   QJsonValue(locationTypeObj);
+            returnObj[locationKey]      =   QJsonValue(locationObj);
+        }
+    }
+    return returnObj;
+}
+
+QJsonObject BridgeDatabase::getLocationsToUpdateGeocodes(const QString &organizationKey)
+{
+    if(!locationsExist())
+        return QJsonObject();
+
+    QJsonObject returnObj;
+    QString query = "SELECT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays`, `id` AS `location:id`, `locationType:id`, `organization:id` FROM as400LocationQuery LEFT JOIN gmLocations ON `key` = `location:key` WHERE gmLocations.`key` IN ( SELECT `location:key` FROM ( SELECT DISTINCT `location:key`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode` FROM as400LocationQuery WHERE as400LocationQuery.`organization:key` = '"+organizationKey+"' EXCEPT SELECT DISTINCT `key`, `addressLine1`,`addressLine2`,`city`, `state`,`zipCode`FROM gmLocations WHERE gmLocations.`organization:key` = '"+organizationKey+"'))";
+    QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile. BridgeDatabase::getLocationsToUpdate()");
+    qDebug() << "BridgeDatabase::getLocationsToUpdate" <<  query;
 
     if(!sql.empty())
     {

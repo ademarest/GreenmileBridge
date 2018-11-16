@@ -29,11 +29,15 @@ public:
 
     QJsonObject getLocationsToUpdate(const QString &organizationKey);
 
+    QJsonObject getLocationsToUpdateGeocodes(const QString &organizationKey);
+
     QJsonObject getLocationsToUpload(const QString &assignmentTableName,
                                      const QString &organizationKey,
                                      const QDate &date,
                                      const QString &minRouteString = QString(),
                                      const QString &maxRouteString = QString());
+
+    bool locationsExist();
 
     QJsonObject getStopsToDelete();
 

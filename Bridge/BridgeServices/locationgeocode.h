@@ -31,8 +31,10 @@ private slots:
     void handleGMResponse(const QString &key, const QJsonValue &response);
     void handleCensusResponse(const QString &key, const QJsonValue &response);
     void handleArcGISResponse(const QString &key, const QJsonValue &response);
+    void handleFailure(const QString &key, const QString &reason);
 
 private:
+    bool failState_ = false;
     GMConnection    *gmConn_        = new GMConnection(this);
     CensusGeocode   *censusConn_    = new CensusGeocode("census.db", this);
     ARCGISGeocode   *arcGISConn_    = new ARCGISGeocode("arcgis.db", this);

@@ -44,8 +44,6 @@ public slots:
     void abort();
 
 private slots:
-//    void handleGMResponse(const QString &key, const QJsonValue &val);
-//    void beginAnalysis(const QDate &date);
     void handleJobCompletion(const QString &key);
     void rebuild(const QString &key);
 

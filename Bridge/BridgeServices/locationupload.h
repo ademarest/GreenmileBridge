@@ -26,6 +26,7 @@ public slots:
 
 private slots:
     void handleGMResponse(const QString &key, const QJsonValue &response);
+    void handleFailure(const QString &key, const QString &reason);
 
 private:
     GMConnection *gmConn_ = new GMConnection(this);
@@ -40,6 +41,8 @@ private:
     void mergeLocationsToUpload(const QJsonObject &locations);
     void applyGeocodesToLocations(const QJsonObject &geocodes);
     void reset();
+
+    bool failState_ = false;
 
 };
 
