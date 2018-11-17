@@ -29,6 +29,7 @@ public slots:
 
 private slots:
     void addToBridgeQueue();
+    void bridgeAborted();
 
 private:
     Ui::BridgeProgressWidget *ui;

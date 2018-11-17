@@ -9,18 +9,18 @@ LocationGeocode::LocationGeocode(QObject *parent) : QObject(parent)
     connect(gmConn_, &GMConnection::statusMessage,  this, &LocationGeocode::statusMessage);
     connect(gmConn_, &GMConnection::errorMessage,   this, &LocationGeocode::errorMessage);
     connect(gmConn_, &GMConnection::debugMessage,   this, &LocationGeocode::debugMessage);
-    connect(gmConn_, &GMConnection::failed,         this, &LocationGeocode::handleFailure);
+    connect(gmConn_, &GMConnection::failed,         this, &LocationGeocode::acknowledgeFailure);
 
     //connect(bridgeDB_, &BridgeDatabase::statusMessage, this, &LocationGeocode::statusMessage);
     connect(bridgeDB_, &BridgeDatabase::errorMessage,   this, &LocationGeocode::errorMessage);
     connect(bridgeDB_, &BridgeDatabase::statusMessage,  this, &LocationGeocode::statusMessage);
     connect(bridgeDB_, &BridgeDatabase::debugMessage,   this, &LocationGeocode::debugMessage);
-    connect(bridgeDB_, &BridgeDatabase::failed,         this, &LocationGeocode::handleFailure);
+    connect(bridgeDB_, &BridgeDatabase::failed,         this, &LocationGeocode::acknowledgeFailure);
 
     connect(arcGISConn_, &ARCGISGeocode::errorMessage, this, &LocationGeocode::errorMessage);
     connect(arcGISConn_, &ARCGISGeocode::debugMessage, this, &LocationGeocode::debugMessage);
     connect(arcGISConn_, &ARCGISGeocode::statusMessage, this, &LocationGeocode::statusMessage);
-    connect(arcGISConn_, &ARCGISGeocode::failed, this, &LocationGeocode::handleFailure);
+    connect(arcGISConn_, &ARCGISGeocode::failed, this, &LocationGeocode::acknowledgeFailure);
 }
 
 LocationGeocode::~LocationGeocode()
@@ -38,6 +38,7 @@ void LocationGeocode::reset()
         return;
     }
 
+    failState_ = false;
     currentKey_.clear();
     activeJobs_.clear();
     currentRequest_.clear();
@@ -47,6 +48,8 @@ void LocationGeocode::reset()
 
 void LocationGeocode::GeocodeLocations(const QString &key, const QList<QVariantMap> &argList)
 {
+    QString geocodingService = "arcgis";
+    QString jobKey = "GeocodeUpdateLocations";
 
     if(!activeJobs_.isEmpty())
     {
@@ -59,77 +62,87 @@ void LocationGeocode::GeocodeLocations(const QString &key, const QList<QVariantM
     geocodedLocations_.empty();
     locationsToGeocode_.empty();
 
+    getLocationsToGeocode(argList, false, false);
+    qDebug() << "Size of locations to geocode is..." << locationsToGeocode_.size();
+    startGeocoding(geocodingService);
+
+    handleJobCompletion(jobKey);
+}
+
+void LocationGeocode::GeocodeUpdateLocations(const QString &key, QList<QVariantMap> argList)
+{
+
+    QString geocodingService = "arcgis";
+    QString jobKey = "GeocodeUpdateLocations";
+
+    if(!activeJobs_.isEmpty())
+    {
+        errorMessage("Geocoding in progress. Try again once current request is finished.");
+        qDebug() << "Geocoding in progress. Try again once current request is finished.";
+        return;
+    }
+
+    currentKey_ = key;
+    geocodedLocations_.empty();
+    locationsToGeocode_.empty();
+
+    getLocationsToGeocode(argList, true, false);
+    qDebug() << "Size of locations to geocode is..." << locationsToGeocode_.size();
+    startGeocoding(geocodingService);
+
+    handleJobCompletion(jobKey);
+}
+
+void LocationGeocode::getLocationsToGeocode(QList<QVariantMap> argList, const bool update, const bool fixBadGeocodes)
+{
     for(auto vMap:argList)
     {
+        if(failState_)
+            return;
+
         QString tableName = vMap["tableName"].toString();
         QString organizationKey = vMap["organization:key"].toString();
         QDate date = vMap["date"].toDate();
         QString minRouteKey = vMap["minRouteKey"].toString();
         QString maxRouteKey = vMap["maxRouteKey"].toString();
 
-        mergeLocationsToGeocode(bridgeDB_->getLocationsToUpload(tableName, organizationKey, date, minRouteKey, maxRouteKey));
-    }
-
-    if(failState_)
-        emit failed("Location database error.", "Failed in location geocode.");
-
-    for(auto key:locationsToGeocode_.keys())
-    {
-        activeJobs_.insert(key);
-        arcGISConn_->geocodeLocation(key, locationsToGeocode_[key].toObject());
-        //censusConn_->geocodeLocation(key, locationsToGeocode_[key].toObject());
-        //gmConn_->geocodeLocation(key, locationsToGeocode_[key].toObject());
-    }
-
-    if(activeJobs_.empty())
-    {
-        emit finished(currentKey_, QJsonObject());
-        reset();
+        if(update)
+        {
+            mergeLocationsToGeocode(bridgeDB_->getLocationsToUpdateGeocodes(organizationKey));
+        }
+        else
+        {
+            mergeLocationsToGeocode(bridgeDB_->getLocationsToUpload(tableName, organizationKey, date, minRouteKey, maxRouteKey));
+        }
+        if(fixBadGeocodes)
+        {
+            mergeLocationsToGeocode(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
+        }
     }
 }
 
-void LocationGeocode::GeocodeUpdateLocations(const QString &key, const QList<QVariantMap> &argList)
+void LocationGeocode::startGeocoding(const QString &geocodingService)
 {
-
-    if(!activeJobs_.isEmpty())
-    {
-        errorMessage("Geocoding in progress. Try again once current request is finished.");
-        qDebug() << "Geocoding in progress. Try again once current request is finished.";
+    if(failState_)
         return;
-    }
 
-    currentKey_ = key;
-    geocodedLocations_.empty();
-    locationsToGeocode_.empty();
-
-    for(auto vMap:argList)
+    if(geocodingService == "arcgis")
     {
-        QString organizationKey = vMap["organization:key"].toString();
-        mergeLocationsToGeocode(bridgeDB_->getLocationsToUpdateGeocodes(organizationKey));
-        //mergeLocationsToGeocode(bridgeDB_->getGMLocationsWithBadGeocode(organizationKey));
+        dispatchGeocodeRequests(arcGISConn_);
     }
-
-    qDebug() << "Size of locations to geocode is..." << locationsToGeocode_.size();
-    for(auto key:locationsToGeocode_.keys())
+    if(geocodingService == "greenmile")
     {
-        activeJobs_.insert(key);
-        arcGISConn_->geocodeLocation(key, locationsToGeocode_[key].toObject());
-        //censusConn_->geocodeLocation(key, locationsToGeocode_[key].toObject());
-        //gmConn_->geocodeLocation(key, locationsToGeocode_[key].toObject());
+        dispatchGeocodeRequests(gmConn_);
     }
-
-    if(activeJobs_.empty())
+    if(geocodingService == "census")
     {
-        emit finished(currentKey_, QJsonObject());
-        reset();
+        dispatchGeocodeRequests(censusConn_);
     }
 }
+
 
 void LocationGeocode::handleGMResponse(const QString &key, const QJsonValue &response)
 {
-    activeJobs_.remove(key);
-
-    //--------------------------
     QJsonObject jObj;
 
     if(response["status"].toString() == "OK")
@@ -144,20 +157,11 @@ void LocationGeocode::handleGMResponse(const QString &key, const QJsonValue &res
         jObj["geocodingQuality"]    = QJsonValue("UNSUCCESSFULL");
     }
     geocodedLocations_[key] = jObj;
-    //--------------------------
-
-    qDebug() << activeJobs_.count();
-    if(activeJobs_.empty())
-    {
-        emit finished(currentKey_, geocodedLocations_);
-        reset();
-    }
+    handleJobCompletion(key);
 }
 
 void LocationGeocode::handleCensusResponse(const QString &key, const QJsonValue &response)
 {
-    activeJobs_.remove(key);
-    //-----------------------------
     QJsonObject jObj;
     QJsonObject resultObj = response["result"].toObject();
     QJsonArray addressMatches = resultObj["addressMatches"].toArray();
@@ -174,20 +178,11 @@ void LocationGeocode::handleCensusResponse(const QString &key, const QJsonValue 
         jObj["geocodingDate"]       =   QJsonValue(QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
     }
     geocodedLocations_[key] = jObj;
-    //-----------------------------
-
-    qDebug() << activeJobs_.count();
-    if(activeJobs_.empty())
-    {
-        emit finished(currentKey_, geocodedLocations_);
-        reset();
-    }
+    handleJobCompletion(key);
 }
 
 void LocationGeocode::handleArcGISResponse(const QString &key, const QJsonValue &response)
 {
-    activeJobs_.remove(key);
-
     QJsonObject jObj;
     QJsonArray candidates = response.toObject()["candidates"].toArray();
 
@@ -204,17 +199,33 @@ void LocationGeocode::handleArcGISResponse(const QString &key, const QJsonValue 
     }
 
     geocodedLocations_[key] = jObj;
-    qDebug() << activeJobs_.count();
+    handleJobCompletion(key);
+}
+
+void LocationGeocode::acknowledgeFailure(const QString &key, const QString &reason)
+{
+    failKey_    = key;
+    failReason_ = reason;
+    failState_  = true;
+}
+
+
+void LocationGeocode::handleJobCompletion(const QString &key)
+{
+    activeJobs_.remove(key);
+
+    if(failState_)
+    {
+        emit failed("LocationGeocode::handleJobCompletion " + failKey_, failReason_);
+        reset();
+        return;
+    }
+
     if(activeJobs_.empty())
     {
         emit finished(currentKey_, geocodedLocations_);
         reset();
     }
-}
-
-void LocationGeocode::handleFailure(const QString &key, const QString &reason)
-{
-    failState_ = true;
 }
 
 void LocationGeocode::mergeLocationsToGeocode(const QJsonObject &locations)

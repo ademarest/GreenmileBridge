@@ -122,8 +122,9 @@ void Bridge::removeRequest(const QString &key)
 
 void Bridge::handleComponentFailure(const QString &key, const QString &reason)
 {
-    emit errorMessage(key + " failed. Aborting bridge. " + reason);
-    abort();
+    emit errorMessage(key + ". Aborting bridge as soon as possible. " + reason);
+    failState_ = true;
+    //abort();
 }
 
 void Bridge::processQueue()
@@ -184,7 +185,6 @@ void Bridge::finishedDataCollection(const QString &key)
 
     if(key.split(":").first() == "initialCollection")
     {
-        bridgeDB_->getLocationsToUpdate("SEATTLE");
         qDebug() << "geocoding updated locations";
         QString jobKey = "geocodeUpdatedLocations:" + currentRequest_["key"].toString();
         qDebug() << "Do I go here 0?";
@@ -284,6 +284,12 @@ void Bridge::finishedRouteAssignmentCorrections(const QString &key, const QJsonO
 
 void Bridge::handleJobCompletion(const QString &key)
 {
+    if(failState_)
+    {
+        abort();
+        return;
+    }
+
     qDebug() << activeJobs_.size() << "jobs remaining" << activeJobs_ << key;
     emit statusMessage("The remaining bridge jobs are: " + activeJobs_.toList().join(",") + ".");
     removeActiveJob(key);
@@ -356,6 +362,7 @@ void Bridge::rebuild(const QString &key)
     routeUpload_                = new RouteUpload(this);
     routeAssignmentCorrection_  = new RouteAssignmentCorrection(this);
     logger_                     = new LogWriter(this);
+    failState_ = false;
 
     init();
 

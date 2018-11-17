@@ -15,6 +15,7 @@ BridgeProgressWidget::BridgeProgressWidget(QWidget *parent) :
     connect(bridgeThreadController_, &BridgeThreadController::bridgeProgress, this, &BridgeProgressWidget::updateBridgeProgressBarStatus);
     connect(bridgeThreadController_, &BridgeThreadController::currentJobProgress, this, &BridgeProgressWidget::updateBridgeJobProgressBarStatus);
     connect(bridgeThreadController_, &BridgeThreadController::bridgeKeyChanged, ui->currentBridgeKeyLabel, &QLabel::setText);
+    connect(bridgeThreadController_, &BridgeThreadController::aborted, this, &BridgeProgressWidget::bridgeAborted);
 }
 
 BridgeProgressWidget::~BridgeProgressWidget()
@@ -73,4 +74,10 @@ void BridgeProgressWidget::updateBridgeJobProgressBarStatus(qint64 done, qint64 
 void BridgeProgressWidget::addToBridgeQueue()
 {
     bridgeThreadController_->addRequest("USER_INITIATED_BRIDGE");
+}
+
+void BridgeProgressWidget::bridgeAborted()
+{
+    ui->currentBridgeOperationProgressBar->setValue(0);
+    ui->currentBridgeProgressBar->setValue(0);
 }

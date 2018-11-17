@@ -88,27 +88,24 @@ bool BridgeDatabase::locationsExist()
     QString gmTestQuery     = "SELECT COUNT(`id`) as `test` FROM gmLocations";
     QString as400TestQuery  = "SELECT COUNT(`location:key`) as `test` FROM as400LocationQuery";
 
-    QMap<QString,QVariantList> gmTestSQL    = executeQuery(gmTestQuery,     "Determining if GM locations exist.");
-    QMap<QString,QVariantList> as400TestSQL = executeQuery(as400TestQuery,  "Determining if AS400 locations exist.");
+    QMap<QString,QVariantList> gmTestSQL    = executeQuery(gmTestQuery,     "determine if GM locations exist.");
+    QMap<QString,QVariantList> as400TestSQL = executeQuery(as400TestQuery,  "determine if AS400 locations exist.");
 
     if(gmTestSQL["test"].first().toInt() == 0)
     {
-        emit errorMessage("Error: Greenmile Locations are empty. Emitting empty result set.");
+        //emit errorMessage("Error in Bridge Database: Greenmile Locations are empty.");
         //have to work out why this fails and crashes...
-        emit failed("Get locations to upload.", "Greenmile locations were empty.");
+        emit failed("Bridge database error.", "Greenmile locations were empty.");
         return false;
     }
 
     if(as400TestSQL["test"].first().toInt() == 0)
     {
-        emit errorMessage("Error: AS400 Locations are empty. Emitting empty result set.");
+        //emit errorMessage("Error in Bridge Database: AS400 Locations are empty.");
         //have to work out why this fails and crashes...
-        emit failed("Get locations to upload.", "AS400 locations were empty.");
+        emit failed("Bridge database error.", "AS400 locations were empty.");
         return false;
     }
-
-    qDebug() << "BING" << gmTestSQL;
-    qDebug() << "BONG" << as400TestSQL;
 
     return true;
 }
@@ -943,7 +940,7 @@ QMap<QString, QVariantList> BridgeDatabase::executeQuery(const QString &queryStr
         }
 
         db.close();
-        emit statusMessage("Finished SQLite. " + verb);
+        emit debugMessage("Finished SQLite. " + verb);
     }
     emit debugMessage("Cleaning up SQLite " + dbPath_ + " connection.");
     QSqlDatabase::removeDatabase(dbPath_);
