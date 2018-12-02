@@ -135,6 +135,8 @@ void LocationUpload::handleGMResponse(const QString &key, const QJsonValue &resp
 
 void LocationUpload::handleFailure(const QString &key, const QString &reason)
 {
+    qDebug() << "LocationUpload::handleFailure Fail Key " << key;
+    qDebug() << "LocationUpload::handleFailure Fail Reason " << reason;
     failState_ = true;
 }
 

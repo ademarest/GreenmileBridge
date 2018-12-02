@@ -46,7 +46,7 @@ void LocationGeocode::reset()
     geocodedLocations_ = QJsonObject();
 }
 
-void LocationGeocode::GeocodeLocations(const QString &key, const QList<QVariantMap> &argList)
+void LocationGeocode::GeocodeLocations(const QString &key, const QList<QVariantMap> &argList, const bool update, const bool fixBadGeocodes)
 {
     QString geocodingService = "arcgis";
     QString jobKey = "GeocodeUpdateLocations";
@@ -62,31 +62,7 @@ void LocationGeocode::GeocodeLocations(const QString &key, const QList<QVariantM
     geocodedLocations_.empty();
     locationsToGeocode_.empty();
 
-    getLocationsToGeocode(argList, false, false);
-    qDebug() << "Size of locations to geocode is..." << locationsToGeocode_.size();
-    startGeocoding(geocodingService);
-
-    handleJobCompletion(jobKey);
-}
-
-void LocationGeocode::GeocodeUpdateLocations(const QString &key, QList<QVariantMap> argList)
-{
-
-    QString geocodingService = "arcgis";
-    QString jobKey = "GeocodeUpdateLocations";
-
-    if(!activeJobs_.isEmpty())
-    {
-        errorMessage("Geocoding in progress. Try again once current request is finished.");
-        qDebug() << "Geocoding in progress. Try again once current request is finished.";
-        return;
-    }
-
-    currentKey_ = key;
-    geocodedLocations_.empty();
-    locationsToGeocode_.empty();
-
-    getLocationsToGeocode(argList, true, false);
+    getLocationsToGeocode(argList, update, fixBadGeocodes);
     qDebug() << "Size of locations to geocode is..." << locationsToGeocode_.size();
     startGeocoding(geocodingService);
 

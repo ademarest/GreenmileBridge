@@ -180,6 +180,7 @@ void Bridge::startDataCollection(const QString &key, const QDate &date, const in
 void Bridge::finishedDataCollection(const QString &key)
 {
     emit statusMessage(key + " has been completed.");
+    bridgeDB_->reprocessAS400LocationTimeWindows();
     applyScheduleHierarchy();
     generateArgs();
 
@@ -189,7 +190,7 @@ void Bridge::finishedDataCollection(const QString &key)
         QString jobKey = "geocodeUpdatedLocations:" + currentRequest_["key"].toString();
         qDebug() << "Do I go here 0?";
         addActiveJob(jobKey);
-        locationUpdateGeocode_->GeocodeUpdateLocations(jobKey, argList_);
+        locationUpdateGeocode_->GeocodeLocations(jobKey, argList_, true, false);
     }
 
     if(key.split(":").first() == "refreshDataForRouteAssignmentCorrections")
@@ -223,7 +224,7 @@ void Bridge::finishedLocationUpdate(const QString &key, const QJsonObject &resul
 
     QString jobKey = "geocodeUploadLocations:" + currentRequest_["key"].toString();
     addActiveJob(jobKey);
-    locationUploadGeocode_->GeocodeLocations(jobKey, argList_);
+    locationUploadGeocode_->GeocodeLocations(jobKey, argList_, false, false);
     handleJobCompletion(key);
 }
 

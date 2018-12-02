@@ -24,8 +24,7 @@ signals:
     void failed(const QString &key, const QString &reason);
 
 public slots:
-    void GeocodeLocations(const QString &key, const QList<QVariantMap> &argList);
-    void GeocodeUpdateLocations(const QString &key, QList<QVariantMap> argList);
+    void GeocodeLocations(const QString &key, const QList<QVariantMap> &argList, const bool update, const bool fixBadGeocodes);
 
 private slots:
     void handleGMResponse(const QString &key, const QJsonValue &response);

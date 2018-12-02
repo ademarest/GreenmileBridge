@@ -54,7 +54,7 @@ void RouteCheck::deleteIncorrectRoutes(const QString &key, const QList<QVariantM
         QDate date = vMap["date"].toDate();
 
         mergeRoutesToDelete(bridgeDB_->getRoutesToDelete(tableName, organizationKey, date));
-        bridgeDB_->getStopsToDelete();
+        //bridgeDB_->getStopsToDelete();
     }
 
     for(auto key:routesToDelete_.keys())

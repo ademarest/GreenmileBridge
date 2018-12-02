@@ -46,20 +46,6 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &assignmentTableN
                     "FROM as400RouteQuery WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString(Qt::ISODate)+"\" AND `location:key` NOT IN (SELECT `key` FROM gmLocations) AND `route:key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString(Qt::ISODate)+"\" AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL"+routeKeyBoundaries+") GROUP BY as400RouteQuery.`location:key`";
 
 
-//    QString query = "SELECT DISTINCT CAST(as400LocationQuery.`location:key` AS INT) as `keyint`, as400LocationQuery.`location:key` as `key`,as400LocationQuery.`location:addressLine1` as `addressLine1`,as400LocationQuery.`location:addressLine2` as `addressLine2`,as400LocationQuery.`location:city` as `city`,as400LocationQuery.`location:deliveryDays` as `deliveryDays`,as400LocationQuery.`location:description` as `description`,as400LocationQuery.`location:state` as `state`,as400LocationQuery.`location:zipCode` as `zipCode` FROM as400LocationQuery WHERE `organization:key` = \"SEATTLE\" AND SUBSTR(as400LocationQuery.`location:description`,0,3) != \"ZZ\" AND `keyint` >= 78000 AND `keyint` < 80000 AND `addressLine1` NOT LIKE \"%WILL%\" AND`key` NOT IN (SELECT `key` FROM gmLocations) ORDER BY `key` ASC";
-
-//    QString query = "SELECT DISTINCT "
-//                    "as400LocationQuery.`location:key` as `key`,"
-//                    "as400LocationQuery.`location:addressLine1` as `addressLine1`,"
-//                    "as400LocationQuery.`location:addressLine2` as `addressLine2`,"
-//                    "as400LocationQuery.`location:city` as `city`,"
-//                    "as400LocationQuery.`location:deliveryDays` as `deliveryDays`,"
-//                    "as400LocationQuery.`location:description` as `description`,"
-//                    "as400LocationQuery.`location:state` as `state`,"
-//                    "as400LocationQuery.`location:zipCode` as `zipCode` "
-//                    "FROM as400LocationQuery WHERE `organization:key` = \""+organizationKey+"\" AND `location:key` NOT IN (SELECT `key` FROM gmLocations)";
-
-
     emit debugMessage(query);
     QMap<QString,QVariantList> sql = executeQuery(query, "Finding locations to upload in in getLocationsToUpload()");
     if(!sql.empty())
@@ -110,9 +96,13 @@ bool BridgeDatabase::locationsExist()
     return true;
 }
 
-QJsonObject BridgeDatabase::getStopsToDelete()
+QJsonObject BridgeDatabase::getStopsToDelete(const QString &assignmentTableName,
+                                              const QString &organizationKey,
+                                              const QDate &date)
 {
-    QString query = "SELECT routeQuery.`order:number` as `order:number`, routeQuery.`order:pieces` as `order:plannedSize1`, routeQuery.`order:cube` as `order:plannedSize2`, routeQuery.`order:weight` as `order:plannedSize3`, routeQuery.`route:date`, routeQuery.`route:key`, routeQuery.`stop:baseLineSequenceNum`, gmOrg.`id` as `organization:id`, `gmDriverInfo`.`id` as `driver:id`, `gmEquipmentInfo`.`id` as `equipment:id`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedArrival`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedComplete`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedDeparture`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedStart`, `rst`.`avgStartsPrev` AS `startsPreviousDay`, `gmLoc`.`id` as `origin:id`, `gmLoc`.`id` as `destination:id`, `gmLocID`.`id` as `location:id` FROM as400RouteQuery `routeQuery` LEFT JOIN gmOrganizations `gmOrg` ON gmOrg.`key` = routeQuery.`organization:key` LEFT JOIN dlmrsDailyAssignments `dailyAssignment` ON `routeQuery`.`route:key` = `dailyAssignment`.`route:key` AND `routeQuery`.`route:date` = `dailyAssignment`.`route:date` AND `routeQuery`.`organization:key` = `dailyAssignment`.`organization:key` LEFT JOIN drivers `mrsDataDrivers` ON `dailyAssignment`.`driver:name` = `mrsDataDrivers`.`employeeName` LEFT JOIN gmDrivers `gmDriverInfo` ON `gmDriverInfo`.`login` = `mrsDataDrivers`.`employeeNumber` LEFT JOIN gmEquipment `gmEquipmentInfo` ON `gmEquipmentInfo`.`key` = `dailyAssignment`.`truck:key` LEFT JOIN routeStartTimes `rst` ON `rst`.`route` = `routeQuery`.`route:key` LEFT JOIN gmLocations `gmLoc` ON `gmLoc`.`key` = `routeQuery`.`organization:key` LEFT JOIN gmLocations `gmLocID` ON `gmLocID`.`key` = `routeQuery`.`location:key` WHERE `routeQuery`.`organization:key` = \"SEATTLE\" AND `routeQuery`.`route:date` = \"2018-10-17\" AND `routeQuery`.`route:key` IN (SELECT `key` FROM gmRoutes WHERE `organization:key` = \"SEATTLE\" AND `date` = \"2018-10-17\") ";
+    //QString query = "SELECT routeQuery.`order:number` as `order:number`, routeQuery.`order:pieces` as `order:plannedSize1`, routeQuery.`order:cube` as `order:plannedSize2`, routeQuery.`order:weight` as `order:plannedSize3`, routeQuery.`route:date`, routeQuery.`route:key`, routeQuery.`stop:baseLineSequenceNum`, gmOrg.`id` as `organization:id`, `gmDriverInfo`.`id` as `driver:id`, `gmEquipmentInfo`.`id` as `equipment:id`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedArrival`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedComplete`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedDeparture`, TRIM(routeQuery.`route:date` || \"T\" ||`rst`.`avgStartTime`) as `route:plannedStart`, `rst`.`avgStartsPrev` AS `startsPreviousDay`, `gmLoc`.`id` as `origin:id`, `gmLoc`.`id` as `destination:id`, `gmLocID`.`id` as `location:id` FROM as400RouteQuery `routeQuery` LEFT JOIN gmOrganizations `gmOrg` ON gmOrg.`key` = routeQuery.`organization:key` LEFT JOIN dlmrsDailyAssignments `dailyAssignment` ON `routeQuery`.`route:key` = `dailyAssignment`.`route:key` AND `routeQuery`.`route:date` = `dailyAssignment`.`route:date` AND `routeQuery`.`organization:key` = `dailyAssignment`.`organization:key` LEFT JOIN drivers `mrsDataDrivers` ON `dailyAssignment`.`driver:name` = `mrsDataDrivers`.`employeeName` LEFT JOIN gmDrivers `gmDriverInfo` ON `gmDriverInfo`.`login` = `mrsDataDrivers`.`employeeNumber` LEFT JOIN gmEquipment `gmEquipmentInfo` ON `gmEquipmentInfo`.`key` = `dailyAssignment`.`truck:key` LEFT JOIN routeStartTimes `rst` ON `rst`.`route` = `routeQuery`.`route:key` LEFT JOIN gmLocations `gmLoc` ON `gmLoc`.`key` = `routeQuery`.`organization:key` LEFT JOIN gmLocations `gmLocID` ON `gmLocID`.`key` = `routeQuery`.`location:key` WHERE `routeQuery`.`organization:key` = \"SEATTLE\" AND `routeQuery`.`route:date` = \"2018-10-17\" AND `routeQuery`.`route:key` IN (SELECT `key` FROM gmRoutes WHERE `organization:key` = \"SEATTLE\" AND `date` = \"2018-10-17\") ";
+    QString query = "SELECT `id` FROM gmRoutes WHERE `date` || `key` || `organization:id` IN ( SELECT `unique_id` FROM( SELECT CAST(baselineSize1 as INTEGER), CAST(baselineSize2 as INTEGER), CAST(baselineSize3 as INTEGER), `date`, `key`, `organization:id`, `date` || `key` || `organization:id` as `unique_id`, `totalStops` FROM gmRoutes WHERE `date` = '"+date.toString("yyyy-MM-dd")+"' AND `organization:key` = '"+organizationKey+"' AND `key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = '"+organizationKey+"' AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL ) AND `status` = 'NOT_STARTED' EXCEPT SELECT CAST(SUM(routeQuery.`order:pieces`) as INTEGER) as `order:plannedSize1`, CAST(SUM(routeQuery.`order:cube`) as INTEGER) as `order:plannedSize2`, CAST(SUM(routeQuery.`order:weight`) as INTEGER) as `order:plannedSize3`, routeQuery.`route:date`, routeQuery.`route:key`, gmOrg.`id` as `organization:id`, routeQuery.`route:date` || routeQuery.`route:key` || gmOrg.`id` as `unique_id`, count( distinct `routeQuery`.`location:key`) FROM as400RouteQuery `routeQuery` LEFT JOIN gmOrganizations `gmOrg` ON gmOrg.`key` = routeQuery.`organization:key` LEFT JOIN "+assignmentTableName+" `dailyAssignment` ON `routeQuery`.`route:key` = `dailyAssignment`.`route:key` AND `routeQuery`.`route:date` = `dailyAssignment`.`route:date` AND `routeQuery`.`organization:key` = `dailyAssignment`.`organization:key` LEFT JOIN drivers `mrsDataDrivers` ON `dailyAssignment`.`driver:name` = `mrsDataDrivers`.`employeeName` LEFT JOIN gmDrivers `gmDriverInfo` ON `gmDriverInfo`.`login` = `mrsDataDrivers`.`employeeNumber` LEFT JOIN gmEquipment `gmEquipmentInfo` ON `gmEquipmentInfo`.`key` = `dailyAssignment`.`truck:key` LEFT JOIN routeStartTimes `rst` ON `rst`.`route` = `routeQuery`.`route:key` LEFT JOIN gmLocations `gmLoc` ON `gmLoc`.`key` = `routeQuery`.`organization:key` LEFT JOIN gmLocations `gmLocID` ON `gmLocID`.`key` = `routeQuery`.`location:key` WHERE `routeQuery`.`organization:key` = '"+organizationKey+"' AND `routeQuery`.`route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `routeQuery`.`route:key` IN (SELECT `key` FROM gmRoutes WHERE `organization:key` = '"+organizationKey+"' AND `date` = '"+date.toString("yyyy-MM-dd")+"') AND `routeQuery`.`route:key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = '"+organizationKey+"' AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL ) GROUP BY routeQuery.`route:key`))";
+
     QMap<QString, QVariantList> sql = executeQuery(query, "Determining stops to delete. BridgeDatabase:getStopsToDelete()");
     QJsonObject assembledAS400Routes = assembleUploadRouteFromQuery(sql);
     for(auto key:assembledAS400Routes.keys())
@@ -125,6 +115,30 @@ QJsonObject BridgeDatabase::getStopsToDelete()
 
     qDebug() << "keeyz" << assembledAS400Routes.keys();
     return QJsonObject();
+}
+
+QJsonObject BridgeDatabase::getServiceTimeTypesToUpload(const QString &organizationKey)
+{
+    if(!locationsExist())
+        return QJsonObject();
+
+    QJsonObject returnObj;
+    QString query = "SELECT DISTINCT as400LocationQuery.`accountType:key` FROM as400LocationQuery LEFT JOIN gmLocations ON `key` = `location:key` WHERE gmLocations.`key` IN ( SELECT `location:key` FROM ( SELECT DISTINCT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays`, `serviceTimeType:key`, `accountType:key` FROM as400LocationQuery WHERE as400LocationQuery.`organization:key` = 'SEATTLE' EXCEPT SELECT DISTINCT `enabled`, `key`, `description`, `addressLine1`, `addressLine2`, `city`, `state`, `zipCode`, `deliveryDays`, `serviceTimeType:key`, `accountType:key` FROM gmLocations WHERE gmLocations.`organization:key` = 'SEATTLE' ) )";
+    QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile. BridgeDatabase::getLocationsToUpdate()");
+    qDebug() << "BridgeDatabase::getLocationsToUpdate" <<  query;
+
+}
+
+QJsonObject BridgeDatabase::getAccountTypesToUpload(const QString &organizationKey)
+{
+    if(!locationsExist())
+        return QJsonObject();
+
+    QJsonObject returnObj;
+    QString query = "SELECT DISTINCT as400LocationQuery.`serviceTimeType:key` FROM as400LocationQuery LEFT JOIN gmLocations ON `key` = `location:key` WHERE gmLocations.`key` IN ( SELECT `location:key` FROM ( SELECT DISTINCT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays`, `serviceTimeType:key`, `accountType:key` FROM as400LocationQuery WHERE as400LocationQuery.`organization:key` = 'SEATTLE' EXCEPT SELECT DISTINCT `enabled`, `key`, `description`, `addressLine1`, `addressLine2`, `city`, `state`, `zipCode`, `deliveryDays`, `serviceTimeType:key`, `accountType:key` FROM gmLocations WHERE gmLocations.`organization:key` = 'SEATTLE' ) )";
+    QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile. BridgeDatabase::getLocationsToUpdate()");
+    qDebug() << "BridgeDatabase::getLocationsToUpdate" <<  query;
+
 }
 
 QJsonObject BridgeDatabase::getGMLocationsWithBadGeocode(const QString &organizationKey)
@@ -491,7 +505,7 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
         runsBackwards = false;
         QString dayOfWeek = QDate::fromString(route[routeKey]["date"].toString(), Qt::ISODate).toString("dddd").toLower();
         QString overrideQuery = "SELECT DISTINCT `gmOrigin`.`id` as `origin`, `gmDestination`.`id` as `destination`, CASE WHEN `rteOver`.`"+dayOfWeek+":backwards` = 'FALSE' THEN 0 ELSE 1 END as `backwards` FROM routeOverrides `rteOver` LEFT JOIN gmLocations `gmOrigin` ON `gmOrigin`.`key` = `rteOver`.`"+dayOfWeek+":origin` LEFT JOIN gmLocations `gmDestination` ON `gmDestination`.`key` = `rteOver`.`"+dayOfWeek+":destination` LEFT JOIN gmOrganizations ON gmOrganizations.`key` = `rteOver`.`organization:key` WHERE gmOrganizations.`id` = "+QString::number(organization[routeKey]["id"].toInt())+" AND `rteOver`.`route:key` = '"+routeKey+"'";
-        QMap<QString, QVariantList> sql = executeQuery(overrideQuery);
+        QMap<QString, QVariantList> sql = executeQuery(overrideQuery, "check route overrides.");
         if(!sql.isEmpty())
         {
             for(auto overrideKey:sql.keys())
@@ -574,6 +588,218 @@ void BridgeDatabase::SQLDataInsert(const QString &tableName, const QMap<QString,
     writeToTable(tableName, sql);
 }
 
+void BridgeDatabase::reprocessAS400LocationTimeWindows()
+{
+    QString as400LocationTableName = "as400LocationQuery";
+    QString selectAllAS400LocationQuery = "SELECT * FROM as400LocationQuery";
+    QMap<QString, QVariantList> as400LocationResult = executeQuery(selectAllAS400LocationQuery, as400LocationTableName);
+    as400LocationResult = fixAS400TimeWindowRecords(as400LocationResult);
+    writeToTable("as400LocationQuery", as400LocationResult);
+    QList<QString> crash;
+    QString burn = crash.first();
+}
+
+QMap<QString, QVariantList> BridgeDatabase::fixAS400TimeWindowRecords(const QMap<QString,QVariantList> &records)
+{
+    QMap<QString,QVariantList> correctedRecords;
+    QList<QVariantMap> sqlByRow;
+    QVariantMap record;
+
+    if(!isSQLResultValid(records))
+        return correctedRecords;
+
+    for(int i = 0; i < records.first().size(); ++i)
+    {
+        record.clear();
+        for(auto key : records.keys())
+        {
+            record[key] = records[key][i];
+        }
+        sqlByRow.append(record);
+    }
+
+    QtConcurrent::blockingMap(sqlByRow.begin(),sqlByRow.end(), &BridgeDatabase::fixAS400TimeWindowRecord);
+
+    for(auto vMap:sqlByRow)
+    {
+        for(auto key:vMap.keys())
+        {
+            correctedRecords[key].append(vMap[key]);
+        }
+    }
+
+//    for(int i = 0; i < records.first().size(); ++i)
+//    {
+//        record.clear();
+
+//        for(auto key : records.keys())
+//        {
+//            record[key] = records[key][i];
+//        }
+
+//        record = fixAS400TimeWindowRecord(record);
+
+//        for(auto key : records.keys())
+//        {
+//            correctedRecords[key].append(record[key]);
+//        }
+//    }
+
+    return correctedRecords;
+}
+
+void BridgeDatabase::fixAS400TimeWindowRecord(QVariantMap &record)
+{
+    bool allInvalid = true;
+    QMap<QString, QTime> timeMap;
+    QVector<QTime> timeSort;
+    timeMap["openTime"]  = record["locationOverrideTimeWindows:openTime"].toTime();
+    timeMap["closeTime"] = record["locationOverrideTimeWindows:closeTime"].toTime();
+    timeMap["tw1Open"]   = record["locationOverrideTimeWindows:tw1Open"].toTime();
+    timeMap["tw1Close"]  = record["locationOverrideTimeWindows:tw1Close"].toTime();
+    timeMap["tw2Open"]   = record["locationOverrideTimeWindows:tw2Open"].toTime();
+    timeMap["tw2Close"]  = record["locationOverrideTimeWindows:tw2Close"].toTime();
+
+    //Validate Pairs
+    if(!timeMap["openTime"].isValid() || !timeMap["closeTime"].isValid())
+    {
+        timeMap["openTime"] = QTime();
+        timeMap["closeTime"] = QTime();
+    }
+
+    if(!timeMap["tw1Open"].isValid() || !timeMap["tw1Close"].isValid())
+    {
+        timeMap["tw1Open"] = QTime();
+        timeMap["tw1Close"] = QTime();
+    }
+
+    if(!timeMap["tw2Open"].isValid() || !timeMap["tw2Close"].isValid())
+    {
+        timeMap["tw2Open"] = QTime();
+        timeMap["tw2Close"] = QTime();
+    }
+
+    //Overall validity.
+    for(auto time:timeMap.values())
+    {
+        if(time.isValid())
+        {
+            allInvalid = false;
+        }
+        if(time == QTime(0,1))
+        {
+            time = QTime(0,0);
+        }
+    }
+
+
+    if(!allInvalid && !timeMap["openTime"].isValid() && !timeMap["closeTime"].isValid())
+    {
+        //qDebug() << "perform time shuffle";
+        if(timeMap["tw1Open"].isValid() && timeMap["tw1Close"].isValid())
+        {
+            //qDebug() << "shuffle 1 to oc";
+            timeMap["openTime"] = timeMap["tw1Open"];
+            timeMap["closeTime"] = timeMap["tw1Close"];
+            timeMap["tw1Open"]  = QTime();
+            timeMap["tw1Close"] = QTime();
+
+            if(timeMap["tw2Open"].isValid() && timeMap["tw2Close"].isValid())
+            {
+                //qDebug() << "shuffle 2 to 1";
+                timeMap["tw1Open"] = timeMap["tw2Open"];
+                timeMap["tw1Close"] = timeMap["tw2Close"];
+                timeMap["tw2Open"]  = QTime();
+                timeMap["tw2Close"] = QTime();
+            }
+        }
+        else if(timeMap["tw2Open"].isValid() && timeMap["tw2Close"].isValid())
+        {
+            //qDebug() << "shuffle 2 to oc";
+            //qDebug() << timeMap["tw1Open"] << timeMap["tw1Close"];
+            //qDebug() << record["location:key"];
+            timeMap["openTime"] = timeMap["tw2Open"];
+            timeMap["closeTime"] = timeMap["tw2Close"];
+            timeMap["tw2Open"] = QTime();
+            timeMap["tw2Close"] = QTime();
+        }
+    }
+
+    //Split times over the date line.
+    if(timeMap["openTime"] > timeMap["closeTime"])
+    {
+        //qDebug() << "crosses over midnight.";
+        timeMap["tw1Open"] = timeMap["openTime"];
+        timeMap["tw1Close"] = QTime(23,58);
+        timeMap["tw2Open"] = QTime(0, 1);
+        timeMap["tw2Close"] = timeMap["closeTime"];
+        timeMap["openTime"] = QTime(0,0);
+        timeMap["closeTime"] = QTime(23,59);
+    }
+
+    for(auto key:timeMap.keys())
+    {
+        if(timeMap[key].isValid())
+        {
+            timeSort.append(timeMap[key]);
+        }
+    }
+
+    std::sort(timeSort.begin(), timeSort.end());
+    //qDebug() << "time sort!" << timeSort;
+    //Adjusts time windows so that they do no overlap.
+    //Special consideration to not push a TW beyond the date e.g. 23:59 -> 00:00.
+    for(int i = 0; i < timeSort.size()-1; ++i)
+    {
+        if(timeSort[i] >= timeSort[i+1] && timeSort[i+1].addSecs(60) != QTime(0,0))
+        {
+            timeSort[i+1] = timeSort[i+1].addSecs(60);
+        }
+        else if(timeSort[i] >= timeSort[i+1])
+        {
+            timeSort[i] = timeSort[i].addSecs(-60);
+        }
+    }
+
+    std::sort(timeSort.begin(), timeSort.end());
+
+    for(int i = 0; i < timeSort.size(); ++i)
+    {
+        int last = timeSort.size()-1;
+        if(i != last)
+        {
+            switch(i)
+            {
+            case 0:
+                timeMap["openTime"] = timeSort[i];
+                break;
+            case 1:
+                timeMap["tw1Open"] = timeSort[i];
+                break;
+            case 2:
+                timeMap["tw1Close"] = timeSort[i];
+                break;
+            case 3:
+                timeMap["tw2Open"] = timeSort[i];
+                break;
+            case 4:
+                timeMap["tw2Close"] = timeSort[i];
+                break;
+            }
+        }
+        else
+        {
+            timeMap["closeTime"] = timeSort[i];
+        }
+    }
+
+    for(auto key:timeMap.keys())
+    {
+        record["locationOverrideTimeWindows:" + key] = QVariant(timeMap[key]);
+    }
+}
+
+
 bool BridgeDatabase::isSQLResultValid(const QMap<QString, QVariantList> &data)
 {
     int columnSizeCount;
@@ -592,13 +818,15 @@ bool BridgeDatabase::isSQLResultValid(const QMap<QString, QVariantList> &data)
     }
 
     columnSizeCount = data.first().size();
-
+    qDebug() << columnSizeCount;
     for(auto key:data.keys())
     {
         otherColumnSizeCount = data[key].size();
+        qDebug() << key;
+        qDebug() << otherColumnSizeCount;
         if(columnSizeCount != otherColumnSizeCount)
         {
-            emit errorMessage("ERROR: SQL columns are not all of equal length.");
+            emit errorMessage("ERROR: SQL columns are not all of equal length. The last column compared was " + key);
             return false;
         }
     }
@@ -836,14 +1064,14 @@ QVariant BridgeDatabase::jsonValueToQVariant(const QJsonValue &val)
     {
         QJsonDocument arrayToString;
         arrayToString.setArray(val.toArray());
-        return QVariant(QString(arrayToString.toJson()));
+        return QVariant(QString(arrayToString.toJson(QJsonDocument::Compact)));
     }
 
     case QJsonValue::Object:
     {
         QJsonDocument objToString;
         objToString.setObject(val.toObject());
-        return QVariant(QString(objToString.toJson()));
+        return QVariant(QString(objToString.toJson(QJsonDocument::Compact)));
     }
     case QJsonValue::Undefined:
         return QVariant();
@@ -864,11 +1092,14 @@ bool BridgeDatabase::truncateATable(const QString &tableName)
     return executeInsertQuery(truncateTableQuery, "Truncating " + tableName + ".");
 }
 
-bool BridgeDatabase::writeToTable(const QString &tableName, QMap<QString, QVariantList> invoiceResults)
+bool BridgeDatabase::writeToTable(const QString &tableName, QMap<QString, QVariantList> data)
 {
     bool success = false;
-    if(invoiceResults.isEmpty())
+
+    if(!isSQLResultValid(data))
         return success;
+
+    qDebug() << data.keys() << "1";
 
     {
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", dbPath_);
@@ -877,10 +1108,12 @@ bool BridgeDatabase::writeToTable(const QString &tableName, QMap<QString, QVaria
         emit statusMessage("SQLite " + tableName + " import.");
         if(db.open())
         {
-            success = executeQueryAsString(db,tableName, invoiceResults);
+            success = executeQueryAsString(db,tableName, data);
+            qDebug() << data.keys() << "2";
             if(!success)
             {
-                success = executeQueryResiliantly(db,tableName, invoiceResults);
+                success = executeQueryResiliantly(db,tableName, data);
+                qDebug() << data.keys() << "3";
             }
         }
         else
@@ -1078,76 +1311,76 @@ bool BridgeDatabase::executeInsertQuery(const QString &queryString, const QStrin
     return success;
 }
 
-QStringList BridgeDatabase::generateValueTuples(QMap<QString, QVariantList> invoiceResults)
+QStringList BridgeDatabase::generateValueTuples(QMap<QString, QVariantList> data)
 {
     QStringList valueList;
     QStringList valueTuples;
-    for(int i = 0; i < invoiceResults.first().size(); ++i)
+    for(int i = 0; i < data.first().size(); ++i)
     {
         valueList.clear();
-        for(auto key:invoiceResults.keys())
+        for(auto key:data.keys())
         {
-            if(invoiceResults[key].size() > invoiceResults.first().size())
+            if(data[key].size() > data.first().size())
             {
                 emit errorMessage("Cannot assemble value tuples. Index for " + key + " out of range.");
                 return QStringList();
             }
-            switch(invoiceResults[key][i].type()) {
+            switch(data[key][i].type()) {
 
             case QVariant::Type::Bool:
-                if(invoiceResults[key][i].isNull())
+                if(data[key][i].isNull())
                     valueList.append("NULL");
                 else
-                    valueList.append(invoiceResults[key][i].toString());
+                    valueList.append(data[key][i].toString());
                 break;
 
             case QVariant::Type::Int:
-                if(invoiceResults[key][i].isNull())
+                if(data[key][i].isNull())
                     valueList.append("NULL");
                 else
-                    valueList.append(invoiceResults[key][i].toString());
+                    valueList.append(data[key][i].toString());
                 break;
 
             case QVariant::Type::LongLong:
-                if(invoiceResults[key][i].isNull())
+                if(data[key][i].isNull())
                     valueList.append("NULL");
                 else
-                    valueList.append(invoiceResults[key][i].toString());
+                    valueList.append(data[key][i].toString());
                 break;
 
             case QVariant::Type::Double:
-                if(invoiceResults[key][i].isNull())
+                if(data[key][i].isNull())
                     valueList.append("NULL");
                 else
-                    valueList.append(invoiceResults[key][i].toString());
+                    valueList.append(data[key][i].toString());
                 break;
 
             case QVariant::Type::String:
-                if(invoiceResults[key][i].isNull())
+                if(data[key][i].isNull())
                     valueList.append("NULL");
                 else
-                    valueList.append("\"" + invoiceResults[key][i].toString().toLatin1().replace("\"", "\"\"") + "\"");
+                    valueList.append("\"" + data[key][i].toString().toLatin1().replace("\"", "\"\"") + "\"");
                 break;
 
             case QVariant::Type::Date:
-                if(invoiceResults[key][i].isNull())
+                if(data[key][i].isNull())
                     valueList.append("NULL");
                 else
-                    valueList.append("\"" + invoiceResults[key][i].toDate().toString(Qt::ISODate) + "\"");
+                    valueList.append("\"" + data[key][i].toDate().toString(Qt::ISODate) + "\"");
                 break;
 
             case QVariant::Type::DateTime:
-                if(invoiceResults[key][i].isNull())
+                if(data[key][i].isNull())
                     valueList.append("NULL");
                 else
-                    valueList.append("\"" + invoiceResults[key][i].toDate().toString(Qt::ISODate) + "\"");
+                    valueList.append("\"" + data[key][i].toDate().toString(Qt::ISODate) + "\"");
                 break;
 
             case QVariant::Type::Time:
-                if(invoiceResults[key][i].isNull())
+                if(data[key][i].isNull())
                     valueList.append("NULL");
                 else
-                    valueList.append("\"" + invoiceResults[key][i].toTime().toString(Qt::ISODate) + "\"");
+                    valueList.append("\"" + data[key][i].toTime().toString(Qt::ISODate) + "\"");
                 break;
 
             case QVariant::Type::Invalid:
@@ -1158,11 +1391,11 @@ QStringList BridgeDatabase::generateValueTuples(QMap<QString, QVariantList> invo
                 qApp->processEvents();
                 //qDebug() << "Unknown variant type in switch. "
                 //            "If you see this a lot, "
-                //            " your event loop might be getting smashed... " << invoiceResults[key][i].type();
+                //            " your event loop might be getting smashed... " << data[key][i].type();
                 emit errorMessage(QString("Unsupported data type from SQLite database "
-                                          + invoiceResults[key][i].toString()
+                                          + data[key][i].toString()
                                           + " "
-                                          + QString(invoiceResults[key][i].type())));
+                                          + QString(data[key][i].type())));
                 break;
             }
         }

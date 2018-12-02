@@ -3,6 +3,8 @@
 
 #include <QtSql>
 #include <QtCore>
+#include <QVector>
+#include <QtConcurrent/QtConcurrent>
 
 class BridgeDatabase : public QObject
 {
@@ -39,7 +41,13 @@ public:
 
     bool locationsExist();
 
-    QJsonObject getStopsToDelete();
+    QJsonObject getStopsToDelete(const QString &assignmentTableName,
+                                 const QString &organizationKey,
+                                 const QDate &date);
+
+    QJsonObject getAccountTypesToUpload(const QString &organizationKey);
+
+    QJsonObject getServiceTimeTypesToUpload(const QString &organizationKey);
 
     QJsonObject getGMLocationsWithBadGeocode(const QString &organizationKey);
 
@@ -51,6 +59,7 @@ public:
 
     QJsonArray getEquipmentToUpload();
 
+    void reprocessAS400LocationTimeWindows();
     void enforceTableSanity(QStringList primaryKeyList, const QString &primaryTable, const QString &secondaryTable);
     bool truncateATable(const QString &tableName);
     bool populateAS400LocationOverrideTimeWindows();
@@ -81,12 +90,19 @@ public slots:
     void SQLDataInsert(const QString &tableName, const QMap<QString, QVariantList> &sql);
 
 private:
+    //Post Processing Utilities
+    QMap<QString, QVariantList> fixAS400TimeWindowRecords(const QMap<QString, QVariantList> &records);
+    static void fixAS400TimeWindowRecord(QVariantMap &record);
+
+
     //Utility Section
     bool isSQLResultValid(const QMap<QString,QVariantList> &data);
     QMap<QString,QVariantList> transposeJsonArrayToSQL(const QStringList &expectedKeys, const QJsonArray &data);
     QVariantMap transposeJsonObjectToVarMap(const QStringList &expectedKeys, const QJsonObject &obj);
     QVariant jsonValueToQVariant(const QJsonValue &val);
     QJsonArray transposeSQLToJsonArray(const QMap<QString,QVariantList> &data);
+    //void transposeSQLRowToColumn(QMap<QString,QVariantList> &result, const QVariantMap &row);
+
 
     bool writeToTable(const QString &tableName, QMap<QString, QVariantList> invoiceResults);
     bool executeInsertQuery(const QString &query, const QString &verb = "unspecified insert query");

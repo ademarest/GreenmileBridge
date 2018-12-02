@@ -21,6 +21,9 @@ signals:
     void failed(const QString &key, const QString &reason);
 
 public slots:
+//    void UploadLocationTypes(const QString &key, const QList<QVariantMap> &argList);
+//    void UploadAccountTypes(const QString &key, const QList<QVariantMap> &argList);
+//    void UploadServiceTimeTypes(const QString &key, const QList<QVariantMap> &argList);
     void UploadLocations(const QString &key, const QList<QVariantMap> &argList, const QJsonObject &geocodes);
     void UpdateLocations(const QString &key, const QList<QVariantMap> &argList, const QJsonObject &geocodes);
 

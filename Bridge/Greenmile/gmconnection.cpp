@@ -53,12 +53,22 @@ void GMConnection::requestLocationKeys(const QString &key)
 void GMConnection::requestLocationInfo(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString serverAddrTail = "/Location/restrictions?criteria={\"filters\":[\"*\", \"locationOverrideTimeWindows.id\", \"locationType.id\", \"locationType.key\", \"organization.id\", \"organization.key\"]}";
+    QString serverAddrTail = "/Location/restrictions?criteria={\"filters\":[\"*\", \"locationOverrideTimeWindows.*\", \"locationType.id\", \"locationType.key\", \"organization.id\", \"organization.key\", \"serviceTimeType.id\", \"serviceTimeType.key\", \"accountType.id\" , \"accountType.key\"]}";
 
     QByteArray postData = QString("{}").toLocal8Bit();
 
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
+
+void GMConnection::requestLocationOverrideTimeWindowInfo(const QString &key)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString serverAddrTail = "/LocationOverrideTimeWindow/restrictions?criteria={\"filters\":[\"*\", \"location.id\"]}";
+    QByteArray postData = QString("{}").toLocal8Bit();
+
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
+}
+
 
 void GMConnection::requestAllOrganizationInfo(const QString &key)
 {
@@ -157,6 +167,39 @@ void GMConnection::assignEquipmentToRoute(const QString &key, const QJsonObject 
     QString serverAddrTail = "/RouteEquipmentAssignment";
 
     QByteArray postData = QJsonDocument(routeEquipmentAssignmentJson).toJson(QJsonDocument::Compact);
+
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
+}
+
+void GMConnection::requestAccountTypes(const QString &key)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    //QString key = routeJson["key"].toString();
+    QString serverAddrTail = "/AccountType/restrictions?criteria={\"filters\":[\"*\", \"organization.id\"]}";
+
+    QByteArray postData = QString("{}").toLocal8Bit();
+
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
+}
+
+void GMConnection::requestServiceTimeTypes(const QString &key)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    //QString key = routeJson["key"].toString();
+    QString serverAddrTail = "/ServiceTimeType/restrictions?criteria={\"filters\":[\"*\", \"organization.id\"]}";
+
+    QByteArray postData = QString("{}").toLocal8Bit();
+
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
+}
+
+void GMConnection::requestLocationTypes(const QString &key)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    //QString key = routeJson["key"].toString();
+    QString serverAddrTail = "/LocationType/restrictions?criteria={\"filters\":[\"*\", \"organization.id\"]}";
+
+    QByteArray postData = QString("{}").toLocal8Bit();
 
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
@@ -269,7 +312,7 @@ void GMConnection::processConnectionQueue()
 
     if(numberOfActiveConnections_ > jsonSettings_["maxActiveConnections"].toInt())
     {
-        qDebug() << "Too many connections! There's more than 100!";
+        qDebug() << "Too many connections! There's more than" << jsonSettings_["maxActiveConnections"].toInt() << "!";
         return;
     }
 

@@ -205,6 +205,42 @@ void BridgeDataCollector::beginGathering(const QVariantMap &request)
             continue;
         }
 
+        if(source == "gmAccountTypes")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            gmConn->requestAccountTypes("gmAccountTypes");
+            continue;
+        }
+
+        if(source == "gmServiceTimeTypes")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            gmConn->requestServiceTimeTypes("gmServiceTimeTypes");
+            continue;
+        }
+
+        if(source == "gmLocationTypes")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            gmConn->requestLocationTypes("gmLocationTypes");
+            continue;
+        }
+
+        if(source == "gmLocationOverrideTimeWindows")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            gmConn->requestLocationOverrideTimeWindowInfo("gmLocationOverrideTimeWindows");
+            continue;
+        }
+
         if(source == "as400RouteQuery")
         {
             activeJobs_.insert(source);
@@ -278,6 +314,14 @@ void BridgeDataCollector::handleJsonResponse(const QString &key, const QJsonValu
         handleGMEquipmentInfo(jVal.toArray());
     if(key == "gmLocations")
         handleGMLocationInfo(jVal.toArray());
+    if(key == "gmLocationOverrideTimeWindows")
+        handleGMLocationOverrideTimeWindowInfo(jVal.toArray());
+    if(key == "gmAccountTypes")
+        handleGMAccountTypes(jVal.toArray());
+    if(key == "gmServiceTimeTypes")
+        handleGMServiceTimeTypes(jVal.toArray());
+    if(key == "gmLocationTypes")
+        handleGMLocationTypes(jVal.toArray());
 
     handleJobCompletion(key);
 }
@@ -380,6 +424,10 @@ void BridgeDataCollector::handleAS400RouteQuery(const QMap<QString, QVariantList
                             "`location:city` TEXT, "
                             "`location:deliveryDays` TEXT, "
                             "`location:description` TEXT, "
+                            "`accountType:key` TEXT, "
+                            "`serviceTimeType:key` TEXT, "
+                            "`locationType:key` TEXT"
+                            "`stopType:key` TEXT"
                             "`location:key` TEXT, "
                             "`location:state` TEXT, "
                             "`location:zipCode` TEXT, "
@@ -425,6 +473,10 @@ void BridgeDataCollector::handleAS400LocationQuery(const QMap<QString, QVariantL
                             "`locationOverrideTimeWindows:tw1Open` TEXT, "
                             "`locationOverrideTimeWindows:tw2Close` TEXT, "
                             "`locationOverrideTimeWindows:tw2Open` TEXT, "
+                            "`accountType:key` TEXT, "
+                            "`serviceTimeType:key` TEXT, "
+                            "`locationType:key` TEXT, "
+                            "`stopType:key` TEXT"
                             "PRIMARY KEY(`location:key`))";
 
     bridgeDB->addSQLInfo(tableName, creationQuery);
@@ -474,6 +526,10 @@ void BridgeDataCollector::handleGMLocationInfo(const QJsonArray &array)
                             "`locationOverrideTimeWindows:0:id` INTEGER, "
                             "`locationType:id` INTEGER, "
                             "`locationType:key` TEXT, "
+                            "`serviceTimeType:id` INTEGER, "
+                            "`serviceTimeType:key` TEXT, "
+                            "`accountType:id` INTEGER, "
+                            "`accountType:key` TEXT, "
                             "PRIMARY KEY(`id`))";
 
     QStringList expectedKeys {"id",
@@ -494,7 +550,55 @@ void BridgeDataCollector::handleGMLocationInfo(const QJsonArray &array)
                               "organization:key",
                               "locationOverrideTimeWindows:0:id",
                               "locationType:id",
-                              "locationType:key"};
+                              "locationType:key",
+                              "serviceTimeType:id",
+                              "serviceTimeType:key",
+                              "accountType:id",
+                              "accountType:key"};
+
+    bridgeDB->addJsonArrayInfo(tableName, creationQuery, expectedKeys);
+    bridgeDB->JSONArrayInsert(tableName, array);
+}
+
+void BridgeDataCollector::handleGMLocationOverrideTimeWindowInfo(const QJsonArray &array)
+{
+    emit statusMessage("GM location time window override info recieved.");
+
+    QString tableName     = "gmLocationOverrideTimeWindows";
+
+    QString creationQuery = "CREATE TABLE `gmLocationOverrideTimeWindows` "
+                            "(`id` INTEGER NOT NULL UNIQUE, "
+                            "`openTime` TEXT, "
+                            "`closeTime` TEXT, "
+                            "`tw1Open` TEXT, "
+                            "`tw1Close` TEXT, "
+                            "`tw2Open` TEXT, "
+                            "`tw2Close` TEXT, "
+                            "`monday` INTEGER, "
+                            "`tuesday` INTEGER, "
+                            "`wednesday` INTEGER, "
+                            "`thursday` INTEGER, "
+                            "`friday` INTEGER, "
+                            "`saturday` INTEGER, "
+                            "`sunday` INTEGER, "
+                            "`location:id` INTEGER, "
+                            "PRIMARY KEY(`id`))";
+
+    QStringList expectedKeys {"id",
+                              "openTime",
+                              "closeTime",
+                              "tw1Open",
+                              "tw1Close",
+                              "tw2Open",
+                              "tw2Close",
+                              "monday",
+                              "tuesday",
+                              "wednesday",
+                              "thursday",
+                              "friday",
+                              "saturday",
+                              "sunday",
+                              "location:id"};
 
     bridgeDB->addJsonArrayInfo(tableName, creationQuery, expectedKeys);
     bridgeDB->JSONArrayInsert(tableName, array);
@@ -574,6 +678,90 @@ void BridgeDataCollector::handleGMRouteInfo(const QJsonArray &array)
                               "baselineSize1",
                               "baselineSize2",
                               "baselineSize3"};
+
+    bridgeDB->addJsonArrayInfo(tableName, creationQuery, expectedKeys);
+    bridgeDB->JSONArrayInsert(tableName, array);
+}
+
+void BridgeDataCollector::handleGMServiceTimeTypes(const QJsonArray &array)
+{
+    emit statusMessage("GM service time type info recieved.");
+
+    QString tableName       = "gmServiceTimeTypes";
+
+    QString creationQuery = "CREATE TABLE `gmServiceTimeTypes` "
+                            "(`id` INTEGER NOT NULL UNIQUE, "
+                            "`organization:id` INTEGER, "
+                            "`key` TEXT, "
+                            "`description` TEXT, "
+                            "`nonHelperFixedTimeSecs` INTEGER, "
+                            "`nonHelperVarTimeSecs` INTEGER, "
+                            "`helperFixedTimeSecs` INTEGER, "
+                            "`helperVarTimeSecs` INTEGER, "
+                            "`enabled` INTEGER, "
+                            "PRIMARY KEY(`id`))";
+
+    QStringList expectedKeys {"id",
+                              "organization:id",
+                              "key",
+                              "description",
+                              "nonHelperFixedTimeSecs",
+                              "nonHelperVarTimeSecs",
+                              "helperFixedTimeSecs",
+                              "helperVarTimeSecs",
+                              "enabled"};
+
+    bridgeDB->addJsonArrayInfo(tableName, creationQuery, expectedKeys);
+    bridgeDB->JSONArrayInsert(tableName, array);
+}
+
+void BridgeDataCollector::handleGMAccountTypes(const QJsonArray &array)
+{
+    emit statusMessage("GM account type info recieved.");
+
+    QString tableName       = "gmAccountTypes";
+
+    QString creationQuery = "CREATE TABLE `gmAccountTypes` "
+                            "(`id` INTEGER NOT NULL UNIQUE, "
+                            "`organization:id` INTEGER, "
+                            "`key` TEXT, "
+                            "`description` TEXT, "
+                            "`color` TEXT, "
+                            "PRIMARY KEY(`id`))";
+
+    QStringList expectedKeys {"id",
+                              "organization:id",
+                              "key",
+                              "description",
+                              "color"};
+
+    bridgeDB->addJsonArrayInfo(tableName, creationQuery, expectedKeys);
+    bridgeDB->JSONArrayInsert(tableName, array);
+}
+
+void BridgeDataCollector::handleGMLocationTypes(const QJsonArray &array)
+{
+    emit statusMessage("GM location type info recieved.");
+
+    QString tableName       = "gmLocationTypes";
+
+    QString creationQuery = "CREATE TABLE `gmLocationTypes` "
+                            "(`id` INTEGER NOT NULL UNIQUE, "
+                            "`organization:id` INTEGER, "
+                            "`key` TEXT, "
+                            "`description` TEXT, "
+                            "`showOnMobileCreate` INTEGER, "
+                            "`enabled` INTEGER, "
+                            "`alternativeKey` TEXT, "
+                            "PRIMARY KEY(`id`))";
+
+    QStringList expectedKeys {"id",
+                              "organization:id",
+                              "key",
+                              "description",
+                              "showOnMobileCreate",
+                              "enabled",
+                              "alternativeKey"};
 
     bridgeDB->addJsonArrayInfo(tableName, creationQuery, expectedKeys);
     bridgeDB->JSONArrayInsert(tableName, array);

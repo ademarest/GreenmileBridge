@@ -30,6 +30,7 @@ public:
     void requestRouteKeysForDate(const QString &key, const QDate &date);
     void requestLocationKeys(const QString &key);
     void requestLocationInfo(const QString &key);
+    void requestLocationOverrideTimeWindowInfo(const QString &key);
     void requestAllOrganizationInfo(const QString &key);
     void requestAllStopTypeInfo(const QString &key);
     void requestAllLocationTypeInfo(const QString &key);
@@ -39,6 +40,9 @@ public:
     void uploadARoute(const QString &key, const QJsonObject &routeJson);
     void assignDriverToRoute(const QString &key, const QJsonObject &routeDriverAssignmentJson);
     void assignEquipmentToRoute(const QString &key, const QJsonObject &routeEquipmentAssignmentJson);
+    void requestAccountTypes(const QString &key);
+    void requestServiceTimeTypes(const QString &key);
+    void requestLocationTypes(const QString &key);
 
     void deleteRoute(const QString &key, const QString &entityID);
     void deleteDriverAssignment(const QString &key, const QString &entityID);
