@@ -204,6 +204,17 @@ void GMConnection::requestLocationTypes(const QString &key)
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
+void GMConnection::requestStopTypes(const QString &key)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    //QString key = routeJson["key"].toString();
+    QString serverAddrTail = "/StopType/restrictions?criteria={\"filters\":[\"*\", \"organization.id\"]}";
+
+    QByteArray postData = QString("{}").toLocal8Bit();
+
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
+}
+
 void GMConnection::deleteRoute(const QString &key, const QString &entityID)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);

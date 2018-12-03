@@ -93,7 +93,7 @@
   <customwidget>
    <class>ListControlWidget</class>
    <extends>QListWidget</extends>
-   <header>listcontrolwidget.h</header>
+   <header>GenericUI/listcontrolwidget.h</header>
   </customwidget>
  </customwidgets>
  <tabstops>

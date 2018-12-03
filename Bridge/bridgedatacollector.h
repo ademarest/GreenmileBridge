@@ -65,6 +65,7 @@ private:
      "gmLocationOverrideTimeWindows",
      "gmServiceTimeTypes",
      "gmAccountTypes",
+     "gmStopTypes",
      "gmLocationTypes",
      "as400RouteQuery",
      "as400LocationQuery"};
@@ -83,7 +84,8 @@ private:
     void handleGMRouteInfo(const QJsonArray &array);
     void handleGMServiceTimeTypes(const QJsonArray &array);
     void handleGMAccountTypes(const QJsonArray &array);
-    void handleGMLocationTypes(const QJsonArray& array);
+    void handleGMLocationTypes(const QJsonArray &array);
+    void handleGMStopTypes(const QJsonArray &array);
 
     void handleRSAssignments(const QString &tableName, const QMap<QString, QVariantList> &sql);
     void handleRSDrivers(const QJsonObject &data);

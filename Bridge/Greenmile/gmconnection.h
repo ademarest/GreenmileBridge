@@ -43,6 +43,7 @@ public:
     void requestAccountTypes(const QString &key);
     void requestServiceTimeTypes(const QString &key);
     void requestLocationTypes(const QString &key);
+    void requestStopTypes(const QString &key);
 
     void deleteRoute(const QString &key, const QString &entityID);
     void deleteDriverAssignment(const QString &key, const QString &entityID);

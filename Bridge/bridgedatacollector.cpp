@@ -232,6 +232,15 @@ void BridgeDataCollector::beginGathering(const QVariantMap &request)
             continue;
         }
 
+        if(source == "gmStopTypes")
+        {
+            activeJobs_.insert(source);
+            totalJobs_ = activeJobs_.size();
+            emit progress(activeJobs_.size(), totalJobs_);
+            gmConn->requestStopTypes("gmStopTypes");
+            continue;
+        }
+
         if(source == "gmLocationOverrideTimeWindows")
         {
             activeJobs_.insert(source);
@@ -258,6 +267,7 @@ void BridgeDataCollector::beginGathering(const QVariantMap &request)
             as400->getLocationDataForGreenmile("as400LocationQuery", monthsUntilCustDisabled, 0);
             continue;
         }
+
     }
 }
 
@@ -322,6 +332,8 @@ void BridgeDataCollector::handleJsonResponse(const QString &key, const QJsonValu
         handleGMServiceTimeTypes(jVal.toArray());
     if(key == "gmLocationTypes")
         handleGMLocationTypes(jVal.toArray());
+    if(key == "gmStopTypes")
+        handleGMStopTypes(jVal.toArray());
 
     handleJobCompletion(key);
 }
@@ -426,7 +438,7 @@ void BridgeDataCollector::handleAS400RouteQuery(const QMap<QString, QVariantList
                             "`location:description` TEXT, "
                             "`accountType:key` TEXT, "
                             "`serviceTimeType:key` TEXT, "
-                            "`locationType:key` TEXT"
+                            "`locationType:key` TEXT, "
                             "`stopType:key` TEXT, "
                             "`location:key` TEXT, "
                             "`location:state` TEXT, "
@@ -476,7 +488,7 @@ void BridgeDataCollector::handleAS400LocationQuery(const QMap<QString, QVariantL
                             "`accountType:key` TEXT, "
                             "`serviceTimeType:key` TEXT, "
                             "`locationType:key` TEXT, "
-                            "`stopType:key` TEXT"
+                            "`stopType:key` TEXT, "
                             "PRIMARY KEY(`location:key`))";
 
     bridgeDB->addSQLInfo(tableName, creationQuery);
@@ -762,6 +774,32 @@ void BridgeDataCollector::handleGMLocationTypes(const QJsonArray &array)
                               "showOnMobileCreate",
                               "enabled",
                               "alternativeKey"};
+
+    bridgeDB->addJsonArrayInfo(tableName, creationQuery, expectedKeys);
+    bridgeDB->JSONArrayInsert(tableName, array);
+}
+
+void BridgeDataCollector::handleGMStopTypes(const QJsonArray &array)
+{
+    emit statusMessage("GM stop type info recieved.");
+
+    QString tableName       = "gmStopTypes";
+
+    QString creationQuery = "CREATE TABLE `gmStopTypes` "
+                            "(`id` INTEGER NOT NULL UNIQUE, "
+                            "`organization:id` INTEGER, "
+                            "`key` TEXT, "
+                            "`description` TEXT, "
+                            "`type` TEXT, "
+                            "`locationRequired` INTEGER, "
+                            "PRIMARY KEY(`id`))";
+
+    QStringList expectedKeys {"id",
+                              "organization:id",
+                              "key",
+                              "description",
+                              "type",
+                              "locationRequired"};
 
     bridgeDB->addJsonArrayInfo(tableName, creationQuery, expectedKeys);
     bridgeDB->JSONArrayInsert(tableName, array);
