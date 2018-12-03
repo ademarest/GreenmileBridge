@@ -427,7 +427,7 @@ void BridgeDataCollector::handleAS400RouteQuery(const QMap<QString, QVariantList
                             "`accountType:key` TEXT, "
                             "`serviceTimeType:key` TEXT, "
                             "`locationType:key` TEXT"
-                            "`stopType:key` TEXT"
+                            "`stopType:key` TEXT, "
                             "`location:key` TEXT, "
                             "`location:state` TEXT, "
                             "`location:zipCode` TEXT, "
