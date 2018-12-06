@@ -41,9 +41,13 @@ public:
     void assignDriverToRoute(const QString &key, const QJsonObject &routeDriverAssignmentJson);
     void assignEquipmentToRoute(const QString &key, const QJsonObject &routeEquipmentAssignmentJson);
     void requestAccountTypes(const QString &key);
+    void uploadAccountType(const QString &key, const QJsonObject &accountTypeJson);
     void requestServiceTimeTypes(const QString &key);
+    void uploadServiceTimeType(const QString &key, const QJsonObject &serviceTimeTypeJson);
     void requestLocationTypes(const QString &key);
+    void uploadLocationType(const QString &key, const QJsonObject &locationTypeJson);
     void requestStopTypes(const QString &key);
+    void uploadStopType(const QString &key, const QJsonObject &stopTypeJson);
 
     void deleteRoute(const QString &key, const QString &entityID);
     void deleteDriverAssignment(const QString &key, const QString &entityID);

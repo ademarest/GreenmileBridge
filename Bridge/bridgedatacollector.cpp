@@ -969,4 +969,3 @@ void BridgeDataCollector::handleRSPowerUnits(const QJsonObject &data)
     bridgeDB->addSQLInfo(tableName, creationQuery);
     bridgeDB->SQLDataInsert(tableName, sql);
 }
-

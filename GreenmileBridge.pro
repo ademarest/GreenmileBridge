@@ -51,7 +51,9 @@ SOURCES += \
     Bridge/Internet/httpconn.cpp \
     Bridge/Geocoding/censusgeocode.cpp \
     Bridge/Geocoding/arcgisgeocode.cpp \
-    GenericUI/listcontrolwidget.cpp
+    GenericUI/listcontrolwidget.cpp \
+    Bridge/BridgeServices/gmabstractentity.cpp \
+    Bridge/BridgeServices/locationoverridetimewindow.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -80,7 +82,9 @@ HEADERS += \
     Bridge/Internet/httpconn.h \
     Bridge/Geocoding/censusgeocode.h \
     Bridge/Geocoding/arcgisgeocode.h \
-    GenericUI/listcontrolwidget.h
+    GenericUI/listcontrolwidget.h \
+    Bridge/BridgeServices/gmabstractentity.h \
+    Bridge/BridgeServices/locationoverridetimewindow.h
 
 FORMS += \
         mainwindow.ui \

@@ -53,7 +53,15 @@ void GMConnection::requestLocationKeys(const QString &key)
 void GMConnection::requestLocationInfo(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString serverAddrTail = "/Location/restrictions?criteria={\"filters\":[\"*\", \"locationOverrideTimeWindows.*\", \"locationType.id\", \"locationType.key\", \"organization.id\", \"organization.key\", \"serviceTimeType.id\", \"serviceTimeType.key\", \"accountType.id\" , \"accountType.key\"]}";
+    QString serverAddrTail = "/Location/restrictions?criteria={\"filters\":[\"*\", \"locationOverrideTimeWindows.*\", "
+                             "\"locationType.id\", "
+                             "\"locationType.key\", "
+                             "\"organization.id\", "
+                             "\"organization.key\", "
+                             "\"serviceTimeType.id\", "
+                             "\"serviceTimeType.key\", "
+                             "\"accountType.id\" , "
+                             "\"accountType.key\"]}";
 
     QByteArray postData = QString("{}").toLocal8Bit();
 
@@ -182,6 +190,17 @@ void GMConnection::requestAccountTypes(const QString &key)
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
+void GMConnection::uploadAccountType(const QString &key, const QJsonObject &accountTypeJson)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    //QString key = routeJson["key"].toString();
+    QString serverAddrTail = "/AccountType";
+
+    QByteArray postData = QJsonDocument(accountTypeJson).toJson(QJsonDocument::Compact);
+
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
+}
+
 void GMConnection::requestServiceTimeTypes(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
@@ -189,6 +208,17 @@ void GMConnection::requestServiceTimeTypes(const QString &key)
     QString serverAddrTail = "/ServiceTimeType/restrictions?criteria={\"filters\":[\"*\", \"organization.id\"]}";
 
     QByteArray postData = QString("{}").toLocal8Bit();
+
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
+}
+
+void GMConnection::uploadServiceTimeType(const QString &key, const QJsonObject &serviceTimeTypeJson)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    //QString key = routeJson["key"].toString();
+    QString serverAddrTail = "/ServiceTimeType";
+
+    QByteArray postData = QJsonDocument(serviceTimeTypeJson).toJson(QJsonDocument::Compact);
 
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
@@ -204,6 +234,17 @@ void GMConnection::requestLocationTypes(const QString &key)
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
+void GMConnection::uploadLocationType(const QString &key, const QJsonObject &locationTypeJson)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    //QString key = routeJson["key"].toString();
+    QString serverAddrTail = "/LocationType";
+
+    QByteArray postData = QJsonDocument(locationTypeJson).toJson(QJsonDocument::Compact);
+
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
+}
+
 void GMConnection::requestStopTypes(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
@@ -211,6 +252,17 @@ void GMConnection::requestStopTypes(const QString &key)
     QString serverAddrTail = "/StopType/restrictions?criteria={\"filters\":[\"*\", \"organization.id\"]}";
 
     QByteArray postData = QString("{}").toLocal8Bit();
+
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
+}
+
+void GMConnection::uploadStopType(const QString &key, const QJsonObject &stopTypeJson)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    //QString key = routeJson["key"].toString();
+    QString serverAddrTail = "/StopType";
+
+    QByteArray postData = QJsonDocument(stopTypeJson).toJson(QJsonDocument::Compact);
 
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }

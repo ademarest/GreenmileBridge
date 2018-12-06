@@ -45,9 +45,23 @@ public:
                                  const QString &organizationKey,
                                  const QDate &date);
 
+    QJsonObject getLocationOverrideTimeWindowsToUpload(const QString &assignmentTableName,
+                                                       const QString &organizationKey,
+                                                       const QDate &date);
+
+    QJsonObject getLocationOverrideTimeWindowsToUpdate(const QString &assignmentTableName,
+                                                       const QString &organizationKey,
+                                                       const QDate &date);
+
+    QJsonObject getLocationOverrideTimeWindowsToDelete();
+
     QJsonObject getAccountTypesToUpload(const QString &organizationKey);
 
     QJsonObject getServiceTimeTypesToUpload(const QString &organizationKey);
+
+    QJsonObject getStopTypesToUpload(const QString &organizationKey);
+
+    QJsonObject getLocationTypesToUpload(const QString &organizationKey);
 
     QJsonObject getGMLocationsWithBadGeocode(const QString &organizationKey);
 
