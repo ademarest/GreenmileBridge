@@ -13,9 +13,8 @@ public:
 signals:
 
 public slots:
-    void UploadLocationOverrideTimeWindows();
-    void UpdateLocationOverrideTimeWindows();
-    void DeleteLocationOverrideTimeWindows();
+    void processLocationOverrideTimeWindows(const QString &key, const QList<QVariantMap> &argList);
+
 
 };
 

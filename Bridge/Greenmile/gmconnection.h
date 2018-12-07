@@ -30,7 +30,6 @@ public:
     void requestRouteKeysForDate(const QString &key, const QDate &date);
     void requestLocationKeys(const QString &key);
     void requestLocationInfo(const QString &key);
-    void requestLocationOverrideTimeWindowInfo(const QString &key);
     void requestAllOrganizationInfo(const QString &key);
     void requestAllStopTypeInfo(const QString &key);
     void requestAllLocationTypeInfo(const QString &key);
@@ -59,6 +58,11 @@ public:
     void patchLocation(const QString &key, const QJsonObject &locationJson);
 
     bool isProcessingNetworkRequests();
+
+    void requestLocationOverrideTimeWindowInfo(const QString &key);
+    void uploadALocationOverrideTimeWindow(const QString &key, const QJsonObject &data);
+    void updateALocationOverrideTimeWindow(const QString &key, const QJsonObject &data);
+    void deleteALocationOverrideTimeWindow(const QString &key, const QJsonObject &data);
 
 signals:
     void statusMessage(const QString &status);

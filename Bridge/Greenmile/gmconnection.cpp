@@ -77,6 +77,34 @@ void GMConnection::requestLocationOverrideTimeWindowInfo(const QString &key)
     addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
+void GMConnection::uploadALocationOverrideTimeWindow(const QString &key, const QJsonObject &data)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+    QString serverAddrTail = "/LocationOverrideTimeWindow";
+
+    QByteArray postData = QJsonDocument(data).toJson(QJsonDocument::Compact);
+    qDebug() << data;
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
+}
+
+void GMConnection::updateALocationOverrideTimeWindow(const QString &key, const QJsonObject &data)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+
+    QString serverAddrTail = "/LocationOverrideTimeWindow";
+
+    QByteArray postData = QJsonDocument(data).toJson(QJsonDocument::Compact);
+    addToConnectionQueue(QNetworkAccessManager::Operation::CustomOperation, key, serverAddrTail, postData, "PATCH");
+}
+
+void GMConnection::deleteALocationOverrideTimeWindow(const QString &key, const QJsonObject &data)
+{
+    jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
+
+    QString serverAddrTail = "/LocationOverrideTimeWindow/" + data["id"].toString();
+    qDebug() << serverAddrTail;
+    addToConnectionQueue(QNetworkAccessManager::Operation::DeleteOperation, key, serverAddrTail);
+}
 
 void GMConnection::requestAllOrganizationInfo(const QString &key)
 {

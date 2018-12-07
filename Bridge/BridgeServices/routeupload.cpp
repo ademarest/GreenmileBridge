@@ -35,7 +35,6 @@ void RouteUpload::reset()
 
 void RouteUpload::UploadRoutes(const QString &key, const QList<QVariantMap> &argList)
 {
-
     if(!activeJobs_.isEmpty())
     {
         errorMessage("Route upload in progress. Try again once current request is finished.");

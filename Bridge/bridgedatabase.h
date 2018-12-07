@@ -45,15 +45,11 @@ public:
                                  const QString &organizationKey,
                                  const QDate &date);
 
-    QJsonObject getLocationOverrideTimeWindowsToUpload(const QString &assignmentTableName,
-                                                       const QString &organizationKey,
-                                                       const QDate &date);
+    QJsonObject getLocationOverrideTimeWindowsToUpload(QVariantMap args);
 
-    QJsonObject getLocationOverrideTimeWindowsToUpdate(const QString &assignmentTableName,
-                                                       const QString &organizationKey,
-                                                       const QDate &date);
+    QJsonObject getLocationOverrideTimeWindowsToUpdate(QVariantMap args);
 
-    QJsonObject getLocationOverrideTimeWindowsToDelete();
+    QJsonObject getLocationOverrideTimeWindowIDsToDelete(QVariantMap args);
 
     QJsonObject getAccountTypesToUpload(const QString &organizationKey);
 
@@ -138,6 +134,7 @@ private:
     bool okToInsertSQLData(const QString &tableName, const QString &whatMethod);
 
     QJsonObject assembleUploadRouteFromQuery(const QMap<QString, QVariantList> &sql);
+    QJsonObject assembleLocationOverrideTimeWindowFromQuery(const QMap<QString, QVariantList> &sql);
 };
 
 #endif // BRIDGEDATABASE_H

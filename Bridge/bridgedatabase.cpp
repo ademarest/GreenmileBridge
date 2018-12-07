@@ -117,134 +117,162 @@ QJsonObject BridgeDatabase::getStopsToDelete(const QString &assignmentTableName,
     return QJsonObject();
 }
 
-QJsonObject BridgeDatabase::getLocationOverrideTimeWindowsToUpload(const QString &assignmentTableName,
-                                                                   const QString &organizationKey,
-                                                                   const QDate &date)
+QJsonObject BridgeDatabase::getLocationOverrideTimeWindowsToUpload(QVariantMap args)
 {
-     QString query = "SELECT \n"
-                     "`locationOverrideTimeWindows:0:id` AS `id`,\n"
-                     "`id` AS `location:id`,\n"
-                     "`locationOverrideTimeWindows:openTime` AS `openTime`,\n"
-                     "`locationOverrideTimeWindows:closeTime` AS `closeTime`,\n"
-                     "`locationOverrideTimeWindows:tw1Open` AS `tw1Open`,\n"
-                     "`locationOverrideTimeWindows:tw1Close` AS `tw1Close`,\n"
-                     "`locationOverrideTimeWindows:tw2Open` AS `tw2Open`,\n"
-                     "`locationOverrideTimeWindows:tw2Close` AS `tw2Close`,\n"
-                     "`monday`,\n"
-                     "`tuesday`,\n"
-                     "`wednesday`,\n"
-                     "`thursday`,\n"
-                     "`friday`,\n"
-                     "`saturday`,\n"
-                     "`sunday`\n"
-                     "FROM\n"
-                     "(\n"
-                     "\tSELECT\n"
-                     "\tgmLocations.`locationOverrideTimeWindows:0:id`,\n"
-                     "\tgmLocations.`id`,\n"
-                     "\tas400Combine.`locationOverrideTimeWindows:openTime`,\n"
-                     "\tas400Combine.`locationOverrideTimeWindows:closeTime`,\n"
-                     "\tas400Combine.`locationOverrideTimeWindows:tw1Open`,\n"
-                     "\tas400Combine.`locationOverrideTimeWindows:tw1Close`,\n"
-                     "\tas400Combine.`locationOverrideTimeWindows:tw2Open`,\n"
-                     "\tas400Combine.`locationOverrideTimeWindows:tw2Close`,\n"
-                     "\tas400Combine.`monday`,\n"
-                     "\tas400Combine.`tuesday`,\n"
-                     "\tas400Combine.`wednesday`,\n"
-                     "\tas400Combine.`thursday`,\n"
-                     "\tas400Combine.`friday`,\n"
-                     "\tas400Combine.`saturday`,\n"
-                     "\tas400Combine.`sunday`\n"
-                     "\tFROM\n"
-                     "\t(\n"
-                     "\t\tSELECT \n"
-                     "\t\tas400RouteQuery.`location:key`,\n"
-                     "\t\tas400RouteQuery.`locationOverrideTimeWindows:openTime`,\n"
-                     "\t\tas400RouteQuery.`locationOverrideTimeWindows:closeTime`,\n"
-                     "\t\tas400RouteQuery.`locationOverrideTimeWindows:tw1Open`,\n"
-                     "\t\tas400RouteQuery.`locationOverrideTimeWindows:tw1Close`,\n"
-                     "\t\tas400RouteQuery.`locationOverrideTimeWindows:tw2Open`,\n"
-                     "\t\tas400RouteQuery.`locationOverrideTimeWindows:tw2Close`,\n"
-                     "\t\tCASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%M%\" THEN 1 ELSE 0 END AS `monday`,\n"
-                     "\t\tCASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%T%\" THEN 1 ELSE 0 END AS `tuesday`,\n"
-                     "\t\tCASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%W%\" THEN 1 ELSE 0 END AS `wednesday`,\n"
-                     "\t\tCASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%R%\" THEN 1 ELSE 0 END AS `thursday`,\n"
-                     "\t\tCASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%F%\" THEN 1 ELSE 0 END AS `friday`,\n"
-                     "\t\tCASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%S%\" THEN 1 ELSE 0 END AS `saturday`,\n"
-                     "\t\tCASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%U%\" THEN 1 ELSE 0 END AS `sunday`\n"
-                     "\t\tFROM as400RouteQuery \n"
-                     "\t\tWHERE `organization:key` = \""+organizationKey+"\" \n"
-                     "\t\tAND `route:date` = \""+date.toString("yyyy-MM-dd")+"\" \n"
-                     "\t\tAND `location:key` \n"
-                     "\t\tAND `route:key` \n"
-                     "\t\tIN \n"
-                     "\t\t(\n"
-                     "\t\t\tSELECT \n"
-                     "\t\t\t`route:key` \n"
-                     "\t\t\tFROM \n"
-                     "\t\t\t"+assignmentTableName+" \n"
-                     "\t\t\tWHERE `organization:key` = \""+organizationKey+"\" \n"
-                     "\t\t\tAND `route:date` = \""+date.toString("yyyy-MM-dd")+"\" \n"
-                     "\t\t)\n"
-                     "\t\tUNION \n"
-                     "\t\tSELECT\n"
-                     "\t\tas400LocationQuery.`location:key`,\n"
-                     "\t\tas400LocationQuery.`locationOverrideTimeWindows:openTime`,\n"
-                     "\t\tas400LocationQuery.`locationOverrideTimeWindows:closeTime`,\n"
-                     "\t\tas400LocationQuery.`locationOverrideTimeWindows:tw1Open`,\n"
-                     "\t\tas400LocationQuery.`locationOverrideTimeWindows:tw1Close`,\n"
-                     "\t\tas400LocationQuery.`locationOverrideTimeWindows:tw2Open`,\n"
-                     "\t\tas400LocationQuery.`locationOverrideTimeWindows:tw2Close`,\n"
-                     "\t\tCASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%M%\" THEN 1 ELSE 0 END AS `monday`,\n"
-                     "\t\tCASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%T%\" THEN 1 ELSE 0 END AS `tuesday`,\n"
-                     "\t\tCASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%W%\" THEN 1 ELSE 0 END AS `wednesday`,\n"
-                     "\t\tCASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%R%\" THEN 1 ELSE 0 END AS `thursday`,\n"
-                     "\t\tCASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%F%\" THEN 1 ELSE 0 END AS `friday`,\n"
-                     "\t\tCASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%S%\" THEN 1 ELSE 0 END AS `saturday`,\n"
-                     "\t\tCASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%U%\" THEN 1 ELSE 0 END AS `sunday`\n"
-                     "\t\tFROM as400LocationQuery\n"
-                     "\t\tWHERE as400LocationQuery.`location:key` \n"
-                     "\t\tIN \n"
-                     "\t\t(\n"
-                     "\t\t\tSELECT \n"
-                     "\t\t\t`key` \n"
-                     "\t\t\tFROM \n"
-                     "\t\t\tgmLocations\n"
-                     "\t\t)\n"
-                     "\t)\n"
-                     "\tAS\n"
-                     "\tas400Combine\n"
-                     "\tJOIN \n"
-                     "\tgmLocations\n"
-                     "\tON gmLocations.`key` = as400Combine.`location:key`\n"
-                     "\tEXCEPT \n"
-                     "\tSELECT\n"
-                     "\tgmLocationOverrideTimeWindows.`id`,\n"
-                     "\tgmLocationOverrideTimeWindows.`location:id`,\n"
-                     "\tgmLocationOverrideTimeWindows.`openTime`,\n"
-                     "\tgmLocationOverrideTimeWindows.`closeTime`,\n"
-                     "\tgmLocationOverrideTimeWindows.`tw1Open`,\n"
-                     "\tgmLocationOverrideTimeWindows.`tw1Close`,\n"
-                     "\tgmLocationOverrideTimeWindows.`tw2Open`,\n"
-                     "\tgmLocationOverrideTimeWindows.`tw2Close`,\n"
-                     "\tgmLocationOverrideTimeWindows.`monday`,\n"
-                     "\tgmLocationOverrideTimeWindows.`tuesday`,\n"
-                     "\tgmLocationOverrideTimeWindows.`wednesday`,\n"
-                     "\tgmLocationOverrideTimeWindows.`thursday`,\n"
-                     "\tgmLocationOverrideTimeWindows.`friday`,\n"
-                     "\tgmLocationOverrideTimeWindows.`saturday`,\n"
-                     "\tgmLocationOverrideTimeWindows.`sunday`\n"
-                     "\tFROM\n"
-                     "\tgmLocationOverrideTimeWindows\n"
-                     ")\n"
-                     "WHERE `locationOverrideTimeWindows:0:id` IS NULL";
+    QString assignmentTableName = args["tableName"].toString();
+    QString organizationKey = args["organization:key"].toString();
+    QDate   date = args["date"].toDate();
+
+    QString query = "SELECT \n"
+                 "`locationOverrideTimeWindows:0:id` AS `id`,\n"
+                 "`id` AS `location:id`,\n"
+                 "`location:key`,\n"
+                 "`locationOverrideTimeWindows:openTime` AS `openTime`,\n"
+                 "`locationOverrideTimeWindows:closeTime` AS `closeTime`,\n"
+                 "`locationOverrideTimeWindows:tw1Open` AS `tw1Open`,\n"
+                 "`locationOverrideTimeWindows:tw1Close` AS `tw1Close`,\n"
+                 "`locationOverrideTimeWindows:tw2Open` AS `tw2Open`,\n"
+                 "`locationOverrideTimeWindows:tw2Close` AS `tw2Close`,\n"
+                 "`monday`,\n"
+                 "`tuesday`,\n"
+                 "`wednesday`,\n"
+                 "`thursday`,\n"
+                 "`friday`,\n"
+                 "`saturday`,\n"
+                 "`sunday`\n"
+                 "FROM\n"
+                 "(\n"
+                 "    SELECT\n"
+                 "    gmLocations.`locationOverrideTimeWindows:0:id`,\n"
+                 "    gmLocations.`id`,\n"
+                 "    gmLocations.`key` AS `location:key`,\n"
+                 "    as400Combine.`locationOverrideTimeWindows:openTime`,\n"
+                 "    as400Combine.`locationOverrideTimeWindows:closeTime`,\n"
+                 "    as400Combine.`locationOverrideTimeWindows:tw1Open`,\n"
+                 "    as400Combine.`locationOverrideTimeWindows:tw1Close`,\n"
+                 "    as400Combine.`locationOverrideTimeWindows:tw2Open`,\n"
+                 "    as400Combine.`locationOverrideTimeWindows:tw2Close`,\n"
+                 "    as400Combine.`monday`,\n"
+                 "    as400Combine.`tuesday`,\n"
+                 "    as400Combine.`wednesday`,\n"
+                 "    as400Combine.`thursday`,\n"
+                 "    as400Combine.`friday`,\n"
+                 "    as400Combine.`saturday`,\n"
+                 "    as400Combine.`sunday`\n"
+                 "    FROM\n"
+                 "    (\n"
+                 "        SELECT \n"
+                 "        as400RouteQuery.`location:key`,\n"
+                 "        as400RouteQuery.`locationOverrideTimeWindows:openTime`,\n"
+                 "        as400RouteQuery.`locationOverrideTimeWindows:closeTime`,\n"
+                 "        as400RouteQuery.`locationOverrideTimeWindows:tw1Open`,\n"
+                 "        as400RouteQuery.`locationOverrideTimeWindows:tw1Close`,\n"
+                 "        as400RouteQuery.`locationOverrideTimeWindows:tw2Open`,\n"
+                 "        as400RouteQuery.`locationOverrideTimeWindows:tw2Close`,\n"
+                 "        CASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%M%\" THEN 1 ELSE 0 END AS `monday`,\n"
+                 "        CASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%T%\" THEN 1 ELSE 0 END AS `tuesday`,\n"
+                 "        CASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%W%\" THEN 1 ELSE 0 END AS `wednesday`,\n"
+                 "        CASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%R%\" THEN 1 ELSE 0 END AS `thursday`,\n"
+                 "        CASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%F%\" THEN 1 ELSE 0 END AS `friday`,\n"
+                 "        CASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%S%\" THEN 1 ELSE 0 END AS `saturday`,\n"
+                 "        CASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%U%\" THEN 1 ELSE 0 END AS `sunday`\n"
+                 "        FROM as400RouteQuery \n"
+                 "        WHERE `organization:key` = \""+organizationKey+"\" \n"
+                 "        AND `route:date` = \""+date.toString("yyyy-MM-dd")+"\" \n"
+                 "        AND `location:key` \n"
+                 "        AND `route:key` \n"
+                 "        IN \n"
+                 "        (\n"
+                 "            SELECT \n"
+                 "            `route:key` \n"
+                 "            FROM \n"
+                 "            "+assignmentTableName+" \n"
+                 "            WHERE `organization:key` = \""+organizationKey+"\" \n"
+                 "            AND `route:date` = \""+date.toString("yyyy-MM-dd")+"\" \n"
+                 "        )\n"
+                 "        UNION \n"
+                 "        SELECT\n"
+                 "        as400LocationQuery.`location:key`,\n"
+                 "        as400LocationQuery.`locationOverrideTimeWindows:openTime`,\n"
+                 "        as400LocationQuery.`locationOverrideTimeWindows:closeTime`,\n"
+                 "        as400LocationQuery.`locationOverrideTimeWindows:tw1Open`,\n"
+                 "        as400LocationQuery.`locationOverrideTimeWindows:tw1Close`,\n"
+                 "        as400LocationQuery.`locationOverrideTimeWindows:tw2Open`,\n"
+                 "        as400LocationQuery.`locationOverrideTimeWindows:tw2Close`,\n"
+                 "        CASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%M%\" THEN 1 ELSE 0 END AS `monday`,\n"
+                 "        CASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%T%\" THEN 1 ELSE 0 END AS `tuesday`,\n"
+                 "        CASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%W%\" THEN 1 ELSE 0 END AS `wednesday`,\n"
+                 "        CASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%R%\" THEN 1 ELSE 0 END AS `thursday`,\n"
+                 "        CASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%F%\" THEN 1 ELSE 0 END AS `friday`,\n"
+                 "        CASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%S%\" THEN 1 ELSE 0 END AS `saturday`,\n"
+                 "        CASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%U%\" THEN 1 ELSE 0 END AS `sunday`\n"
+                 "        FROM as400LocationQuery\n"
+                 "        WHERE as400LocationQuery.`location:key` \n"
+                 "        IN \n"
+                 "        (\n"
+                 "            SELECT \n"
+                 "            `key` \n"
+                 "            FROM \n"
+                 "            gmLocations\n"
+                 "        )\n"
+                 "    )\n"
+                 "    AS\n"
+                 "    as400Combine\n"
+                 "    JOIN \n"
+                 "    gmLocations\n"
+                 "    ON gmLocations.`key` = as400Combine.`location:key`\n"
+                 "    EXCEPT \n"
+                 "    SELECT\n"
+                 "    gmLocationOverrideTimeWindows.`id`,\n"
+                 "    gmLocationOverrideTimeWindows.`location:id`,\n"
+                 "    gmLocations.`key`,\n"
+                 "    gmLocationOverrideTimeWindows.`openTime`,\n"
+                 "    gmLocationOverrideTimeWindows.`closeTime`,\n"
+                 "    gmLocationOverrideTimeWindows.`tw1Open`,\n"
+                 "    gmLocationOverrideTimeWindows.`tw1Close`,\n"
+                 "    gmLocationOverrideTimeWindows.`tw2Open`,\n"
+                 "    gmLocationOverrideTimeWindows.`tw2Close`,\n"
+                 "    gmLocationOverrideTimeWindows.`monday`,\n"
+                 "    gmLocationOverrideTimeWindows.`tuesday`,\n"
+                 "    gmLocationOverrideTimeWindows.`wednesday`,\n"
+                 "    gmLocationOverrideTimeWindows.`thursday`,\n"
+                 "    gmLocationOverrideTimeWindows.`friday`,\n"
+                 "    gmLocationOverrideTimeWindows.`saturday`,\n"
+                 "    gmLocationOverrideTimeWindows.`sunday`\n"
+                 "    FROM\n"
+                 "    gmLocationOverrideTimeWindows\n"
+                 "    JOIN\n"
+                 "    gmLocations\n"
+                 "    WHERE\n"
+                 "    gmLocations.`id` = gmLocationOverrideTimeWindows.`location:id`\n"
+                 ")\n"
+                 "WHERE `locationOverrideTimeWindows:0:id` IS NULL\n";
+
+    qDebug() << "BridgeDatabase:getLocationOverrideTimeWindowsToUpload query " << query;
+
+    QMap<QString, QVariantList> sql = executeQuery(query, " find Loction Override Time Windows to upload. BridgeDatabase:getLocationOverrideTimeWindowsToUpload()");
+    if(!isSQLResultValid(sql))
+    {
+        emit statusMessage("There are no Loction Override Time Windows to update. Returning empty result set.");
+        return QJsonObject();
+    }
+    else
+    {
+        return assembleLocationOverrideTimeWindowFromQuery(sql);
+    }
 }
 
-QJsonObject BridgeDatabase::getLocationOverrideTimeWindowsToUpdate(const QString &assignmentTableName, const QString &organizationKey, const QDate &date)
+
+QJsonObject BridgeDatabase::getLocationOverrideTimeWindowsToUpdate(QVariantMap args)
 {
+    QString assignmentTableName = args["tableName"].toString();
+    QString organizationKey = args["organization:key"].toString();
+    QDate   date = args["date"].toDate();
+
     QString query = "SELECT \n"
                     "`locationOverrideTimeWindows:0:id` AS `id`,\n"
                     "`id` AS `location:id`,\n"
+                    "`location:key`,\n"
                     "`locationOverrideTimeWindows:openTime` AS `openTime`,\n"
                     "`locationOverrideTimeWindows:closeTime` AS `closeTime`,\n"
                     "`locationOverrideTimeWindows:tw1Open` AS `tw1Open`,\n"
@@ -260,115 +288,145 @@ QJsonObject BridgeDatabase::getLocationOverrideTimeWindowsToUpdate(const QString
                     "`sunday`\n"
                     "FROM\n"
                     "(\n"
-                    "\tSELECT\n"
-                    "\tgmLocations.`locationOverrideTimeWindows:0:id`,\n"
-                    "\tgmLocations.`id`,\n"
-                    "\tas400Combine.`locationOverrideTimeWindows:openTime`,\n"
-                    "\tas400Combine.`locationOverrideTimeWindows:closeTime`,\n"
-                    "\tas400Combine.`locationOverrideTimeWindows:tw1Open`,\n"
-                    "\tas400Combine.`locationOverrideTimeWindows:tw1Close`,\n"
-                    "\tas400Combine.`locationOverrideTimeWindows:tw2Open`,\n"
-                    "\tas400Combine.`locationOverrideTimeWindows:tw2Close`,\n"
-                    "\tas400Combine.`monday`,\n"
-                    "\tas400Combine.`tuesday`,\n"
-                    "\tas400Combine.`wednesday`,\n"
-                    "\tas400Combine.`thursday`,\n"
-                    "\tas400Combine.`friday`,\n"
-                    "\tas400Combine.`saturday`,\n"
-                    "\tas400Combine.`sunday`\n"
-                    "\tFROM\n"
-                    "\t(\n"
-                    "\t\tSELECT \n"
-                    "\t\tas400RouteQuery.`location:key`,\n"
-                    "\t\tas400RouteQuery.`locationOverrideTimeWindows:openTime`,\n"
-                    "\t\tas400RouteQuery.`locationOverrideTimeWindows:closeTime`,\n"
-                    "\t\tas400RouteQuery.`locationOverrideTimeWindows:tw1Open`,\n"
-                    "\t\tas400RouteQuery.`locationOverrideTimeWindows:tw1Close`,\n"
-                    "\t\tas400RouteQuery.`locationOverrideTimeWindows:tw2Open`,\n"
-                    "\t\tas400RouteQuery.`locationOverrideTimeWindows:tw2Close`,\n"
-                    "\t\tCASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%M%\" THEN 1 ELSE 0 END AS `monday`,\n"
-                    "\t\tCASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%T%\" THEN 1 ELSE 0 END AS `tuesday`,\n"
-                    "\t\tCASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%W%\" THEN 1 ELSE 0 END AS `wednesday`,\n"
-                    "\t\tCASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%R%\" THEN 1 ELSE 0 END AS `thursday`,\n"
-                    "\t\tCASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%F%\" THEN 1 ELSE 0 END AS `friday`,\n"
-                    "\t\tCASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%S%\" THEN 1 ELSE 0 END AS `saturday`,\n"
-                    "\t\tCASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%U%\" THEN 1 ELSE 0 END AS `sunday`\n"
-                    "\t\tFROM as400RouteQuery \n"
-                    "\t\tWHERE `organization:key` = \""+organizationKey+"\" \n"
-                    "\t\tAND `route:date` = \""+date.toString("yyyy-MM-dd")+"\" \n"
-                    "\t\tAND `location:key` \n"
-                    "\t\tAND `route:key` \n"
-                    "\t\tIN \n"
-                    "\t\t(\n"
-                    "\t\t\tSELECT \n"
-                    "\t\t\t`route:key` \n"
-                    "\t\t\tFROM \n"
-                    "\t\t\t"+assignmentTableName+" \n"
-                    "\t\t\tWHERE `organization:key` = \""+organizationKey+"\" \n"
-                    "\t\t\tAND `route:date` = \""+date.toString("yyyy-MM-dd")+"\" \n"
-                    "\t\t)\n"
-                    "\t\tUNION \n"
-                    "\t\tSELECT\n"
-                    "\t\tas400LocationQuery.`location:key`,\n"
-                    "\t\tas400LocationQuery.`locationOverrideTimeWindows:openTime`,\n"
-                    "\t\tas400LocationQuery.`locationOverrideTimeWindows:closeTime`,\n"
-                    "\t\tas400LocationQuery.`locationOverrideTimeWindows:tw1Open`,\n"
-                    "\t\tas400LocationQuery.`locationOverrideTimeWindows:tw1Close`,\n"
-                    "\t\tas400LocationQuery.`locationOverrideTimeWindows:tw2Open`,\n"
-                    "\t\tas400LocationQuery.`locationOverrideTimeWindows:tw2Close`,\n"
-                    "\t\tCASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%M%\" THEN 1 ELSE 0 END AS `monday`,\n"
-                    "\t\tCASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%T%\" THEN 1 ELSE 0 END AS `tuesday`,\n"
-                    "\t\tCASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%W%\" THEN 1 ELSE 0 END AS `wednesday`,\n"
-                    "\t\tCASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%R%\" THEN 1 ELSE 0 END AS `thursday`,\n"
-                    "\t\tCASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%F%\" THEN 1 ELSE 0 END AS `friday`,\n"
-                    "\t\tCASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%S%\" THEN 1 ELSE 0 END AS `saturday`,\n"
-                    "\t\tCASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%U%\" THEN 1 ELSE 0 END AS `sunday`\n"
-                    "\t\tFROM as400LocationQuery\n"
-                    "\t\tWHERE as400LocationQuery.`location:key` \n"
-                    "\t\tIN \n"
-                    "\t\t(\n"
-                    "\t\t\tSELECT \n"
-                    "\t\t\t`key` \n"
-                    "\t\t\tFROM \n"
-                    "\t\t\tgmLocations\n"
-                    "\t\t)\n"
-                    "\t)\n"
-                    "\tAS\n"
-                    "\tas400Combine\n"
-                    "\tJOIN \n"
-                    "\tgmLocations\n"
-                    "\tON gmLocations.`key` = as400Combine.`location:key`\n"
-                    "\tEXCEPT \n"
-                    "\tSELECT\n"
-                    "\tgmLocationOverrideTimeWindows.`id`,\n"
-                    "\tgmLocationOverrideTimeWindows.`location:id`,\n"
-                    "\tgmLocationOverrideTimeWindows.`openTime`,\n"
-                    "\tgmLocationOverrideTimeWindows.`closeTime`,\n"
-                    "\tgmLocationOverrideTimeWindows.`tw1Open`,\n"
-                    "\tgmLocationOverrideTimeWindows.`tw1Close`,\n"
-                    "\tgmLocationOverrideTimeWindows.`tw2Open`,\n"
-                    "\tgmLocationOverrideTimeWindows.`tw2Close`,\n"
-                    "\tgmLocationOverrideTimeWindows.`monday`,\n"
-                    "\tgmLocationOverrideTimeWindows.`tuesday`,\n"
-                    "\tgmLocationOverrideTimeWindows.`wednesday`,\n"
-                    "\tgmLocationOverrideTimeWindows.`thursday`,\n"
-                    "\tgmLocationOverrideTimeWindows.`friday`,\n"
-                    "\tgmLocationOverrideTimeWindows.`saturday`,\n"
-                    "\tgmLocationOverrideTimeWindows.`sunday`\n"
-                    "\tFROM\n"
-                    "\tgmLocationOverrideTimeWindows\n"
+                    "    SELECT\n"
+                    "    gmLocations.`locationOverrideTimeWindows:0:id`,\n"
+                    "    gmLocations.`id`,\n"
+                    "    gmLocations.`key` AS `location:key`,\n"
+                    "    as400Combine.`locationOverrideTimeWindows:openTime`,\n"
+                    "    as400Combine.`locationOverrideTimeWindows:closeTime`,\n"
+                    "    as400Combine.`locationOverrideTimeWindows:tw1Open`,\n"
+                    "    as400Combine.`locationOverrideTimeWindows:tw1Close`,\n"
+                    "    as400Combine.`locationOverrideTimeWindows:tw2Open`,\n"
+                    "    as400Combine.`locationOverrideTimeWindows:tw2Close`,\n"
+                    "    as400Combine.`monday`,\n"
+                    "    as400Combine.`tuesday`,\n"
+                    "    as400Combine.`wednesday`,\n"
+                    "    as400Combine.`thursday`,\n"
+                    "    as400Combine.`friday`,\n"
+                    "    as400Combine.`saturday`,\n"
+                    "    as400Combine.`sunday`\n"
+                    "    FROM\n"
+                    "    (\n"
+                    "        SELECT \n"
+                    "        as400RouteQuery.`location:key`,\n"
+                    "        as400RouteQuery.`locationOverrideTimeWindows:openTime`,\n"
+                    "        as400RouteQuery.`locationOverrideTimeWindows:closeTime`,\n"
+                    "        as400RouteQuery.`locationOverrideTimeWindows:tw1Open`,\n"
+                    "        as400RouteQuery.`locationOverrideTimeWindows:tw1Close`,\n"
+                    "        as400RouteQuery.`locationOverrideTimeWindows:tw2Open`,\n"
+                    "        as400RouteQuery.`locationOverrideTimeWindows:tw2Close`,\n"
+                    "        CASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%M%\" THEN 1 ELSE 0 END AS `monday`,\n"
+                    "        CASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%T%\" THEN 1 ELSE 0 END AS `tuesday`,\n"
+                    "        CASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%W%\" THEN 1 ELSE 0 END AS `wednesday`,\n"
+                    "        CASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%R%\" THEN 1 ELSE 0 END AS `thursday`,\n"
+                    "        CASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%F%\" THEN 1 ELSE 0 END AS `friday`,\n"
+                    "        CASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%S%\" THEN 1 ELSE 0 END AS `saturday`,\n"
+                    "        CASE WHEN as400RouteQuery.`location:deliveryDays` LIKE \"%U%\" THEN 1 ELSE 0 END AS `sunday`\n"
+                    "        FROM as400RouteQuery \n"
+                    "        WHERE `organization:key` = \""+organizationKey+"\" \n"
+                    "        AND `route:date` = \""+date.toString("yyyy-MM-dd")+"\" \n"
+                    "        AND `location:key` \n"
+                    "        AND `route:key` \n"
+                    "        IN \n"
+                    "        (\n"
+                    "            SELECT \n"
+                    "            `route:key` \n"
+                    "            FROM \n"
+                    "            "+assignmentTableName+" \n"
+                    "            WHERE `organization:key` = \""+organizationKey+"\" \n"
+                    "            AND `route:date` = \""+date.toString("yyyy-MM-dd")+"\" \n"
+                    "        )\n"
+                    "        UNION \n"
+                    "        SELECT\n"
+                    "        as400LocationQuery.`location:key`,\n"
+                    "        as400LocationQuery.`locationOverrideTimeWindows:openTime`,\n"
+                    "        as400LocationQuery.`locationOverrideTimeWindows:closeTime`,\n"
+                    "        as400LocationQuery.`locationOverrideTimeWindows:tw1Open`,\n"
+                    "        as400LocationQuery.`locationOverrideTimeWindows:tw1Close`,\n"
+                    "        as400LocationQuery.`locationOverrideTimeWindows:tw2Open`,\n"
+                    "        as400LocationQuery.`locationOverrideTimeWindows:tw2Close`,\n"
+                    "        CASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%M%\" THEN 1 ELSE 0 END AS `monday`,\n"
+                    "        CASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%T%\" THEN 1 ELSE 0 END AS `tuesday`,\n"
+                    "        CASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%W%\" THEN 1 ELSE 0 END AS `wednesday`,\n"
+                    "        CASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%R%\" THEN 1 ELSE 0 END AS `thursday`,\n"
+                    "        CASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%F%\" THEN 1 ELSE 0 END AS `friday`,\n"
+                    "        CASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%S%\" THEN 1 ELSE 0 END AS `saturday`,\n"
+                    "        CASE WHEN as400LocationQuery.`location:deliveryDays` LIKE \"%U%\" THEN 1 ELSE 0 END AS `sunday`\n"
+                    "        FROM as400LocationQuery\n"
+                    "        WHERE as400LocationQuery.`location:key` \n"
+                    "        IN \n"
+                    "        (\n"
+                    "            SELECT \n"
+                    "            `key` \n"
+                    "            FROM \n"
+                    "            gmLocations\n"
+                    "        )\n"
+                    "    )\n"
+                    "    AS\n"
+                    "    as400Combine\n"
+                    "    JOIN \n"
+                    "    gmLocations\n"
+                    "    ON gmLocations.`key` = as400Combine.`location:key`\n"
+                    "    EXCEPT \n"
+                    "    SELECT\n"
+                    "    gmLocationOverrideTimeWindows.`id`,\n"
+                    "    gmLocationOverrideTimeWindows.`location:id`,\n"
+                    "    gmLocations.`key`,\n"
+                    "    gmLocationOverrideTimeWindows.`openTime`,\n"
+                    "    gmLocationOverrideTimeWindows.`closeTime`,\n"
+                    "    gmLocationOverrideTimeWindows.`tw1Open`,\n"
+                    "    gmLocationOverrideTimeWindows.`tw1Close`,\n"
+                    "    gmLocationOverrideTimeWindows.`tw2Open`,\n"
+                    "    gmLocationOverrideTimeWindows.`tw2Close`,\n"
+                    "    gmLocationOverrideTimeWindows.`monday`,\n"
+                    "    gmLocationOverrideTimeWindows.`tuesday`,\n"
+                    "    gmLocationOverrideTimeWindows.`wednesday`,\n"
+                    "    gmLocationOverrideTimeWindows.`thursday`,\n"
+                    "    gmLocationOverrideTimeWindows.`friday`,\n"
+                    "    gmLocationOverrideTimeWindows.`saturday`,\n"
+                    "    gmLocationOverrideTimeWindows.`sunday`\n"
+                    "    FROM\n"
+                    "    gmLocationOverrideTimeWindows\n"
+                    "    JOIN\n"
+                    "    gmLocations\n"
+                    "    WHERE\n"
+                    "    gmLocations.`id` = gmLocationOverrideTimeWindows.`location:id`\n"
                     ")\n"
-                    "WHERE `locationOverrideTimeWindows:0:id` IS NOT NULL";
+                    "WHERE `locationOverrideTimeWindows:0:id` IS NOT NULL\n";
+
+    qDebug() << "BridgeDatabase:getLocationOverrideTimeWindowsToUpdate query " << query;
+    QMap<QString, QVariantList> sql = executeQuery(query, " find Loction Override Time Windows to update. BridgeDatabase:getLocationOverrideTimeWindowsToUpdate()");
+    if(!isSQLResultValid(sql))
+    {
+        emit statusMessage("There are no Loction Override Time Windows to update. Returning empty result set.");
+        return QJsonObject();
+    }
+    else
+    {
+        return assembleLocationOverrideTimeWindowFromQuery(sql);
+    }
 }
 
-QJsonObject BridgeDatabase::getLocationOverrideTimeWindowsToDelete()
+QJsonObject BridgeDatabase::getLocationOverrideTimeWindowIDsToDelete(QVariantMap args)
 {
+    qDebug() << args;
+    QString keyBase = "locationOverrideTimeWindowIDToDelete:";
+    QJsonObject jObj;
     QString query = "SELECT \n"
                     "`id`\n"
                     "FROM\n"
                     "gmLocationOverrideTimeWindows\n"
                     "WHERE \n"
                     "`location:id` IS NULL";
+
+    QMap<QString, QVariantList> sql = executeQuery(query, " find Loction Override Time Window IDs to delete. BridgeDatabase:getLocationOverrideTimeWindowIDsToDelete()");
+
+    for(auto var:sql["id"])
+    {
+        jObj[keyBase + var.toString()] = QJsonValue(QString::number(var.toInt()));
+    }
+    return jObj;
+
 }
 
 QJsonObject BridgeDatabase::getServiceTimeTypesToUpload(const QString &organizationKey)
@@ -829,6 +887,61 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
     }
     //qDebug() << returnObj;
     return returnObj;
+}
+
+QJsonObject BridgeDatabase::assembleLocationOverrideTimeWindowFromQuery(const QMap<QString, QVariantList> &sql)
+{
+    QJsonObject jObj;
+    if(isSQLResultValid(sql))
+    {
+        for(int i = 0; i < sql.first().size(); ++i)
+        {
+            QString key             = QString();
+            QJsonObject lotw        = QJsonObject();
+            QJsonObject location    = QJsonObject();
+
+            for(auto key : sql.keys())
+            {
+                location["id"]      = QJsonValue(sql["location:id"][i].toTime().toString("HH:mm"));
+                lotw["openTime"]    = QJsonValue(sql["openTime"][i].toTime().toString("HH:mm"));
+                lotw["closeTime"]   = QJsonValue(sql["closeTime"][i].toTime().toString("HH:mm"));
+                lotw["tw1Open"]     = QJsonValue(sql["tw1Open"][i].toTime().toString("HH:mm"));
+                lotw["tw1Close"]    = QJsonValue(sql["tw1Close"][i].toTime().toString("HH:mm"));
+                lotw["tw2Open"]     = QJsonValue(sql["tw2Open"][i].toTime().toString("HH:mm"));
+                lotw["tw2Close"]    = QJsonValue(sql["tw2Close"][i].toTime().toString("HH:mm"));
+                lotw["monday"]      = QJsonValue(sql["monday"][i].toBool());
+                lotw["tuesday"]     = QJsonValue(sql["tuesday"][i].toBool());
+                lotw["wednesday"]   = QJsonValue(sql["wednesday"][i].toBool());
+                lotw["thursday"]    = QJsonValue(sql["thursday"][i].toBool());
+                lotw["friday"]      = QJsonValue(sql["friday"][i].toBool());
+                lotw["saturday"]    = QJsonValue(sql["saturday"][i].toBool());
+                lotw["sunday"]      = QJsonValue(sql["sunday"][i].toBool());
+                if(sql["id"][i].isNull())
+                {
+                    key = "locationOverrideTimeWindowUpload:" + sql["location:key"][i].toString();
+
+                }
+                else
+                {
+                    lotw["id"] = QJsonValue::fromVariant(sql["id"][i]);
+                    key = "locationOverrideTimeWindowUpdate:"
+                            + sql["location:key"][i].toString()
+                            + ":"
+                            + sql["id"][i].toString();
+                }
+            }
+            lotw["location"] = QJsonValue(location);
+            qDebug() << "Looking for..." << lotw;
+            jObj[key] = QJsonValue(lotw);
+        }
+    }
+    else
+    {
+        emit statusMessage("Given empty sql input in BridgeDatabase::assembleLocationOverrideTimeWindowFromQuery. "
+                           "Emitting empty result set.");
+    }
+
+    return jObj;
 }
 
 void BridgeDatabase::SQLDataInsert(const QString &tableName, const QMap<QString, QVariantList> &sql)
