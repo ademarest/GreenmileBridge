@@ -45,10 +45,9 @@ public:
                                  const QString &organizationKey,
                                  const QDate &date);
 
+    //Location Override Time Window
     QJsonObject getLocationOverrideTimeWindowsToUpload(QVariantMap args);
-
     QJsonObject getLocationOverrideTimeWindowsToUpdate(QVariantMap args);
-
     QJsonObject getLocationOverrideTimeWindowIDsToDelete(QVariantMap args);
 
     QJsonObject getAccountTypesToUpload(const QString &organizationKey);

@@ -7,6 +7,7 @@ LocationOverrideTimeWindow::LocationOverrideTimeWindow(QObject *parent) : GMAbst
 
 void LocationOverrideTimeWindow::processLocationOverrideTimeWindows(const QString &key, const QList<QVariantMap> &argList)
 {
+    currentKey_ = key;
     std::function<QJsonObject(BridgeDatabase*, QVariantMap)> getUploadsFromDatabaseFunc = &BridgeDatabase::getLocationOverrideTimeWindowsToUpload;
     std::function<QJsonObject(BridgeDatabase*, QVariantMap)> getUpdatesFromDatabaseFunc = &BridgeDatabase::getLocationOverrideTimeWindowsToUpdate;
     std::function<QJsonObject(BridgeDatabase*, QVariantMap)> getDeletesFromDatabaseFunc = &BridgeDatabase::getLocationOverrideTimeWindowIDsToDelete;

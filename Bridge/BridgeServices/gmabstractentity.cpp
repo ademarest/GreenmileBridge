@@ -82,9 +82,9 @@ void GMAbstractEntity::processEntities(const QString &key,
         return;
     }
 
-    currentKey_ = key;
-    QVector<QStringList> requestKeyVec;
     reset();
+    currentKey_ = key;
+    QStringList totalKeys;
 
     for(auto argMap:argList)
     {
@@ -97,19 +97,27 @@ void GMAbstractEntity::processEntities(const QString &key,
     entitiesToUpdate_ = prefixEntityKeys("update", entitiesToUpdate_);
     entitiesToDelete_ = prefixEntityKeys("delete", entitiesToDelete_);
 
-    activeJobs_.fromList(entitiesToUpload_.keys() + entitiesToUpdate_.keys() + entitiesToDelete_.keys());
+    totalKeys << entitiesToUpload_.keys() << entitiesToUpdate_.keys() << entitiesToDelete_.keys();
+
+    activeJobs_ = QSet<QString>::fromList(totalKeys);
+    qDebug() << activeJobs_.size();
+    //QList<QString> crash;
+    //QString burn = crash.first();
 
     for(auto key:entitiesToUpload_.keys())
     {
-            uploadFunc(gmConn_, key, entitiesToUpload_[key].toObject());
+        qDebug() << "IPLOAD" << entitiesToUpload_[key].toObject();
+        uploadFunc(gmConn_, key, entitiesToUpload_[key].toObject());
     }
     for(auto key:entitiesToUpdate_.keys())
     {
-            updateFunc(gmConn_, key, entitiesToUpdate_[key].toObject());
+        qDebug() << "IPDATE" << entitiesToUpdate_[key].toObject();
+        updateFunc(gmConn_, key, entitiesToUpdate_[key].toObject());
     }
     for(auto key:entitiesToDelete_.keys())
     {
-            deleteFunc(gmConn_, key, entitiesToDelete_[key].toObject());
+        qDebug() << "DILETE" << entitiesToDelete_[key].toObject();
+        deleteFunc(gmConn_, key, entitiesToDelete_[key].toObject());
     }
 
     if(activeJobs_.empty())

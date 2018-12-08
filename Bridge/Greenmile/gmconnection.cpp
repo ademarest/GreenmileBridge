@@ -94,15 +94,16 @@ void GMConnection::updateALocationOverrideTimeWindow(const QString &key, const Q
     QString serverAddrTail = "/LocationOverrideTimeWindow";
 
     QByteArray postData = QJsonDocument(data).toJson(QJsonDocument::Compact);
-    addToConnectionQueue(QNetworkAccessManager::Operation::CustomOperation, key, serverAddrTail, postData, "PATCH");
+    addToConnectionQueue(QNetworkAccessManager::Operation::PostOperation,  key, serverAddrTail, postData);
 }
 
 void GMConnection::deleteALocationOverrideTimeWindow(const QString &key, const QJsonObject &data)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
 
-    QString serverAddrTail = "/LocationOverrideTimeWindow/" + data["id"].toString();
-    qDebug() << serverAddrTail;
+    QString serverAddrTail("/LocationOverrideTimeWindow/" + QString::number(data.value("id").toInt()));
+    QJsonValue val = data.value("id");
+
     addToConnectionQueue(QNetworkAccessManager::Operation::DeleteOperation, key, serverAddrTail);
 }
 

@@ -13,6 +13,7 @@
 #include "Bridge/BridgeServices/routecheck.h"
 #include "Greenmile/gmconnection.h"
 #include "LogWriter/logwriter.h"
+#include "BridgeServices/locationoverridetimewindow.h"
 
 class Bridge : public QObject
 {
@@ -54,6 +55,8 @@ private slots:
 
     void finishedLocationUploadGeocode(const QString& key, const QJsonObject &result);
     void finishedLocationUpload(const QString &key, const QJsonObject &result);
+
+    void finishedLocationOverrideTimeWindows(const QString &key, const QJsonObject &uploaded, const QJsonObject &updated, const QJsonObject &deleted);
 
     void finishedRouteCheck(const QString &key, const QJsonObject &result);
     void finishedRouteUpload(const QString &key, const QJsonObject &result);
@@ -100,6 +103,7 @@ private:
     RouteAssignmentCorrection *routeAssignmentCorrection_ = new RouteAssignmentCorrection(this);
     RouteCheck *routeCheck_ = new RouteCheck(this);
     LogWriter *logger_ = new LogWriter(this);
+    LocationOverrideTimeWindow *lotw_ = new LocationOverrideTimeWindow(this);
     //END BRIDGE MEMBER SUBSECTION
 
     void init();

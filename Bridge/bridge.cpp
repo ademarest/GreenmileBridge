@@ -23,15 +23,18 @@ void Bridge::init()
     connect(dataCollector, &BridgeDataCollector::finished, this, &Bridge::finishedDataCollection);
     connect(dataCollector, &BridgeDataCollector::failed, this, &Bridge::handleComponentFailure);
 
-    connect(locationUpdateGeocode_, &LocationGeocode::finished, this,   &Bridge::finishedLocationUpdateGeocode);
-    connect(locationUpdateGeocode_, &LocationGeocode::failed, this,     &Bridge::handleComponentFailure);
-    connect(locationUpdate_,        &LocationUpload::finished, this,    &Bridge::finishedLocationUpdate);
-    connect(locationUpdate_,        &LocationUpload::failed, this,      &Bridge::handleComponentFailure);
+    connect(locationUpdateGeocode_, &LocationGeocode::finished, this,               &Bridge::finishedLocationUpdateGeocode);
+    connect(locationUpdateGeocode_, &LocationGeocode::failed, this,                 &Bridge::handleComponentFailure);
+    connect(locationUpdate_,        &LocationUpload::finished, this,                &Bridge::finishedLocationUpdate);
+    connect(locationUpdate_,        &LocationUpload::failed, this,                  &Bridge::handleComponentFailure);
 
-    connect(locationUploadGeocode_, &LocationGeocode::finished, this,   &Bridge::finishedLocationUploadGeocode);
-    connect(locationUploadGeocode_, &LocationGeocode::failed, this,     &Bridge::handleComponentFailure);
-    connect(locationUpload_,        &LocationUpload::finished, this,    &Bridge::finishedLocationUpload);
-    connect(locationUpload_,        &LocationUpload::failed, this,      &Bridge::handleComponentFailure);
+    connect(locationUploadGeocode_, &LocationGeocode::finished, this,               &Bridge::finishedLocationUploadGeocode);
+    connect(locationUploadGeocode_, &LocationGeocode::failed, this,                 &Bridge::handleComponentFailure);
+    connect(locationUpload_,        &LocationUpload::finished, this,                &Bridge::finishedLocationUpload);
+    connect(locationUpload_,        &LocationUpload::failed, this,                  &Bridge::handleComponentFailure);
+
+    connect(lotw_,                  &LocationOverrideTimeWindow::finished, this,    &Bridge::finishedLocationOverrideTimeWindows);
+    connect(lotw_,                  &LocationOverrideTimeWindow::failed, this,      &Bridge::handleComponentFailure);
 
     connect(routeCheck_, &RouteCheck::finished, this, &Bridge::finishedRouteCheck);
     connect(routeUpload_, &RouteUpload::finished, this, &Bridge::finishedRouteUpload);
@@ -57,6 +60,10 @@ void Bridge::init()
     connect(locationUpdate_, &LocationUpload::statusMessage,    this, &Bridge::statusMessage);
     connect(locationUpdate_, &LocationUpload::debugMessage,     this, &Bridge::debugMessage);
     connect(locationUpdate_, &LocationUpload::errorMessage,     this, &Bridge::errorMessage);
+
+    connect(lotw_, &LocationOverrideTimeWindow::statusMessage,    this, &Bridge::statusMessage);
+    connect(lotw_, &LocationOverrideTimeWindow::debugMessage,     this, &Bridge::debugMessage);
+    connect(lotw_, &LocationOverrideTimeWindow::errorMessage,     this, &Bridge::errorMessage);
 
     connect(routeCheck_, &RouteCheck::statusMessage, this, &Bridge::statusMessage);
     connect(routeCheck_, &RouteCheck::debugMessage, this, &Bridge::debugMessage);
@@ -243,6 +250,20 @@ void Bridge::finishedLocationUpload(const QString &key, const QJsonObject &resul
     emit statusMessage(key + " has been completed.");
     qDebug() << result;
     qDebug() << "Do I go here 4?";
+    QString jobKey = "locationOverrideTimeWindows:" + currentRequest_["key"].toString();
+    addActiveJob(jobKey);
+    lotw_->processLocationOverrideTimeWindows(jobKey, argList_);
+    //routeCheck_->deleteIncorrectRoutes(jobKey, argList_);
+    handleJobCompletion(key);
+}
+
+void Bridge::finishedLocationOverrideTimeWindows(const QString &key, const QJsonObject &uploaded, const QJsonObject &updated, const QJsonObject &deleted)
+{
+    emit statusMessage(key + " has been completed. ");
+    emit statusMessage(key + " " +  QString::number(uploaded.size()) + " have been uploaded.");
+    emit statusMessage(key + " " +  QString::number(updated.size())  + " have been updated.");
+    emit statusMessage(key + " " +  QString::number(deleted.size())  + " have been deleted.");
+
     QString jobKey = "routeCheck:" + currentRequest_["key"].toString();
     addActiveJob(jobKey);
     routeCheck_->deleteIncorrectRoutes(jobKey, argList_);
