@@ -8,6 +8,8 @@ ListControlWidget::ListControlWidget(QWidget *parent) :
     ui->setupUi(this);
     connect(ui->upButton,   &QPushButton::clicked, this, &ListControlWidget::upButtonPressed);
     connect(ui->downButton, &QPushButton::clicked, this, &ListControlWidget::downButtonPressed);
+    connect(ui->deleteButton, &QPushButton::clicked, this, &ListControlWidget::deleteButtonPressed);
+    connect(ui->resetButton, &QPushButton::clicked, this, &ListControlWidget::resetButtonPressed);
 }
 
 ListControlWidget::~ListControlWidget()
@@ -16,9 +18,9 @@ ListControlWidget::~ListControlWidget()
 }
 
 
-void ListControlWidget::addItems(const QString &key, const QStringList &items)
+void ListControlWidget::addItems(const QStringList &items)
 {
-    qDebug() << key;
+    originalItems_ = items;
     QStringList spacedItems;
     for(auto item : items)
     {
@@ -29,17 +31,17 @@ void ListControlWidget::addItems(const QString &key, const QStringList &items)
     sequenceEntries();
 }
 
-void ListControlWidget::appendItem(const QString &key, const QString &item)
+void ListControlWidget::appendItem( const QString &item)
 {
-    qDebug() << key;
+    originalItems_.append(item);
     QString spacedItem = "  " + item;
     ui->listWidget->addItem(spacedItem);
     sequenceEntries();
 }
 
-void ListControlWidget::prependItem(const QString &key, const QString &item)
+void ListControlWidget::prependItem(const QString &item)
 {
-    qDebug() << key;
+    originalItems_.prepend(item);
     QString spacedItem = "  " + item;
     ui->listWidget->insertItem(0, spacedItem);
     sequenceEntries();
@@ -61,6 +63,19 @@ void ListControlWidget::downButtonPressed()
     ui->listWidget->insertItem(idx+1, item);
     ui->listWidget->setCurrentRow(idx+1);
     sequenceEntries();
+}
+
+void ListControlWidget::deleteButtonPressed()
+{
+    int idx = ui->listWidget->currentRow();
+    delete ui->listWidget->takeItem(idx);
+    sequenceEntries();
+}
+
+void ListControlWidget::resetButtonPressed()
+{
+    ui->listWidget->clear();
+    addItems(originalItems_);
 }
 
 void ListControlWidget::clearList()

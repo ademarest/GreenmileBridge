@@ -39,7 +39,7 @@ void BridgeConfigWidget::handleSQLResponse(const QString &key, const QMap<QStrin
     QStringList strList;
     for(int i = 0; i < sql["organization:key"].size(); ++i)
     {
-        ui->orgAS400LCW->appendItem("populate as400 org", sql["organization:key"][i].toString());
+        ui->orgAS400LCW->appendItem(sql["organization:key"][i].toString());
         //as400OrgLCW->appendItem("BridgeConfig add item", (QString(QString::number(i+1) + " " + sql["organization:key"][i].toString())));
     }
     qDebug() << strList;

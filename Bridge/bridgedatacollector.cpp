@@ -62,6 +62,15 @@ void BridgeDataCollector::removeRequest(const QString &key)
     qDebug() << "START BridgeDataCollector::removeRequest.";
 }
 
+void BridgeDataCollector::buildTables()
+{
+    for(auto source: knownSources_)
+    {
+        handleJsonResponse("Building Tables", QJsonValue());
+        handleSQLResponse("Building tables", QMap<QString,QVariantList>());
+    }
+}
+
 void BridgeDataCollector::processQueue()
 {
     if(hasActiveJobs() || requestQueue_.isEmpty())
@@ -78,6 +87,7 @@ void BridgeDataCollector::processQueue()
 
 void BridgeDataCollector::beginGathering(const QVariantMap &request)
 {
+    buildTables();
     QStringList sources;
     QStringList sourceOverrides = request["sourceOverrides"].toStringList();
     QDate date = request["date"].toDate();

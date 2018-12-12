@@ -93,6 +93,7 @@ private:
     //END TIMER SUBSECTION
 
     //BRIDGE MEMBER SUBSECTION
+    //IF ADDING A MEMBER, REMEMBER TO UPDATE RESET AND REBUILD!!!
     BridgeDataCollector *dataCollector = new BridgeDataCollector(this);
     BridgeDatabase *bridgeDB_ = new BridgeDatabase(this);
     LocationGeocode *locationUploadGeocode_ = new LocationGeocode(this);

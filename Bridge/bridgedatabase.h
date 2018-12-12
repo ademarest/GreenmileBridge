@@ -50,7 +50,9 @@ public:
     QJsonObject getLocationOverrideTimeWindowsToUpdate(QVariantMap args);
     QJsonObject getLocationOverrideTimeWindowIDsToDelete(QVariantMap args);
 
-    QJsonObject getAccountTypesToUpload(const QString &organizationKey);
+    QJsonObject getAccountTypesToUpload(QVariantMap args);
+    QJsonObject getAccountTypesToUpdate(QVariantMap args);
+    QJsonObject getAccountTypesToDelete(QVariantMap args);
 
     QJsonObject getServiceTimeTypesToUpload(const QString &organizationKey);
 

@@ -15,11 +15,6 @@ Bridge::~Bridge()
 
 void Bridge::init()
 {
-
-    /*  Location PUT query.
-    SELECT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays`, `id` FROM as400LocationQuery LEFT JOIN gmLocations ON `key` = `location:key` WHERE gmLocations.`key` IN ( SELECT `location:key` FROM ( SELECT DISTINCT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays` FROM as400LocationQuery WHERE as400LocationQuery.`organization:key` = 'SEATTLE' EXCEPT SELECT DISTINCT `enabled`, `key`,`description`,`addressLine1`,`addressLine2`,`city`, `state`,`zipCode`,`deliveryDays` FROM gmLocations WHERE gmLocations.`organization:key` = 'SEATTLE' ) )
-    */
-
     connect(dataCollector, &BridgeDataCollector::finished, this, &Bridge::finishedDataCollection);
     connect(dataCollector, &BridgeDataCollector::failed, this, &Bridge::handleComponentFailure);
 
@@ -172,20 +167,25 @@ void Bridge::addActiveJob(const QString &key)
 
 void Bridge::removeActiveJob(const QString &key)
 {
+    qDebug() << "Bridge::removeActiveJob " << key;
     activeJobs_.remove(key);
+    qDebug() << "Bridge::removeActiveJob activeJobs_.remove(key) " << activeJobs_;
     activeJobCount_ = activeJobs_.size();
+    qDebug() << "Bridge::removeActiveJob activeJobs_.size() " << activeJobs_.size();
 
     emit bridgeProgress(activeJobCount_, totalJobCount_);
 }
 
 void Bridge::startDataCollection(const QString &key, const QDate &date, const int monthsUntilCustDisabled)
 {
+    qDebug() << "Bridge::startDataCollection";
     emit currentJobChanged(key);
     dataCollector->addRequest(key, date, monthsUntilCustDisabled);
 }
 
 void Bridge::finishedDataCollection(const QString &key)
 {
+    qDebug() << "Bridge::finishedDataCollection";
     emit statusMessage(key + " has been completed.");
     bridgeDB_->reprocessAS400LocationTimeWindows();
     applyScheduleHierarchy();
@@ -213,6 +213,7 @@ void Bridge::finishedDataCollection(const QString &key)
 
 void Bridge::finishedLocationUpdateGeocode(const QString &key, const QJsonObject &result)
 {
+    qDebug() << "Bridge::finishedLocationUpdateGeocode";
     emit statusMessage(key + " has been completed.");
 
     QString jobKey = "updateLocations:" + currentRequest_["key"].toString();
@@ -225,6 +226,7 @@ void Bridge::finishedLocationUpdateGeocode(const QString &key, const QJsonObject
 
 void Bridge::finishedLocationUpdate(const QString &key, const QJsonObject &result)
 {
+    qDebug() << "Bridge::finishedLocationUpdate";
     emit statusMessage(key + " has been completed.");
     qDebug() << result;
     qDebug() << "Do I go here 2?";
@@ -237,6 +239,7 @@ void Bridge::finishedLocationUpdate(const QString &key, const QJsonObject &resul
 
 void Bridge::finishedLocationUploadGeocode(const QString &key, const QJsonObject &result)
 {
+    qDebug() << "Bridge::finishedLocationUploadGeocode";
     emit statusMessage(key + " has been completed.");
     qDebug() << "Do I go here 3?";
     QString jobKey = "uploadLocations:" + currentRequest_["key"].toString();
@@ -247,6 +250,7 @@ void Bridge::finishedLocationUploadGeocode(const QString &key, const QJsonObject
 
 void Bridge::finishedLocationUpload(const QString &key, const QJsonObject &result)
 {
+    qDebug() << "Bridge::finishedLocationUpload";
     emit statusMessage(key + " has been completed.");
     qDebug() << result;
     qDebug() << "Do I go here 4?";
@@ -259,6 +263,7 @@ void Bridge::finishedLocationUpload(const QString &key, const QJsonObject &resul
 
 void Bridge::finishedLocationOverrideTimeWindows(const QString &key, const QJsonObject &uploaded, const QJsonObject &updated, const QJsonObject &deleted)
 {
+    qDebug() << "Bridge::finishedLocationOverrideTimeWindows";
     emit statusMessage(key + " has been completed. ");
     emit statusMessage(key + " " +  QString::number(uploaded.size()) + " have been uploaded.");
     emit statusMessage(key + " " +  QString::number(updated.size())  + " have been updated.");
@@ -272,6 +277,7 @@ void Bridge::finishedLocationOverrideTimeWindows(const QString &key, const QJson
 
 void Bridge::finishedRouteCheck(const QString &key, const QJsonObject &result)
 {
+    qDebug() << "Bridge::finishedRouteCheck";
     emit statusMessage(key + " has been completed.");
     qDebug() << result;
     qDebug() << "Do I go here 5?";
@@ -284,35 +290,44 @@ void Bridge::finishedRouteCheck(const QString &key, const QJsonObject &result)
 
 void Bridge::finishedRouteUpload(const QString &key, const QJsonObject &result)
 {
+    qDebug() << "Bridge::finishedRouteUpload";
     emit statusMessage(key + " has been completed.");
     qDebug() << result;
 
     QString jobKey = "refreshDataForRouteAssignmentCorrections:" + currentRequest_["key"].toString();
     addActiveJob(jobKey);
-    dataCollector->addRequest(jobKey,
-                            currentRequest_["date"].toDate(),
-                            currentRequest_["monthsUntilCustDisabled"].toInt(),
-                            QStringList{"gmRoutes"});
+    dataCollector->addRequest(  jobKey,
+                                currentRequest_["date"].toDate(),
+                                currentRequest_["monthsUntilCustDisabled"].toInt(),
+                                QStringList{"gmRoutes"});
 
     handleJobCompletion(key);
 }
 
 void Bridge::finishedRouteAssignmentCorrections(const QString &key, const QJsonObject &result)
 {
+    qDebug() << "Bridge::finishedRouteAssignmentCorrections";
     emit statusMessage(key + " has been completed.");
     qDebug() << result;
     handleJobCompletion(key);
 }
 
 void Bridge::handleJobCompletion(const QString &key)
-{
+{    
     if(failState_)
     {
         abort();
         return;
     }
 
-    qDebug() << activeJobs_.size() << "jobs remaining" << activeJobs_ << key;
+    qDebug() << "IMPORTANT DEBUG" << activeJobs_.size() << " jobs remaining" << activeJobs_ << "job completed" << key;
+
+    if(currentRequest_["key"].toString().isEmpty())
+    {
+        emit errorMessage("ERROR: Job key has no value. Something went wrong, aborting.");
+        handleComponentFailure("Bridge job", "Empty job key error.");
+    }
+
     emit statusMessage("The remaining bridge jobs are: " + activeJobs_.toList().join(",") + ".");
     removeActiveJob(key);
     if(!hasActiveJobs())
@@ -361,6 +376,7 @@ void Bridge::abort()
     routeUpload_->deleteLater();
     routeAssignmentCorrection_->deleteLater();
     logger_->deleteLater();
+    lotw_->deleteLater();
 
     totalJobCount_ = 0;
     activeJobCount_ = 0;
@@ -384,6 +400,7 @@ void Bridge::rebuild(const QString &key)
     routeUpload_                = new RouteUpload(this);
     routeAssignmentCorrection_  = new RouteAssignmentCorrection(this);
     logger_                     = new LogWriter(this);
+    lotw_                       = new LocationOverrideTimeWindow(this);
     failState_ = false;
 
     init();

@@ -18,6 +18,7 @@ public:
     bool hasActiveJobs();
     void addRequest(const QString &key, const QDate &date, const int monthsUntilCustDisabled, const QStringList &sourceOverrides = QStringList());
     void removeRequest(const QString &key);
+    void buildTables();
 
 signals:
     void statusMessage(const QString &status);
@@ -39,6 +40,7 @@ private:
     QQueue<QVariantMap> requestQueue_;
     QSet<QString> activeJobs_;
 
+    void assembleKnownSources();
     void prepDatabases(const QStringList &sourceOverrides = QStringList());
     void beginGathering(const QVariantMap &request);
 
@@ -49,6 +51,8 @@ private:
     GMConnection *gmConn                    = new GMConnection(this);
     AS400 *as400                            = new AS400(this);
     QTimer *queueTimer                      = new QTimer(this);
+
+    QJsonObject knownSourcesJson_;
 
     QStringList knownSources_ =
     {"mrsDailyAssignments",
@@ -95,6 +99,105 @@ private:
     void handleJobCompletion(const QString &key);
 
     void processQueue();
+
+    QString gmDriverCreationQuery_ =    "CREATE TABLE `gmDrivers` "
+                                        "(`id` INTEGER NOT NULL UNIQUE, "
+                                        "`login` TEXT, "
+                                        "`enabled` INTEGER, "
+                                        "`organization:id` INTEGER, "
+                                        "`organization:key` TEXT, "
+                                        "`key` TEXT, "
+                                        "`name` TEXT, "
+                                        "`unitSystem` TEXT, "
+                                        "`driverType` TEXT, "
+                                        "PRIMARY KEY(`id`))";
+
+    QStringList gmDriverExpectedKeys {"id",
+                                      "login",
+                                      "enabled",
+                                      "organization:id",
+                                      "organization:key",
+                                      "key",
+                                      "name",
+                                      "unitSystem",
+                                      "driverType"};
+
+    QString gmEquipmentCreationQuery =  "CREATE TABLE `gmEquipment` "
+                                        "(`id` INTEGER NOT NULL UNIQUE, "
+                                        "`key` TEXT, "
+                                        "`description` TEXT, "
+                                        "`equipmentType:id` INTEGER, "
+                                        "`equipmentType:key` TEXT, "
+                                        "`organization:id` INTEGER, "
+                                        "`organization:key` TEXT, "
+                                        "`gpsUnitId` TEXT, "
+                                        "`enabled` INTEGER, "
+                                        "PRIMARY KEY(`id`))";
+
+    QStringList gmEquipmentExpectedKeys {   "id",
+                                            "key",
+                                            "description",
+                                            "equipmentType:id",
+                                            "equipmentType:key",
+                                            "organization:id",
+                                            "organization:key",
+                                            "gpsUnitId",
+                                            "enabled"};
+
+    QString as400RouteCreationQuery =   "CREATE TABLE `as400RouteQuery` "
+                                        "(`driver:key` TEXT, "
+                                        "`equipment:key` TEXT, "
+                                        "`location:addressLine1` TEXT, "
+                                        "`location:addressLine2` TEXT, "
+                                        "`location:city` TEXT, "
+                                        "`location:deliveryDays` TEXT, "
+                                        "`location:description` TEXT, "
+                                        "`accountType:key` TEXT, "
+                                        "`serviceTimeType:key` TEXT, "
+                                        "`locationType:key` TEXT, "
+                                        "`stopType:key` TEXT, "
+                                        "`location:key` TEXT, "
+                                        "`location:state` TEXT, "
+                                        "`location:zipCode` TEXT, "
+                                        "`locationOverrideTimeWindows:closeTime` TEXT, "
+                                        "`locationOverrideTimeWindows:openTime` TEXT, "
+                                        "`locationOverrideTimeWindows:tw1Close` TEXT, "
+                                        "`locationOverrideTimeWindows:tw1Open` TEXT, "
+                                        "`locationOverrideTimeWindows:tw2Close` TEXT, "
+                                        "`locationOverrideTimeWindows:tw2Open` TEXT, "
+                                        "`order:cube` NUMERIC, "
+                                        "`order:number` TEXT NOT NULL UNIQUE, "
+                                        "`order:pieces` NUMERIC, "
+                                        "`order:weight` NUMERIC, "
+                                        "`organization:key` TEXT, "
+                                        "`route:date` TEXT, "
+                                        "`route:key` TEXT, "
+                                        "`stop:baseLineSequenceNum` INT, "
+                                        "PRIMARY KEY(`order:number`))";
+
+    QString as400LocaitonCreationQuery =    "CREATE TABLE `as400LocationQuery` "
+                                            "(`location:enabled` INTEGER, "
+                                            "`organization:key` TEXT, "
+                                            "`location:key` TEXT, "
+                                            "`location:addressLine1` TEXT, "
+                                            "`location:addressLine2` TEXT, "
+                                            "`location:city` TEXT, "
+                                            "`location:deliveryDays` TEXT, "
+                                            "`location:description` TEXT, "
+                                            "`location:state` TEXT, "
+                                            "`location:zipCode` TEXT, "
+                                            "`locationOverrideTimeWindows:closeTime` TEXT, "
+                                            "`locationOverrideTimeWindows:openTime` TEXT, "
+                                            "`locationOverrideTimeWindows:tw1Close` TEXT, "
+                                            "`locationOverrideTimeWindows:tw1Open` TEXT, "
+                                            "`locationOverrideTimeWindows:tw2Close` TEXT, "
+                                            "`locationOverrideTimeWindows:tw2Open` TEXT, "
+                                            "`accountType:key` TEXT, "
+                                            "`serviceTimeType:key` TEXT, "
+                                            "`locationType:key` TEXT, "
+                                            "`stopType:key` TEXT, "
+                                            "PRIMARY KEY(`location:key`))";
+
 };
 
 #endif // BRIDGEDATACOLLECTOR_H

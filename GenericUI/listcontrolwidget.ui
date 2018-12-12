@@ -14,12 +14,8 @@
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="1" column="0">
-    <widget class="QPushButton" name="upButton">
-     <property name="text">
-      <string>Move Item Up</string>
-     </property>
-    </widget>
+   <item row="0" column="0" colspan="2">
+    <widget class="QListWidget" name="listWidget"/>
    </item>
    <item row="1" column="1">
     <widget class="QPushButton" name="downButton">
@@ -28,11 +24,36 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="0" colspan="2">
-    <widget class="QListWidget" name="listWidget"/>
+   <item row="1" column="0">
+    <widget class="QPushButton" name="upButton">
+     <property name="text">
+      <string>Move Item Up</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QPushButton" name="deleteButton">
+     <property name="text">
+      <string>Delete Item</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QPushButton" name="resetButton">
+     <property name="text">
+      <string>Reset List</string>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>listWidget</tabstop>
+  <tabstop>upButton</tabstop>
+  <tabstop>downButton</tabstop>
+  <tabstop>deleteButton</tabstop>
+  <tabstop>resetButton</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

@@ -449,9 +449,9 @@ QJsonObject BridgeDatabase::getLocationTypesToUpload(const QString &organization
     return QJsonObject();
 }
 
-QJsonObject BridgeDatabase::getAccountTypesToUpload(const QString &organizationKey)
+QJsonObject BridgeDatabase::getAccountTypesToUpload(QVariantMap args)
 {
-    qDebug() << "BridgeDatabase::getAccountTypesToUpload not implemented yet. Org key " << organizationKey;
+    qDebug() << "BridgeDatabase::getAccountTypesToUpload not implemented yet. Org key " << args;
     return QJsonObject();
 }
 
@@ -550,7 +550,99 @@ QJsonObject BridgeDatabase::getRoutesToDelete(const QString &assignmentTableName
 {
     QJsonObject returnObj;
     QString keyBase = "DeleteRoute:" + organizationKey + ":" + date.toString("yyyy-MM-dd")+ ":";
-    QString query = "SELECT `id` FROM gmRoutes WHERE `date` || `key` || `organization:id` IN ( SELECT `unique_id` FROM( SELECT CAST(baselineSize1 as INTEGER), CAST(baselineSize2 as INTEGER), CAST(baselineSize3 as INTEGER), `date`, `key`, `organization:id`, `date` || `key` || `organization:id` as `unique_id`, `totalStops` FROM gmRoutes WHERE `date` = '"+date.toString("yyyy-MM-dd")+"' AND `organization:key` = '"+organizationKey+"' AND `key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = '"+organizationKey+"' AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL ) AND `status` = 'NOT_STARTED' EXCEPT SELECT CAST(SUM(routeQuery.`order:pieces`) as INTEGER) as `order:plannedSize1`, CAST(SUM(routeQuery.`order:cube`) as INTEGER) as `order:plannedSize2`, CAST(SUM(routeQuery.`order:weight`) as INTEGER) as `order:plannedSize3`, routeQuery.`route:date`, routeQuery.`route:key`, gmOrg.`id` as `organization:id`, routeQuery.`route:date` || routeQuery.`route:key` || gmOrg.`id` as `unique_id`, count( distinct `routeQuery`.`location:key`) FROM as400RouteQuery `routeQuery` LEFT JOIN gmOrganizations `gmOrg` ON gmOrg.`key` = routeQuery.`organization:key` LEFT JOIN "+assignmentTableName+" `dailyAssignment` ON `routeQuery`.`route:key` = `dailyAssignment`.`route:key` AND `routeQuery`.`route:date` = `dailyAssignment`.`route:date` AND `routeQuery`.`organization:key` = `dailyAssignment`.`organization:key` LEFT JOIN drivers `mrsDataDrivers` ON `dailyAssignment`.`driver:name` = `mrsDataDrivers`.`employeeName` LEFT JOIN gmDrivers `gmDriverInfo` ON `gmDriverInfo`.`login` = `mrsDataDrivers`.`employeeNumber` LEFT JOIN gmEquipment `gmEquipmentInfo` ON `gmEquipmentInfo`.`key` = `dailyAssignment`.`truck:key` LEFT JOIN routeStartTimes `rst` ON `rst`.`route` = `routeQuery`.`route:key` LEFT JOIN gmLocations `gmLoc` ON `gmLoc`.`key` = `routeQuery`.`organization:key` LEFT JOIN gmLocations `gmLocID` ON `gmLocID`.`key` = `routeQuery`.`location:key` WHERE `routeQuery`.`organization:key` = '"+organizationKey+"' AND `routeQuery`.`route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `routeQuery`.`route:key` IN (SELECT `key` FROM gmRoutes WHERE `organization:key` = '"+organizationKey+"' AND `date` = '"+date.toString("yyyy-MM-dd")+"') AND `routeQuery`.`route:key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = '"+organizationKey+"' AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL ) GROUP BY routeQuery.`route:key`))";
+    //QString query = "SELECT `id` FROM gmRoutes WHERE `date` || `key` || `organization:id` IN ( SELECT `unique_id` FROM( SELECT CAST(baselineSize1 as INTEGER), CAST(baselineSize2 as INTEGER), CAST(baselineSize3 as INTEGER), `date`, `key`, `organization:id`, `date` || `key` || `organization:id` as `unique_id`, `totalStops` FROM gmRoutes WHERE `date` = '"+date.toString("yyyy-MM-dd")+"' AND `organization:key` = '"+organizationKey+"' AND `key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = '"+organizationKey+"' AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL ) AND `status` = 'NOT_STARTED' EXCEPT SELECT CAST(SUM(routeQuery.`order:pieces`) as INTEGER) as `order:plannedSize1`, CAST(SUM(routeQuery.`order:cube`) as INTEGER) as `order:plannedSize2`, CAST(SUM(routeQuery.`order:weight`) as INTEGER) as `order:plannedSize3`, routeQuery.`route:date`, routeQuery.`route:key`, gmOrg.`id` as `organization:id`, routeQuery.`route:date` || routeQuery.`route:key` || gmOrg.`id` as `unique_id`, count( distinct `routeQuery`.`location:key`) FROM as400RouteQuery `routeQuery` LEFT JOIN gmOrganizations `gmOrg` ON gmOrg.`key` = routeQuery.`organization:key` LEFT JOIN "+assignmentTableName+" `dailyAssignment` ON `routeQuery`.`route:key` = `dailyAssignment`.`route:key` AND `routeQuery`.`route:date` = `dailyAssignment`.`route:date` AND `routeQuery`.`organization:key` = `dailyAssignment`.`organization:key` LEFT JOIN drivers `mrsDataDrivers` ON `dailyAssignment`.`driver:name` = `mrsDataDrivers`.`employeeName` LEFT JOIN gmDrivers `gmDriverInfo` ON `gmDriverInfo`.`login` = `mrsDataDrivers`.`employeeNumber` LEFT JOIN gmEquipment `gmEquipmentInfo` ON `gmEquipmentInfo`.`key` = `dailyAssignment`.`truck:key` LEFT JOIN routeStartTimes `rst` ON `rst`.`route` = `routeQuery`.`route:key` LEFT JOIN gmLocations `gmLoc` ON `gmLoc`.`key` = `routeQuery`.`organization:key` LEFT JOIN gmLocations `gmLocID` ON `gmLocID`.`key` = `routeQuery`.`location:key` WHERE `routeQuery`.`organization:key` = '"+organizationKey+"' AND `routeQuery`.`route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `routeQuery`.`route:key` IN (SELECT `key` FROM gmRoutes WHERE `organization:key` = '"+organizationKey+"' AND `date` = '"+date.toString("yyyy-MM-dd")+"') AND `routeQuery`.`route:key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = '"+organizationKey+"' AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' AND `driver:name` IS NOT NULL AND `truck:key` IS NOT NULL ) GROUP BY routeQuery.`route:key`))";
+    QString query = "SELECT \n"
+                    "`id` \n"
+                    "FROM \n"
+                    "gmRoutes \n"
+                    "WHERE `date` || `key` || `organization:id` IN \n"
+                    "( \n"
+                    "    SELECT \n"
+                    "    `unique_id` \n"
+                    "    FROM \n"
+                    "    ( \n"
+                    "        SELECT \n"
+                    "        ROUND(baselineSize1, 0) AS `baselineSize1`, \n"
+                    "        ROUND(baselineSize2, 0) AS `baselineSize2`, \n"
+                    "        ROUND(baselineSize3, 0) AS `baselineSize3`, \n"
+                    "        `date`, \n"
+                    "        `key`, \n"
+                    "        `organization:id`, \n"
+                    "        `date` || `key` || `organization:id` as `unique_id`, \n"
+                    "        `totalStops` \n"
+                    "        FROM gmRoutes \n"
+                    "        WHERE \n"
+                    "        `date` = '"+date.toString("yyyy-MM-dd")+"' \n"
+                    "        AND `organization:key` = '"+organizationKey+"' \n"
+                    "        AND `key` \n"
+                    "        IN \n"
+                    "        ( \n"
+                    "            SELECT \n"
+                    "            `route:key` \n"
+                    "            FROM "+assignmentTableName+" \n"
+                    "            WHERE `organization:key` = '"+organizationKey+"' \n"
+                    "            AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' \n"
+                    "            AND `driver:name` IS NOT NULL \n"
+                    "            AND `truck:key` IS NOT NULL \n"
+                    "        ) \n"
+                    "        AND `status` = 'NOT_STARTED' \n"
+                    "        EXCEPT \n"
+                    "        SELECT \n"
+                    "        ROUND(SUM(routeQuery.`order:pieces`), 0) as `order:plannedSize1`, \n"
+                    "        ROUND(SUM(routeQuery.`order:cube`), 0) as `order:plannedSize2`, \n"
+                    "        ROUND(SUM(routeQuery.`order:weight`), 0) as `order:plannedSize3`, \n"
+                    "        routeQuery.`route:date`, \n"
+                    "        routeQuery.`route:key`, \n"
+                    "        gmOrg.`id` as `organization:id`, \n"
+                    "        routeQuery.`route:date` || routeQuery.`route:key` || gmOrg.`id` as `unique_id`, \n"
+                    "        COUNT( distinct `routeQuery`.`location:key`) \n"
+                    "        FROM as400RouteQuery `routeQuery` \n"
+                    "        LEFT JOIN gmOrganizations `gmOrg` \n"
+                    "        ON gmOrg.`key` = routeQuery.`organization:key` \n"
+                    "        LEFT JOIN "+assignmentTableName+" `dailyAssignment` \n"
+                    "        ON `routeQuery`.`route:key` = `dailyAssignment`.`route:key` \n"
+                    "        AND `routeQuery`.`route:date` = `dailyAssignment`.`route:date` \n"
+                    "        AND `routeQuery`.`organization:key` = `dailyAssignment`.`organization:key` \n"
+                    "        LEFT JOIN drivers `mrsDataDrivers` \n"
+                    "        ON `dailyAssignment`.`driver:name` = `mrsDataDrivers`.`employeeName` \n"
+                    "        LEFT JOIN gmDrivers `gmDriverInfo` \n"
+                    "        ON `gmDriverInfo`.`login` = `mrsDataDrivers`.`employeeNumber` \n"
+                    "        LEFT JOIN gmEquipment `gmEquipmentInfo` \n"
+                    "        ON `gmEquipmentInfo`.`key` = `dailyAssignment`.`truck:key` \n"
+                    "        LEFT JOIN routeStartTimes `rst` \n"
+                    "        ON `rst`.`route` = `routeQuery`.`route:key` \n"
+                    "        LEFT JOIN gmLocations `gmLoc` \n"
+                    "        ON `gmLoc`.`key` = `routeQuery`.`organization:key` \n"
+                    "        LEFT JOIN gmLocations `gmLocID` \n"
+                    "        ON `gmLocID`.`key` = `routeQuery`.`location:key` \n"
+                    "        WHERE `routeQuery`.`organization:key` = '"+organizationKey+"' \n"
+                    "        AND `routeQuery`.`route:date` = '"+date.toString("yyyy-MM-dd")+"' \n"
+                    "        AND `routeQuery`.`route:key` \n"
+                    "        IN \n"
+                    "        ( \n"
+                    "            SELECT \n"
+                    "            `key` \n"
+                    "            FROM \n"
+                    "            gmRoutes \n"
+                    "            WHERE \n"
+                    "            `organization:key` = '"+organizationKey+"' \n"
+                    "            AND `date` = '"+date.toString("yyyy-MM-dd")+"' \n"
+                    "        ) \n"
+                    "        AND `routeQuery`.`route:key` \n"
+                    "        IN \n"
+                    "        ( \n"
+                    "            SELECT \n"
+                    "            `route:key` \n"
+                    "            FROM "+assignmentTableName+" \n"
+                    "            WHERE `organization:key` = '"+organizationKey+"' \n"
+                    "            AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' \n"
+                    "            AND `driver:name` IS NOT NULL \n"
+                    "            AND `truck:key` IS NOT NULL \n"
+                    "        ) \n"
+                    "        GROUP BY routeQuery.`route:key` \n"
+                    "    ) \n"
+                    ") \n";
+
     qDebug() << "Routes out of compliance." << query;
     QMap<QString,QVariantList> sql = executeQuery(query, "Getting route IDs to update.");
 

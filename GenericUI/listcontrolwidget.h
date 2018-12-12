@@ -17,17 +17,21 @@ public:
     ~ListControlWidget();
 
 public slots:
-    void addItems(const QString &key, const QStringList &items);
-    void appendItem(const QString &key, const QString &item);
-    void prependItem(const QString &key, const QString &item);
+    void addItems(const QStringList &items);
+    void appendItem(const QString &item);
+    void prependItem(const QString &item);
     void clearList();
 
 private slots:
     void upButtonPressed();
     void downButtonPressed();
+    void deleteButtonPressed();
+    void resetButtonPressed();
 
 private:
     void sequenceEntries();
+
+    QStringList originalItems_;
     Ui::ListControlWidget *ui;
 };
 
