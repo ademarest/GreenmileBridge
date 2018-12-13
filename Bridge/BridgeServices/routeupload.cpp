@@ -2,7 +2,7 @@
 
 RouteUpload::RouteUpload(QObject *parent) : QObject(parent)
 {
-    connect(gmConn_, &GMConnection::gmNetworkResponse, this, &RouteUpload::handleGMResponse);
+    connect(gmConn_, &GMConnection::networkResponse, this, &RouteUpload::handleGMResponse);
     connect(gmConn_, &GMConnection::statusMessage, this, &RouteUpload::statusMessage);
     connect(gmConn_, &GMConnection::errorMessage, this, &RouteUpload::errorMessage);
     connect(gmConn_, &GMConnection::debugMessage, this, &RouteUpload::debugMessage);

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>673</width>
-    <height>765</height>
+    <width>861</width>
+    <height>825</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,6 +16,23 @@
   <layout class="QGridLayout" name="gridLayout_2">
    <item row="0" column="0">
     <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="serverAddressLabel">
+       <property name="text">
+        <string>Greenmile Server Address</string>
+       </property>
+      </widget>
+     </item>
+     <item row="24" column="0">
+      <widget class="QLabel" name="arcGISRequestTimeoutLabel">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>ArcGIS Request Timeout in Seconds</string>
+       </property>
+      </widget>
+     </item>
      <item row="9" column="0">
       <widget class="QSpinBox" name="connectionFreqMSSpinBox">
        <property name="minimum">
@@ -29,68 +46,20 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
-      <widget class="QLineEdit" name="usernameLineEdit">
+     <item row="23" column="0">
+      <widget class="QLineEdit" name="arcGISAddressLineEdit">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
-        <string>username</string>
+        <string>https://geocode.arcgis.com</string>
        </property>
       </widget>
      </item>
-     <item row="5" column="0">
-      <widget class="QLineEdit" name="passwordLineEdit">
+     <item row="2" column="0">
+      <widget class="QLabel" name="usernameLabel">
        <property name="text">
-        <string>password</string>
-       </property>
-       <property name="echoMode">
-        <enum>QLineEdit::Password</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="31" column="0">
-      <widget class="QPushButton" name="saveSettingsButton">
-       <property name="text">
-        <string>Save Settings</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="serverAddressLabel">
-       <property name="text">
-        <string>Greenmile Server Address</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="0">
-      <widget class="QLabel" name="passwordLabel">
-       <property name="text">
-        <string>Greenmile Password</string>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="0">
-      <widget class="QSpinBox" name="requestTimeoutSpinbox">
-       <property name="minimum">
-        <number>1</number>
-       </property>
-       <property name="maximum">
-        <number>9001</number>
-       </property>
-       <property name="value">
-        <number>40</number>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="0">
-      <widget class="QLabel" name="requestTimeoutLabel">
-       <property name="text">
-        <string>Greenmile Request Timeout in Seconds</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLineEdit" name="serverAddressLineEdit">
-       <property name="text">
-        <string>https://charliesproduce.greenmile.com</string>
+        <string>Greenmile User Name</string>
        </property>
       </widget>
      </item>
@@ -107,30 +76,45 @@
        </property>
       </spacer>
      </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="usernameLabel">
-       <property name="text">
-        <string>Greenmile User Name</string>
+     <item row="25" column="0">
+      <widget class="QSpinBox" name="arcGISRequestTimeoutSpinBox">
+       <property name="enabled">
+        <bool>false</bool>
        </property>
-      </widget>
-     </item>
-     <item row="10" column="0">
-      <widget class="QLabel" name="maxActiveConnectionsLabel">
-       <property name="text">
-        <string>Greenmile Maximum Number of Active Connections</string>
-       </property>
-      </widget>
-     </item>
-     <item row="11" column="0">
-      <widget class="QSpinBox" name="maxActiveConnectionsSpinBox">
        <property name="minimum">
         <number>1</number>
        </property>
        <property name="maximum">
-        <number>100</number>
+        <number>9001</number>
        </property>
        <property name="value">
-        <number>10</number>
+        <number>90</number>
+       </property>
+      </widget>
+     </item>
+     <item row="26" column="0">
+      <widget class="QLabel" name="arcGISConnectionFreqLabel">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>ArcGIS Connection Frequency (ms)</string>
+       </property>
+      </widget>
+     </item>
+     <item row="16" column="0">
+      <widget class="QSpinBox" name="censusRequestTimeoutSpinBox">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>3600</number>
+       </property>
+       <property name="value">
+        <number>40</number>
        </property>
       </widget>
      </item>
@@ -150,88 +134,47 @@
        </property>
       </widget>
      </item>
+     <item row="11" column="0">
+      <widget class="QSpinBox" name="maxActiveConnectionsSpinBox">
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>100</number>
+       </property>
+       <property name="value">
+        <number>10</number>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="0">
+      <widget class="QLabel" name="maxActiveConnectionsLabel">
+       <property name="text">
+        <string>Greenmile Maximum Number of Active Connections</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="requestTimeoutLabel">
+       <property name="text">
+        <string>Greenmile Request Timeout in Seconds</string>
+       </property>
+      </widget>
+     </item>
+     <item row="14" column="0">
+      <widget class="QLineEdit" name="censusAddressLineEdit">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>https://geocoding.geo.census.gov</string>
+       </property>
+      </widget>
+     </item>
      <item row="21" column="0">
       <widget class="QCheckBox" name="useArcGISCheckBox">
        <property name="text">
         <string>Use ArcGIS Geocoder</string>
-       </property>
-      </widget>
-     </item>
-     <item row="26" column="0">
-      <widget class="QLabel" name="arcGISConnectionFreqLabel">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>ArcGIS Connection Frequency (ms)</string>
-       </property>
-      </widget>
-     </item>
-     <item row="28" column="0">
-      <widget class="QLabel" name="arcGISMaxActiveConnectionsLabel">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>ArcGIS Maximum Number of Active Connections</string>
-       </property>
-      </widget>
-     </item>
-     <item row="25" column="0">
-      <widget class="QSpinBox" name="arcGISRequestTimeoutSpinBox">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="minimum">
-        <number>1</number>
-       </property>
-       <property name="maximum">
-        <number>9001</number>
-       </property>
-       <property name="value">
-        <number>90</number>
-       </property>
-      </widget>
-     </item>
-     <item row="27" column="0">
-      <widget class="QSpinBox" name="arcGISConnectionFreqSpinBox">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="minimum">
-        <number>1</number>
-       </property>
-       <property name="maximum">
-        <number>1000</number>
-       </property>
-       <property name="value">
-        <number>250</number>
-       </property>
-      </widget>
-     </item>
-     <item row="24" column="0">
-      <widget class="QLabel" name="arcGISRequestTimeoutLabel">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>ArcGIS Request Timeout in Seconds</string>
-       </property>
-      </widget>
-     </item>
-     <item row="16" column="0">
-      <widget class="QSpinBox" name="censusRequestTimeoutSpinBox">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="minimum">
-        <number>1</number>
-       </property>
-       <property name="maximum">
-        <number>3600</number>
-       </property>
-       <property name="value">
-        <number>40</number>
        </property>
       </widget>
      </item>
@@ -281,13 +224,33 @@
        </property>
       </widget>
      </item>
-     <item row="14" column="0">
-      <widget class="QLineEdit" name="censusAddressLineEdit">
-       <property name="enabled">
-        <bool>false</bool>
+     <item row="7" column="0">
+      <widget class="QSpinBox" name="requestTimeoutSpinbox">
+       <property name="minimum">
+        <number>1</number>
        </property>
+       <property name="maximum">
+        <number>9001</number>
+       </property>
+       <property name="value">
+        <number>40</number>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLineEdit" name="passwordLineEdit">
        <property name="text">
-        <string>https://geocoding.geo.census.gov</string>
+        <string>password</string>
+       </property>
+       <property name="echoMode">
+        <enum>QLineEdit::Password</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0">
+      <widget class="QLabel" name="connectionFreqLabel">
+       <property name="text">
+        <string>Greenmile Connection Frequency (ms)</string>
        </property>
       </widget>
      </item>
@@ -298,10 +261,67 @@
        </property>
       </widget>
      </item>
-     <item row="8" column="0">
-      <widget class="QLabel" name="connectionFreqLabel">
+     <item row="27" column="0">
+      <widget class="QSpinBox" name="arcGISConnectionFreqSpinBox">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>1000</number>
+       </property>
+       <property name="value">
+        <number>250</number>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLineEdit" name="usernameLineEdit">
        <property name="text">
-        <string>Greenmile Connection Frequency (ms)</string>
+        <string>username</string>
+       </property>
+      </widget>
+     </item>
+     <item row="31" column="0">
+      <widget class="QPushButton" name="saveSettingsButton">
+       <property name="text">
+        <string>Save Settings</string>
+       </property>
+      </widget>
+     </item>
+     <item row="28" column="0">
+      <widget class="QLabel" name="arcGISMaxActiveConnectionsLabel">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>ArcGIS Maximum Number of Active Connections</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="passwordLabel">
+       <property name="text">
+        <string>Greenmile Password</string>
+       </property>
+      </widget>
+     </item>
+     <item row="22" column="0">
+      <widget class="QLabel" name="arcGISAddressLabel">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="text">
+        <string>ArcGIS Server Address</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLineEdit" name="serverAddressLineEdit">
+       <property name="text">
+        <string>https://charliesproduce.greenmile.com</string>
        </property>
       </widget>
      </item>
@@ -328,26 +348,6 @@
        </property>
        <property name="value">
         <number>10</number>
-       </property>
-      </widget>
-     </item>
-     <item row="22" column="0">
-      <widget class="QLabel" name="arcGISAddressLabel">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>ArcGIS Server Address</string>
-       </property>
-      </widget>
-     </item>
-     <item row="23" column="0">
-      <widget class="QLineEdit" name="arcGISAddressLineEdit">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="text">
-        <string>https://geocode.arcgis.com</string>
        </property>
       </widget>
      </item>

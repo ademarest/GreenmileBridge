@@ -2,7 +2,7 @@
 
 LocationGeocode::LocationGeocode(QObject *parent) : QObject(parent)
 {
-    connect(gmConn_, &GMConnection::gmNetworkResponse, this, &LocationGeocode::handleGMResponse);
+    connect(gmConn_, &GMConnection::networkResponse, this, &LocationGeocode::handleGMResponse);
     connect(censusConn_, &CensusGeocode::networkResponse, this, &LocationGeocode::handleCensusResponse);
     connect(arcGISConn_, &ARCGISGeocode::networkResponse, this, &LocationGeocode::handleArcGISResponse);
 

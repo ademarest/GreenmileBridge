@@ -371,6 +371,8 @@ QNetworkRequest HTTPConn::makeNetworkRequest(const QString &serverAddrTail)
                             reqJsonObj["headerValue"].toString().toUtf8());
     }
 
+    qDebug() << "RHL" << request.rawHeaderList();
+
     qDebug() << "END: HTTPConn::makeNetworkRequest";
     return request;
 }

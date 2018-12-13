@@ -2,7 +2,7 @@
 
 LocationUpload::LocationUpload(QObject *parent) : QObject(parent)
 {
-    connect(gmConn_, &GMConnection::gmNetworkResponse, this, &LocationUpload::handleGMResponse);
+    connect(gmConn_, &GMConnection::networkResponse, this, &LocationUpload::handleGMResponse);
 
     connect(gmConn_,    &GMConnection::statusMessage,   this, &LocationUpload::statusMessage);
     connect(gmConn_,    &GMConnection::errorMessage,    this, &LocationUpload::errorMessage);

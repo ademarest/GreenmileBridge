@@ -455,6 +455,7 @@ QJsonObject BridgeDatabase::getAccountTypesToUpload(QVariantMap args)
     return QJsonObject();
 }
 
+
 QJsonObject BridgeDatabase::getGMLocationsWithBadGeocode(const QString &organizationKey)
 {
     QString query = "SELECT `id` as `location:id`, `key` AS `location:key`,`description` AS `location:description`,`addressLine1` AS `location:addressLine1`,`addressLine2` AS `location:addressLine2`,`city` AS `location:city`, `state` AS `location:state`,`zipCode` AS `location:zipCode`, `organization:id`, `locationType:id` FROM gmLocations WHERE gmLocations.`organization:key` = '"+organizationKey+"' AND gmLocations.`geocodingQuality` = 'UNSUCCESSFULL'";

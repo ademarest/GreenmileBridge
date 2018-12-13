@@ -2,7 +2,7 @@
 
 RouteCheck::RouteCheck(QObject *parent) : QObject(parent)
 {
-    connect(gmConn_, &GMConnection::gmNetworkResponse, this, &RouteCheck::handleGMResponse);
+    connect(gmConn_, &GMConnection::networkResponse, this, &RouteCheck::handleGMResponse);
     connect(gmConn_, &GMConnection::statusMessage, this, &RouteCheck::statusMessage);
     connect(gmConn_, &GMConnection::errorMessage, this, &RouteCheck::errorMessage);
     connect(gmConn_, &GMConnection::debugMessage, this, &RouteCheck::debugMessage);

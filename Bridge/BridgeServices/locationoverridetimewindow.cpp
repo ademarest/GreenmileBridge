@@ -7,22 +7,14 @@ LocationOverrideTimeWindow::LocationOverrideTimeWindow(QObject *parent) : GMAbst
 
 void LocationOverrideTimeWindow::processLocationOverrideTimeWindows(const QString &key, const QList<QVariantMap> &argList)
 {
-    currentKey_ = key;
-    std::function<QJsonObject(BridgeDatabase*, QVariantMap)> getUploadsFromDatabaseFunc = &BridgeDatabase::getLocationOverrideTimeWindowsToUpload;
-    std::function<QJsonObject(BridgeDatabase*, QVariantMap)> getUpdatesFromDatabaseFunc = &BridgeDatabase::getLocationOverrideTimeWindowsToUpdate;
-    std::function<QJsonObject(BridgeDatabase*, QVariantMap)> getDeletesFromDatabaseFunc = &BridgeDatabase::getLocationOverrideTimeWindowIDsToDelete;
-    std::function<void(GMConnection*, QString, QJsonObject)> uploadFunc                 = &GMConnection::uploadALocationOverrideTimeWindow;
-    std::function<void(GMConnection*, QString, QJsonObject)> updateFunc                 = &GMConnection::updateALocationOverrideTimeWindow;
-    std::function<void(GMConnection*, QString, QJsonObject)> deleteFunc                 = &GMConnection::deleteALocationOverrideTimeWindow;
+    databaseFuncs_["upload"]    = &BridgeDatabase::getLocationOverrideTimeWindowsToUpload;
+    databaseFuncs_["update"]    = &BridgeDatabase::getLocationOverrideTimeWindowsToUpdate;
+    databaseFuncs_["delete"]    = &BridgeDatabase::getLocationOverrideTimeWindowIDsToDelete;
+    gmFuncs_["upload"]          = &GMConnection::uploadALocationOverrideTimeWindow;
+    gmFuncs_["update"]          = &GMConnection::updateALocationOverrideTimeWindow;
+    gmFuncs_["delete"]          = &GMConnection::deleteALocationOverrideTimeWindow;
 
-    processEntities(key,
-                    argList,
-                    getUploadsFromDatabaseFunc,
-                    getUpdatesFromDatabaseFunc,
-                    getDeletesFromDatabaseFunc,
-                    uploadFunc,
-                    updateFunc,
-                    deleteFunc);
+    processEntities(key, argList);
 }
 
 

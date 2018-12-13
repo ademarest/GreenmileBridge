@@ -23,25 +23,17 @@ signals:
     void failed(const QString &key, const QString &reason);
 
 protected slots:
-    virtual void handleGMResponse(const QString &key, const QJsonValue &response);
+    virtual void handleGMResponse(const QString &key, QJsonValue response);
     virtual void handleFailure(const QString &key, const QString &reason);
-
-    virtual void processEntities(const QString &key,
-                                 const QList<QVariantMap> &argList,
-                                 std::function<QJsonObject(BridgeDatabase*, QVariantMap)> getUploadsFromDatabaseFunc,
-                                 std::function<QJsonObject(BridgeDatabase*, QVariantMap)> getUpdatesFromDatabaseFunc,
-                                 std::function<QJsonObject(BridgeDatabase*, QVariantMap)> getDeletesFromDatabaseFunc,
-                                 std::function<void(GMConnection*, QString, QJsonObject)> uploadFunc,
-                                 std::function<void(GMConnection*, QString, QJsonObject)> updateFunc,
-                                 std::function<void(GMConnection*, QString, QJsonObject)> deleteFunc);
+    virtual void processEntities(const QString &key, const QList<QVariantMap> &argList);
 
 protected:
     bool            failState_ = false;
     QString         failReason_ = QString();
     QString         failKey_ = QString();
 
-    GMConnection    *gmConn_ = new GMConnection(this);
-    BridgeDatabase  *bridgeDB_ = new BridgeDatabase(this);
+    GMConnection    *gmConn_    = new GMConnection(this);
+    BridgeDatabase  *bridgeDB_  = new BridgeDatabase(this);
 
     QString         currentKey_;
     QVariantMap     currentRequst_;
@@ -54,6 +46,10 @@ protected:
     QJsonObject     entitiesUploaded_;
     QJsonObject     entitiesUpdated_;
     QJsonObject     entitiesDeleted_;
+
+    QMap<QString, std::function<QJsonObject (BridgeDatabase *, QVariantMap)>>   databaseFuncs_;
+    QMap<QString, std::function<void(GMConnection*, QString, QJsonObject)>>     gmFuncs_;
+    QMap<QString, std::function<QJsonValue(GMAbstractEntity*, QJsonValue)>>     modFuncs_;
 
     static QJsonObject mergeEntities(QJsonObject initialData, const QJsonObject &additionalData);
     static QJsonObject prefixEntityKeys(const QString &prefix, const QJsonObject &entity);

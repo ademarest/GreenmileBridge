@@ -6,7 +6,7 @@ BridgeConfigWidget::BridgeConfigWidget(QWidget *parent) :
     ui(new Ui::BridgeConfigWidget)
 {
     ui->setupUi(this);
-    connect(gmConn, &GMConnection::gmNetworkResponse, this, &BridgeConfigWidget::handleGMResponse);
+    connect(gmConn, &GMConnection::networkResponse, this, &BridgeConfigWidget::handleGMResponse);
     connect(as400Conn, &AS400::sqlResults, this, &BridgeConfigWidget::handleSQLResponse);
     init();
 }

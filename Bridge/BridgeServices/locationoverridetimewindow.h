@@ -14,8 +14,6 @@ signals:
 
 public slots:
     void processLocationOverrideTimeWindows(const QString &key, const QList<QVariantMap> &argList);
-
-
 };
 
 #endif // LOCATIONOVERRIDETIMEWINDOW_H

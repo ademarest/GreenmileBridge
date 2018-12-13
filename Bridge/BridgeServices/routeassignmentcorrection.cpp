@@ -2,8 +2,8 @@
 
 RouteAssignmentCorrection::RouteAssignmentCorrection(QObject *parent) : QObject(parent)
 {
-    connect(gmDeleteConn_, &GMConnection::gmNetworkResponse, this, &RouteAssignmentCorrection::handleGMDeleteAssignmentResponse);
-    connect(gmAssignConn_, &GMConnection::gmNetworkResponse, this, &RouteAssignmentCorrection::handleGMUploadAssignmentResponse);
+    connect(gmDeleteConn_, &GMConnection::networkResponse, this, &RouteAssignmentCorrection::handleGMDeleteAssignmentResponse);
+    connect(gmAssignConn_, &GMConnection::networkResponse, this, &RouteAssignmentCorrection::handleGMUploadAssignmentResponse);
 
     connect(gmDeleteConn_, &GMConnection::statusMessage, this, &RouteAssignmentCorrection::statusMessage);
     connect(gmDeleteConn_, &GMConnection::errorMessage, this, &RouteAssignmentCorrection::errorMessage);
@@ -84,6 +84,7 @@ void RouteAssignmentCorrection::mergeRouteAssignmentCorrections(const QJsonObjec
         routeAssignmentsToCorrect_[key] = locations[key];
     }
 }
+
 
 void RouteAssignmentCorrection::deleteAssignments()
 {

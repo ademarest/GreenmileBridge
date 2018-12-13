@@ -5,7 +5,7 @@ BridgeDataCollector::BridgeDataCollector(QObject *parent) : QObject(parent)
     connect(mrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &BridgeDataCollector::handleSQLResponse);
     connect(dlmrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &BridgeDataCollector::handleSQLResponse);
     connect(routeSheetData, &GoogleSheetsConnection::data, this, &BridgeDataCollector::handleJsonResponse);
-    connect(gmConn, &GMConnection::gmNetworkResponse, this, &BridgeDataCollector::handleJsonResponse);
+    connect(gmConn, &GMConnection::networkResponse, this, &BridgeDataCollector::handleJsonResponse);
     connect(as400, &AS400::sqlResults, this, &BridgeDataCollector::handleSQLResponse);
 
     connect(mrsConn,        &MRSConnection::failed,             this, &BridgeDataCollector::handleComponentFailure);
@@ -24,6 +24,7 @@ BridgeDataCollector::BridgeDataCollector(QObject *parent) : QObject(parent)
     connect(as400, &AS400::errorMessage, this, &BridgeDataCollector::errorMessage);
 
     connect(queueTimer, &QTimer::timeout, this, &BridgeDataCollector::processQueue);
+    buildTables();
     queueTimer->start(1000);
 }
 
@@ -66,8 +67,8 @@ void BridgeDataCollector::buildTables()
 {
     for(auto source: knownSources_)
     {
-        handleJsonResponse("Building Tables", QJsonValue());
-        handleSQLResponse("Building tables", QMap<QString,QVariantList>());
+        handleJsonResponse(source, QJsonValue());
+        handleSQLResponse(source, QMap<QString,QVariantList>());
     }
 }
 
@@ -87,7 +88,6 @@ void BridgeDataCollector::processQueue()
 
 void BridgeDataCollector::beginGathering(const QVariantMap &request)
 {
-    buildTables();
     QStringList sources;
     QStringList sourceOverrides = request["sourceOverrides"].toStringList();
     QDate date = request["date"].toDate();
@@ -356,16 +356,20 @@ void BridgeDataCollector::handleComponentFailure(const QString &key, const QStri
 
 void BridgeDataCollector::handleJobCompletion(const QString &key)
 {
-    activeJobs_.remove(key);
+    if(activeJobs_.remove(key))
+    {
+        if(!hasActiveJobs())
+        {
+            qDebug() << "Emitting finished";
+            emit statusMessage("Completed data collection for " + key + ".");
+            emit finished(currentKey_);
+            currentKey_.clear();
+        }
+    }
     emit progress(activeJobs_.size(), totalJobs_);
     qDebug() << activeJobs_.size() << "out of " << totalJobs_ << " data collection jobs remaining.";
     qDebug() << activeJobs_;
-    if(!hasActiveJobs())
-    {
-        emit statusMessage("Completed data collection for " + key + ".");
-        emit finished(currentKey_);
-        currentKey_.clear();
-    }
+
 }
 
 void BridgeDataCollector::handleGMDriverInfo(const QJsonArray &array)

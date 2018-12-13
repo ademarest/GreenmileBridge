@@ -2,7 +2,7 @@
 
 GMAbstractEntity::GMAbstractEntity(QObject *parent) : QObject(parent)
 {
-    connect(gmConn_,    &GMConnection::gmNetworkResponse,   this, &GMAbstractEntity::handleGMResponse);
+    connect(gmConn_,    &GMConnection::networkResponse,   this, &GMAbstractEntity::handleGMResponse);
 
     connect(gmConn_,    &GMConnection::statusMessage,       this, &GMAbstractEntity::statusMessage);
     connect(gmConn_,    &GMConnection::errorMessage,        this, &GMAbstractEntity::errorMessage);
@@ -20,7 +20,7 @@ GMAbstractEntity::~GMAbstractEntity()
 
 }
 
-void GMAbstractEntity::handleGMResponse(const QString &key, const QJsonValue &response)
+void GMAbstractEntity::handleGMResponse(const QString &key, QJsonValue response)
 {
     activeJobs_.remove(key);
     QStringList keyList = key.split(":");
@@ -30,17 +30,29 @@ void GMAbstractEntity::handleGMResponse(const QString &key, const QJsonValue &re
         return;
     }
 
-    if(keyList.first() == "upload")
+    if(keyList.first() == "upload" && modFuncs_.contains("upload"))
+    {
+        entitiesUploaded_[key] = modFuncs_["upload"](this, response);
+    }
+    else if(keyList.first() == "upload")
     {
         entitiesUploaded_[key] = response;
     }
 
-    if(keyList.first() == "update")
+    if(keyList.first() == "update" && modFuncs_.contains("update"))
+    {
+        entitiesUpdated_[key] = modFuncs_["update"](this, response);
+    }
+    else if(keyList.first() == "update")
     {
         entitiesUpdated_[key] = response;
     }
 
-    if(keyList.first() == "delete")
+    if(keyList.first() == "delete" && modFuncs_.contains("delete"))
+    {
+        entitiesDeleted_[key] = modFuncs_["delete"](this, response);
+    }
+    else if(keyList.first() == "delete")
     {
         entitiesDeleted_[key] = response;
     }
@@ -68,13 +80,7 @@ void GMAbstractEntity::handleFailure(const QString &key, const QString &reason)
 }
 
 void GMAbstractEntity::processEntities(const QString &key,
-                                       const QList<QVariantMap> &argList,
-                                       std::function<QJsonObject (BridgeDatabase *, QVariantMap)> getUploadsFromDatabaseFunc,
-                                       std::function<QJsonObject (BridgeDatabase *, QVariantMap)> getUpdatesFromDatabaseFunc,
-                                       std::function<QJsonObject (BridgeDatabase *, QVariantMap)> getDeletesFromDatabaseFunc,
-                                       std::function<void (GMConnection *, QString, QJsonObject)> uploadFunc,
-                                       std::function<void (GMConnection *, QString, QJsonObject)> updateFunc,
-                                       std::function<void (GMConnection *, QString, QJsonObject)> deleteFunc)
+                                       const QList<QVariantMap> &argList)
 {
     if(!activeJobs_.isEmpty())
     {
@@ -88,10 +94,17 @@ void GMAbstractEntity::processEntities(const QString &key,
 
     for(auto argMap:argList)
     {
-        entitiesToUpload_ = mergeEntities(entitiesToUpload_, getUploadsFromDatabaseFunc(bridgeDB_, argMap));
-        entitiesToUpdate_ = mergeEntities(entitiesToUpdate_, getUpdatesFromDatabaseFunc(bridgeDB_, argMap));
-        entitiesToDelete_ = mergeEntities(entitiesToDelete_, getDeletesFromDatabaseFunc(bridgeDB_, argMap));
+        for(auto keys:databaseFuncs_.keys())
+        {
+            if(key == "upload")
+                entitiesToUpload_ = mergeEntities(entitiesToUpload_, databaseFuncs_["upload"](bridgeDB_, argMap));
+            if(key == "update")
+                entitiesToUpdate_ = mergeEntities(entitiesToUpdate_, databaseFuncs_["update"](bridgeDB_, argMap));
+            if(key == "delete")
+                entitiesToDelete_ = mergeEntities(entitiesToDelete_, databaseFuncs_["delete"](bridgeDB_, argMap));
+        }
     }
+
 
     entitiesToUpload_ = prefixEntityKeys("upload", entitiesToUpload_);
     entitiesToUpdate_ = prefixEntityKeys("update", entitiesToUpdate_);
@@ -107,17 +120,17 @@ void GMAbstractEntity::processEntities(const QString &key,
     for(auto key:entitiesToUpload_.keys())
     {
         qDebug() << "IPLOAD" << entitiesToUpload_[key].toObject();
-        uploadFunc(gmConn_, key, entitiesToUpload_[key].toObject());
+        gmFuncs_["upload"](gmConn_, key, entitiesToUpload_[key].toObject());
     }
     for(auto key:entitiesToUpdate_.keys())
     {
         qDebug() << "IPDATE" << entitiesToUpdate_[key].toObject();
-        updateFunc(gmConn_, key, entitiesToUpdate_[key].toObject());
+        gmFuncs_["update"](gmConn_, key, entitiesToUpdate_[key].toObject());
     }
     for(auto key:entitiesToDelete_.keys())
     {
         qDebug() << "DILETE" << entitiesToDelete_[key].toObject();
-        deleteFunc(gmConn_, key, entitiesToDelete_[key].toObject());
+        gmFuncs_["delete"](gmConn_, key, entitiesToDelete_[key].toObject());
     }
 
     if(activeJobs_.empty())
