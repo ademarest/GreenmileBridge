@@ -10,10 +10,9 @@ void LocationOverrideTimeWindow::processLocationOverrideTimeWindows(const QStrin
     databaseFuncs_["upload"]    = &BridgeDatabase::getLocationOverrideTimeWindowsToUpload;
     databaseFuncs_["update"]    = &BridgeDatabase::getLocationOverrideTimeWindowsToUpdate;
     databaseFuncs_["delete"]    = &BridgeDatabase::getLocationOverrideTimeWindowIDsToDelete;
-    gmFuncs_["upload"]          = &GMConnection::uploadALocationOverrideTimeWindow;
-    gmFuncs_["update"]          = &GMConnection::updateALocationOverrideTimeWindow;
-    gmFuncs_["delete"]          = &GMConnection::deleteALocationOverrideTimeWindow;
-
+    internetFuncs_["upload"]          = &GMConnection::uploadALocationOverrideTimeWindow;
+    internetFuncs_["update"]          = &GMConnection::updateALocationOverrideTimeWindow;
+    internetFuncs_["delete"]          = &GMConnection::deleteALocationOverrideTimeWindow;
     processEntities(key, argList);
 }
 

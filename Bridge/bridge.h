@@ -14,6 +14,7 @@
 #include "Greenmile/gmconnection.h"
 #include "LogWriter/logwriter.h"
 #include "BridgeServices/locationoverridetimewindow.h"
+#include "BridgeServices/accounttype.h"
 
 class Bridge : public QObject
 {
@@ -50,13 +51,15 @@ private slots:
 
     void finishedDataCollection(const QString &key);
 
+    void finishedAccountTypes(const QString &key, const QMap<QString, QJsonObject> &result);
+
     void finishedLocationUpdateGeocode(const QString& key, const QJsonObject &result);
     void finishedLocationUpdate(const QString &key, const QJsonObject &result);
 
     void finishedLocationUploadGeocode(const QString& key, const QJsonObject &result);
     void finishedLocationUpload(const QString &key, const QJsonObject &result);
 
-    void finishedLocationOverrideTimeWindows(const QString &key, const QJsonObject &uploaded, const QJsonObject &updated, const QJsonObject &deleted);
+    void finishedLocationOverrideTimeWindows(const QString &key, const QMap<QString, QJsonObject> &results);
 
     void finishedRouteCheck(const QString &key, const QJsonObject &result);
     void finishedRouteUpload(const QString &key, const QJsonObject &result);
@@ -105,6 +108,8 @@ private:
     RouteCheck *routeCheck_ = new RouteCheck(this);
     LogWriter *logger_ = new LogWriter(this);
     LocationOverrideTimeWindow *lotw_ = new LocationOverrideTimeWindow(this);
+    AccountType *accountType_ = new AccountType(this);
+
     //END BRIDGE MEMBER SUBSECTION
 
     void init();

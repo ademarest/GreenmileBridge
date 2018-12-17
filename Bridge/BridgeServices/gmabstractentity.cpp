@@ -24,37 +24,22 @@ void GMAbstractEntity::handleGMResponse(const QString &key, QJsonValue response)
 {
     activeJobs_.remove(key);
     QStringList keyList = key.split(":");
+    QString operationKey = keyList.first();
+
     if(keyList.isEmpty())
     {
         emit errorMessage("GMAbstractEntity::handleGMResponse key was empty.");
         return;
     }
 
-    if(keyList.first() == "upload" && modFuncs_.contains("upload"))
+    if(postProcessFuncs_.keys().contains(operationKey))
     {
-        entitiesUploaded_[key] = modFuncs_["upload"](this, response);
+        entitiesProcessed_[operationKey][key] = postProcessFuncs_[operationKey](this, response);
+        qDebug() << "Post processing completed.... Operation Key: " << operationKey << "Entity Key:" << key << "Entity:" << entitiesProcessed_[operationKey][key];
     }
-    else if(keyList.first() == "upload")
+    else
     {
-        entitiesUploaded_[key] = response;
-    }
-
-    if(keyList.first() == "update" && modFuncs_.contains("update"))
-    {
-        entitiesUpdated_[key] = modFuncs_["update"](this, response);
-    }
-    else if(keyList.first() == "update")
-    {
-        entitiesUpdated_[key] = response;
-    }
-
-    if(keyList.first() == "delete" && modFuncs_.contains("delete"))
-    {
-        entitiesDeleted_[key] = modFuncs_["delete"](this, response);
-    }
-    else if(keyList.first() == "delete")
-    {
-        entitiesDeleted_[key] = response;
+        entitiesProcessed_[operationKey][key] = response;
     }
 
     if(failState_)
@@ -64,7 +49,7 @@ void GMAbstractEntity::handleGMResponse(const QString &key, QJsonValue response)
 
     if(activeJobs_.empty())
     {
-        emit finished(currentKey_, entitiesUploaded_, entitiesUpdated_, entitiesDeleted_);
+        emit finished(currentKey_, entitiesProcessed_);
         reset();
     }
 }
@@ -88,54 +73,67 @@ void GMAbstractEntity::processEntities(const QString &key,
         return;
     }
 
-    reset();
+    qDebug() << "Section 1";
     currentKey_ = key;
     QStringList totalKeys;
 
     for(auto argMap:argList)
     {
-        for(auto keys:databaseFuncs_.keys())
+        for(auto operationKey :databaseFuncs_.keys())
         {
-            if(key == "upload")
-                entitiesToUpload_ = mergeEntities(entitiesToUpload_, databaseFuncs_["upload"](bridgeDB_, argMap));
-            if(key == "update")
-                entitiesToUpdate_ = mergeEntities(entitiesToUpdate_, databaseFuncs_["update"](bridgeDB_, argMap));
-            if(key == "delete")
-                entitiesToDelete_ = mergeEntities(entitiesToDelete_, databaseFuncs_["delete"](bridgeDB_, argMap));
+            qDebug() << "Section 2" << operationKey;
+            entitiesToProcess_[operationKey] = mergeEntities(entitiesToProcess_[operationKey], databaseFuncs_[operationKey](bridgeDB_, argMap));
+            entitiesProcessed_[operationKey] = QJsonObject();
         }
     }
 
+    //No mod to key structure.
+    for(auto operationKey:entitiesToProcess_.keys())
+    {
+        qDebug() << "Section 3";
+        entitiesToProcess_[operationKey] = prefixEntityKeys(key, entitiesToProcess_[operationKey]);
+    }
 
-    entitiesToUpload_ = prefixEntityKeys("upload", entitiesToUpload_);
-    entitiesToUpdate_ = prefixEntityKeys("update", entitiesToUpdate_);
-    entitiesToDelete_ = prefixEntityKeys("delete", entitiesToDelete_);
-
-    totalKeys << entitiesToUpload_.keys() << entitiesToUpdate_.keys() << entitiesToDelete_.keys();
+    //No mod to key structure.
+    for(auto operationKey:entitiesToProcess_.keys())
+    {
+        qDebug() << "Section 4";
+        totalKeys << entitiesToProcess_[operationKey].keys();
+    }
 
     activeJobs_ = QSet<QString>::fromList(totalKeys);
     qDebug() << activeJobs_.size();
     //QList<QString> crash;
     //QString burn = crash.first();
 
-    for(auto key:entitiesToUpload_.keys())
+    qDebug() << "Section 5";
+    for(auto operationKey : entitiesToProcess_.keys())
     {
-        qDebug() << "IPLOAD" << entitiesToUpload_[key].toObject();
-        gmFuncs_["upload"](gmConn_, key, entitiesToUpload_[key].toObject());
+        if(preprocessFuncs_.keys().contains(operationKey))
+        {
+            for(auto entityKey : entitiesToProcess_[operationKey].keys())
+            {
+                qDebug() << "Section 6a";
+                entitiesToProcess_[operationKey][entityKey] = preprocessFuncs_[operationKey](this, entitiesToProcess_[operationKey][entityKey]);
+                internetFuncs_[operationKey](gmConn_, entityKey,  entitiesToProcess_[operationKey][entityKey].toObject());
+                qDebug() << "Operation Key: " << operationKey << "Entity Key" << entityKey << "Entity" << entitiesToProcess_[operationKey][entityKey];
+            }
+        }
+        else
+        {
+            for(auto entityKey : entitiesToProcess_[operationKey].keys())
+            {
+                qDebug() << "Section 6b";
+                internetFuncs_[operationKey](gmConn_, entityKey,  entitiesToProcess_[operationKey][entityKey].toObject());
+                qDebug() << "Operation Key: " << operationKey << "Entity Key" << entityKey << "Entity" << entitiesToProcess_[operationKey][entityKey];
+            }
+        }
     }
-    for(auto key:entitiesToUpdate_.keys())
-    {
-        qDebug() << "IPDATE" << entitiesToUpdate_[key].toObject();
-        gmFuncs_["update"](gmConn_, key, entitiesToUpdate_[key].toObject());
-    }
-    for(auto key:entitiesToDelete_.keys())
-    {
-        qDebug() << "DILETE" << entitiesToDelete_[key].toObject();
-        gmFuncs_["delete"](gmConn_, key, entitiesToDelete_[key].toObject());
-    }
+
 
     if(activeJobs_.empty())
     {
-        emit finished(currentKey_, entitiesUploaded_, entitiesUpdated_, entitiesDeleted_);
+        emit finished(currentKey_, entitiesProcessed_);
         reset();
     }
 }
@@ -160,17 +158,14 @@ void GMAbstractEntity::reset()
 
     currentKey_.clear();
     activeJobs_.clear();
-    entitiesToUpload_ = QJsonObject();
-    entitiesToUpdate_ = QJsonObject();
-    entitiesToDelete_ = QJsonObject();
-    entitiesUploaded_ = QJsonObject();
-    entitiesUpdated_ = QJsonObject();
-    entitiesDeleted_ = QJsonObject();
+    entitiesProcessed_.clear();
+    entitiesToProcess_.clear();
 }
 
 QJsonObject GMAbstractEntity::prefixEntityKeys(const QString &prefix, const QJsonObject &entity)
 {
     QJsonObject entityCopy;
+    //qDebug() << "Merge entities. Entity copy " <<  entityCopy;
     for(auto key:entity.keys())
     {
         entityCopy[prefix+":"+key] = QJsonValue(entity[key]);

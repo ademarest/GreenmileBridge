@@ -428,7 +428,6 @@ QJsonObject BridgeDatabase::getLocationOverrideTimeWindowIDsToDelete(QVariantMap
     }
     qDebug() << "To delete" << jObj;
     return jObj;
-
 }
 
 QJsonObject BridgeDatabase::getServiceTimeTypesToUpload(const QString &organizationKey)
@@ -451,8 +450,83 @@ QJsonObject BridgeDatabase::getLocationTypesToUpload(const QString &organization
 
 QJsonObject BridgeDatabase::getAccountTypesToUpload(QVariantMap args)
 {
-    qDebug() << "BridgeDatabase::getAccountTypesToUpload not implemented yet. Org key " << args;
-    return QJsonObject();
+    qDebug() << args;
+    QString keyBase = "locationOverrideTimeWindowIDToDelete:";
+    QJsonObject jObj;
+    QString assignmentTableName = args["tableName"].toString();
+    QString organizationKey = args["organization:key"].toString();
+    QDate   date = args["date"].toDate();
+
+    QString query = "SELECT DISTINCT \n"
+                    "gmOrganizations.`id` as `organization:id`, \n"
+                    "`accountType:key` as `key`, \n"
+                    "`accountType:key` as `description` \n"
+                    "FROM \n"
+                    "( \n"
+                    "    SELECT \n"
+                    "    as400RouteQuery.`accountType:key` \n"
+                    "    FROM as400RouteQuery \n"
+                    "    WHERE `organization:key` = '"+organizationKey+"' \n"
+                    "    AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' \n"
+                    "    AND `location:key` \n"
+                    "    AND `route:key` \n"
+                    "    IN \n"
+                    "    ( \n"
+                    "        SELECT \n"
+                    "        `route:key` \n"
+                    "        FROM \n"
+                    "        "+assignmentTableName+" \n"
+                    "        WHERE `organization:key` = '"+organizationKey+"' \n"
+                    "        AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' \n"
+                    "    ) \n"
+                    "    UNION ALL \n"
+                    "    SELECT \n"
+                    "    as400LocationQuery.`accountType:key` \n"
+                    "    FROM as400LocationQuery \n"
+                    "    WHERE as400LocationQuery.`location:key` \n"
+                    "    IN \n"
+                    "    ( \n"
+                    "        SELECT \n"
+                    "        `key` \n"
+                    "        FROM \n"
+                    "        gmLocations \n"
+                    "    ) \n"
+                    ") \n"
+                    "JOIN \n"
+                    "gmOrganizations \n"
+                    "ON \n"
+                    "gmOrganizations.key = '"+organizationKey+"' \n"
+                    "WHERE \n"
+                    "`accountType:key` \n"
+                    "NOT IN \n"
+                    "( \n"
+                    "    SELECT \n"
+                    "    `key` \n"
+                    "    FROM \n"
+                    "    gmAccountTypes \n"
+                    ") \n"
+;
+
+    QMap<QString, QVariantList> sql = executeQuery(query, " find Account Types to upload. BrdigeDatabase::getAccountTypesToUpload");
+
+    if(!isSQLResultValid(sql))
+    {
+        emit statusMessage("Account type SQL was empty. Returning empty json object.");
+        return jObj;
+    }
+
+    for(int i = 0; i < sql.first().size(); ++i)
+    {
+        QString key = "accountType:" + sql["organization:id"][i].toString() + ":" + sql["key"][i].toString();
+        QJsonObject orgObj = {{"id", sql["organization:id"][i].toJsonValue()}};
+        QJsonObject acctObj = {{"organization", orgObj},
+                               {"description", sql["description"][i].toJsonValue()},
+                               {"key", sql["key"][i].toJsonValue()}};
+
+        jObj[key] = QJsonValue(acctObj);
+    }
+
+    return jObj;
 }
 
 
@@ -704,9 +778,68 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
         return QJsonObject();
 
     QJsonObject returnObj;
-    QString query = "SELECT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays`, `id` AS `location:id`, `locationType:id`, `organization:id` FROM as400LocationQuery LEFT JOIN gmLocations ON `key` = `location:key` WHERE gmLocations.`key` IN ( SELECT `location:key` FROM ( SELECT DISTINCT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays` FROM as400LocationQuery WHERE as400LocationQuery.`organization:key` = '"+organizationKey+"' EXCEPT SELECT DISTINCT `enabled`, `key`,`description`,`addressLine1`,`addressLine2`,`city`, `state`,`zipCode`,`deliveryDays` FROM gmLocations WHERE gmLocations.`organization:key` = '"+organizationKey+"'))";    
-    QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile. BridgeDatabase::getLocationsToUpdate()");
+    QString query = "SELECT \n"
+                    "as400LocationQuery.`location:enabled`, \n"
+                    "as400LocationQuery.`location:key`, \n"
+                    "as400LocationQuery.`location:description`, \n"
+                    "as400LocationQuery.`location:addressLine1`, \n"
+                    "as400LocationQuery.`location:addressLine2`, \n"
+                    "as400LocationQuery.`location:city`, \n"
+                    "as400LocationQuery.`location:state`, \n"
+                    "as400LocationQuery.`location:zipCode`, \n"
+                    "as400LocationQuery.`location:deliveryDays`, \n"
+                    "gmLocations.`id` AS `location:id`, \n"
+                    "gmLocations.`locationType:id`, \n"
+                    "gmOrganizations.`id` AS `organization:id`, \n"
+                    "gmAccountTypes.`id`, \n"
+                    "as400LocationQuery.`accountType:key` \n"
+                    "FROM as400LocationQuery \n"
+                    "JOIN gmLocations \n"
+                    "ON gmLocations.`key` = `location:key` \n"
+                    "JOIN gmAccountTypes \n"
+                    "ON gmAccountTypes.`key` =  as400LocationQuery.`accountType:key` \n"
+                    "JOIN gmOrganizations \n"
+                    "ON gmOrganizations.`key` = as400LocationQuery.`organization:key` \n"
+                    "WHERE gmLocations.`key` \n"
+                    "IN \n"
+                    "( \n"
+                    "    SELECT \n"
+                    "    `location:key` \n"
+                    "    FROM \n"
+                    "    ( \n"
+                    "        SELECT DISTINCT \n"
+                    "        `location:enabled`, \n"
+                    "        `location:key`, \n"
+                    "        `location:description`, \n"
+                    "        `location:addressLine1`, \n"
+                    "        `location:addressLine2`, \n"
+                    "        `location:city`, \n"
+                    "        `location:state`, \n"
+                    "        `location:zipCode`, \n"
+                    "        `location:deliveryDays`, \n"
+                    "        `accountType:key` \n"
+                    "        FROM as400LocationQuery \n"
+                    "        WHERE as400LocationQuery.`organization:key` = '"+organizationKey+"' \n"
+                    "        EXCEPT \n"
+                    "        SELECT DISTINCT \n"
+                    "        `enabled`, \n"
+                    "        `key`, \n"
+                    "        `description`, \n"
+                    "        `addressLine1`, \n"
+                    "        `addressLine2`, \n"
+                    "        `city`, \n"
+                    "        `state`, \n"
+                    "        `zipCode`, \n"
+                    "        `deliveryDays`, \n"
+                    "        `accountType:key` \n"
+                    "        FROM gmLocations \n"
+                    "        WHERE gmLocations.`organization:key` = '"+organizationKey+"' \n"
+                    "    ) \n"
+                    ") \n";
+
     qDebug() << "BridgeDatabase::getLocationsToUpdate" <<  query;
+    QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile. BridgeDatabase::getLocationsToUpdate()");
+
 
     if(!sql.empty())
     {
@@ -718,6 +851,7 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
             QJsonObject locationObj;
             QJsonObject locationTypeObj;
             QJsonObject organizationObj;
+            QJsonObject accountTypeObj;
 
             for(auto key:sql.keys())
             {
@@ -728,6 +862,8 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
                     locationTypeObj[splitKey.last()] = sql[key][i].toJsonValue();
                 if(splitKey.first() == "organization")
                     organizationObj[splitKey.last()] = sql[key][i].toJsonValue();
+                if(splitKey.first() == "accountType")
+                    accountTypeObj[splitKey.last()] = sql[key][i].toJsonValue();
             }
 
             locationKeyList << "locationToUpdate"
@@ -737,6 +873,7 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
             locationKey = locationKeyList.join(":");
             locationObj["organization"] =   QJsonValue(organizationObj);
             locationObj["locationType"] =   QJsonValue(locationTypeObj);
+            locationObj["accountType"]  =   QJsonValue(accountTypeObj);
             returnObj[locationKey]      =   QJsonValue(locationObj);
         }
     }
@@ -970,9 +1107,9 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
                         << route[routeKey]["date"].toString();
 
 
-        routeCompoundKey = "routeUpload:" + genericKeyList.join(":");
-        driverCompoundKey = "routeDriverAssignment:" + genericKeyList.join(":");
-        equipmentCompoundKey = "routeEquipmentAssignment:" + genericKeyList.join(":");
+        routeCompoundKey        = "routeUpload:" + genericKeyList.join(":");
+        driverCompoundKey       = "routeDriverAssignment:" + genericKeyList.join(":");
+        equipmentCompoundKey    = "routeEquipmentAssignment:" + genericKeyList.join(":");
 
 
         //qDebug() << route[routeKey];
@@ -1313,12 +1450,12 @@ bool BridgeDatabase::isSQLResultValid(const QMap<QString, QVariantList> &data)
     }
 
     columnSizeCount = data.first().size();
-    qDebug() << columnSizeCount;
+    //qDebug() << columnSizeCount;
     for(auto key:data.keys())
     {
         otherColumnSizeCount = data[key].size();
-        qDebug() << key;
-        qDebug() << otherColumnSizeCount;
+        //qDebug() << key;
+        //qDebug() << otherColumnSizeCount;
         if(columnSizeCount != otherColumnSizeCount)
         {
             emit errorMessage("ERROR: SQL columns are not all of equal length. The last column compared was " + key);

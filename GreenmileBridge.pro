@@ -53,7 +53,8 @@ SOURCES += \
     Bridge/Geocoding/arcgisgeocode.cpp \
     GenericUI/listcontrolwidget.cpp \
     Bridge/BridgeServices/gmabstractentity.cpp \
-    Bridge/BridgeServices/locationoverridetimewindow.cpp
+    Bridge/BridgeServices/locationoverridetimewindow.cpp \
+    Bridge/BridgeServices/accounttype.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -84,7 +85,8 @@ HEADERS += \
     Bridge/Geocoding/arcgisgeocode.h \
     GenericUI/listcontrolwidget.h \
     Bridge/BridgeServices/gmabstractentity.h \
-    Bridge/BridgeServices/locationoverridetimewindow.h
+    Bridge/BridgeServices/locationoverridetimewindow.h \
+    Bridge/BridgeServices/accounttype.h
 
 FORMS += \
         mainwindow.ui \

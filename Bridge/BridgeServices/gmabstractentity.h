@@ -16,10 +16,7 @@ signals:
     void statusMessage(const QString &status);
     void debugMessage(const QString &debug);
     void errorMessage(const QString &error);
-    void finished(const QString &key,
-                  const QJsonObject &uploadedData,
-                  const QJsonObject &updatedData,
-                  const QJsonObject &deletedData);
+    void finished(const QString &key, const QMap<QString, QJsonObject> result);
     void failed(const QString &key, const QString &reason);
 
 protected slots:
@@ -39,17 +36,13 @@ protected:
     QVariantMap     currentRequst_;
     QSet<QString>   activeJobs_;
 
-    QJsonObject     entitiesToUpload_;
-    QJsonObject     entitiesToUpdate_;
-    QJsonObject     entitiesToDelete_;
-
-    QJsonObject     entitiesUploaded_;
-    QJsonObject     entitiesUpdated_;
-    QJsonObject     entitiesDeleted_;
+    QMap<QString, QJsonObject> entitiesToProcess_;
+    QMap<QString, QJsonObject> entitiesProcessed_;
 
     QMap<QString, std::function<QJsonObject (BridgeDatabase *, QVariantMap)>>   databaseFuncs_;
-    QMap<QString, std::function<void(GMConnection*, QString, QJsonObject)>>     gmFuncs_;
-    QMap<QString, std::function<QJsonValue(GMAbstractEntity*, QJsonValue)>>     modFuncs_;
+    QMap<QString, std::function<QJsonValue(GMAbstractEntity*, QJsonValue)>>     preprocessFuncs_;
+    QMap<QString, std::function<void(GMConnection*, QString, QJsonObject)>>     internetFuncs_;
+    QMap<QString, std::function<QJsonValue(GMAbstractEntity*, QJsonValue)>>     postProcessFuncs_;
 
     static QJsonObject mergeEntities(QJsonObject initialData, const QJsonObject &additionalData);
     static QJsonObject prefixEntityKeys(const QString &prefix, const QJsonObject &entity);

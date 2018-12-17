@@ -15,13 +15,15 @@ Bridge::~Bridge()
 
 void Bridge::init()
 {
-    connect(dataCollector, &BridgeDataCollector::finished, this, &Bridge::finishedDataCollection);
-    connect(dataCollector, &BridgeDataCollector::failed, this, &Bridge::handleComponentFailure);
+    connect(dataCollector, &BridgeDataCollector::finished,      this, &Bridge::finishedDataCollection);
+    connect(dataCollector, &BridgeDataCollector::failed,        this, &Bridge::handleComponentFailure);
 
-    connect(locationUpdateGeocode_, &LocationGeocode::finished, this,               &Bridge::finishedLocationUpdateGeocode);
-    connect(locationUpdateGeocode_, &LocationGeocode::failed, this,                 &Bridge::handleComponentFailure);
-    connect(locationUpdate_,        &LocationUpload::finished, this,                &Bridge::finishedLocationUpdate);
-    connect(locationUpdate_,        &LocationUpload::failed, this,                  &Bridge::handleComponentFailure);
+    connect(accountType_,           &AccountType::finished,     this, &Bridge::finishedAccountTypes);
+
+    connect(locationUpdateGeocode_, &LocationGeocode::finished, this,   &Bridge::finishedLocationUpdateGeocode);
+    connect(locationUpdateGeocode_, &LocationGeocode::failed,   this,   &Bridge::handleComponentFailure);
+    connect(locationUpdate_,        &LocationUpload::finished,  this,   &Bridge::finishedLocationUpdate);
+    connect(locationUpdate_,        &LocationUpload::failed,    this,   &Bridge::handleComponentFailure);
 
     connect(locationUploadGeocode_, &LocationGeocode::finished, this,               &Bridge::finishedLocationUploadGeocode);
     connect(locationUploadGeocode_, &LocationGeocode::failed, this,                 &Bridge::handleComponentFailure);
@@ -59,6 +61,11 @@ void Bridge::init()
     connect(lotw_, &LocationOverrideTimeWindow::statusMessage,    this, &Bridge::statusMessage);
     connect(lotw_, &LocationOverrideTimeWindow::debugMessage,     this, &Bridge::debugMessage);
     connect(lotw_, &LocationOverrideTimeWindow::errorMessage,     this, &Bridge::errorMessage);
+
+
+    connect(accountType_, &AccountType::statusMessage,    this, &Bridge::statusMessage);
+    connect(accountType_, &AccountType::debugMessage,     this, &Bridge::debugMessage);
+    connect(accountType_, &AccountType::errorMessage,     this, &Bridge::errorMessage);
 
     connect(routeCheck_, &RouteCheck::statusMessage, this, &Bridge::statusMessage);
     connect(routeCheck_, &RouteCheck::debugMessage, this, &Bridge::debugMessage);
@@ -193,11 +200,11 @@ void Bridge::finishedDataCollection(const QString &key)
 
     if(key.split(":").first() == "initialCollection")
     {
-        qDebug() << "geocoding updated locations";
-        QString jobKey = "geocodeUpdatedLocations:" + currentRequest_["key"].toString();
+        emit statusMessage("Processing account types.");
+        QString jobKey = "accountTypes:" + currentRequest_["key"].toString();
         qDebug() << "Do I go here 0?";
         addActiveJob(jobKey);
-        locationUpdateGeocode_->GeocodeLocations(jobKey, argList_, true, false);
+        accountType_->processAccountTypes(jobKey, argList_);
     }
 
     if(key.split(":").first() == "refreshDataForRouteAssignmentCorrections")
@@ -208,6 +215,17 @@ void Bridge::finishedDataCollection(const QString &key)
         routeAssignmentCorrection_->CorrectRouteAssignments(jobKey, argList_);
     }
 
+    handleJobCompletion(key);
+}
+
+void Bridge::finishedAccountTypes(const QString &key, const QMap<QString,QJsonObject> &result)
+{
+    emit statusMessage(key + " has been completed.");
+    qDebug() << result;
+    QString jobKey = "geocodeUpdatedLocations:" + currentRequest_["key"].toString();
+    qDebug() << "Do I go here 0?";
+    addActiveJob(jobKey);
+    locationUpdateGeocode_->GeocodeLocations(jobKey, argList_, true, false);
     handleJobCompletion(key);
 }
 
@@ -261,13 +279,26 @@ void Bridge::finishedLocationUpload(const QString &key, const QJsonObject &resul
     handleJobCompletion(key);
 }
 
-void Bridge::finishedLocationOverrideTimeWindows(const QString &key, const QJsonObject &uploaded, const QJsonObject &updated, const QJsonObject &deleted)
+void Bridge::finishedLocationOverrideTimeWindows(const QString &key, const QMap<QString,QJsonObject> &result)
 {
     qDebug() << "Bridge::finishedLocationOverrideTimeWindows";
     emit statusMessage(key + " has been completed. ");
-    emit statusMessage(key + " " +  QString::number(uploaded.size()) + " have been uploaded.");
-    emit statusMessage(key + " " +  QString::number(updated.size())  + " have been updated.");
-    emit statusMessage(key + " " +  QString::number(deleted.size())  + " have been deleted.");
+
+    for(auto resultKey: result.keys())
+    {
+        QString resultVerb = resultKey.split(":").first();
+
+        if(resultVerb.back() == 'e')
+        {
+            resultVerb = resultVerb + "d";
+        }
+        else
+        {
+            resultVerb = resultVerb+"ed";
+        }
+
+        emit statusMessage(key + " " +  QString::number(result[resultKey].size()) + " have been "+resultVerb+".");
+    }
 
     QString jobKey = "routeCheck:" + currentRequest_["key"].toString();
     addActiveJob(jobKey);
@@ -377,6 +408,7 @@ void Bridge::abort()
     routeAssignmentCorrection_->deleteLater();
     logger_->deleteLater();
     lotw_->deleteLater();
+    accountType_->deleteLater();
 
     totalJobCount_ = 0;
     activeJobCount_ = 0;
@@ -401,6 +433,7 @@ void Bridge::rebuild(const QString &key)
     routeAssignmentCorrection_  = new RouteAssignmentCorrection(this);
     logger_                     = new LogWriter(this);
     lotw_                       = new LocationOverrideTimeWindow(this);
+    accountType_                = new AccountType(this);
     failState_ = false;
 
     init();
