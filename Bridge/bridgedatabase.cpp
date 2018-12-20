@@ -504,8 +504,7 @@ QJsonObject BridgeDatabase::getAccountTypesToUpload(QVariantMap args)
                     "    `key` \n"
                     "    FROM \n"
                     "    gmAccountTypes \n"
-                    ") \n"
-;
+                    ") \n";
 
     QMap<QString, QVariantList> sql = executeQuery(query, " find Account Types to upload. BrdigeDatabase::getAccountTypesToUpload");
 

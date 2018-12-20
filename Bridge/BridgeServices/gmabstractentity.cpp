@@ -23,6 +23,7 @@ GMAbstractEntity::~GMAbstractEntity()
 void GMAbstractEntity::handleGMResponse(const QString &key, QJsonValue response)
 {
     activeJobs_.remove(key);
+
     QStringList keyList = key.split(":");
     QString operationKey = keyList.first();
 
@@ -32,15 +33,8 @@ void GMAbstractEntity::handleGMResponse(const QString &key, QJsonValue response)
         return;
     }
 
-    if(postProcessFuncs_.keys().contains(operationKey))
-    {
-        entitiesProcessed_[operationKey][key] = postProcessFuncs_[operationKey](this, response);
-        qDebug() << "Post processing completed.... Operation Key: " << operationKey << "Entity Key:" << key << "Entity:" << entitiesProcessed_[operationKey][key];
-    }
-    else
-    {
-        entitiesProcessed_[operationKey][key] = response;
-    }
+    entitiesProcessed_[operationKey][key] = response;
+    executePostProcessFuncs(key, operationKey);
 
     if(failState_)
     {
@@ -49,10 +43,12 @@ void GMAbstractEntity::handleGMResponse(const QString &key, QJsonValue response)
 
     if(activeJobs_.empty())
     {
+        executeInsertResponsesToDB();
         emit finished(currentKey_, entitiesProcessed_);
         reset();
     }
 }
+
 
 void GMAbstractEntity::handleFailure(const QString &key, const QString &reason)
 {
@@ -69,67 +65,17 @@ void GMAbstractEntity::processEntities(const QString &key,
 {
     if(!activeJobs_.isEmpty())
     {
-        debugMessage("Currently processing location override time windows. Try again once current request is finished.");
+        emit debugMessage("Currently processing entities. Try again once current request is finished.");
         return;
     }
 
     qDebug() << "Section 1";
     currentKey_ = key;
-    QStringList totalKeys;
 
-    for(auto argMap:argList)
-    {
-        for(auto operationKey :databaseFuncs_.keys())
-        {
-            qDebug() << "Section 2" << operationKey;
-            entitiesToProcess_[operationKey] = mergeEntities(entitiesToProcess_[operationKey], databaseFuncs_[operationKey](bridgeDB_, argMap));
-            entitiesProcessed_[operationKey] = QJsonObject();
-        }
-    }
-
-    //No mod to key structure.
-    for(auto operationKey:entitiesToProcess_.keys())
-    {
-        qDebug() << "Section 3";
-        entitiesToProcess_[operationKey] = prefixEntityKeys(key, entitiesToProcess_[operationKey]);
-    }
-
-    //No mod to key structure.
-    for(auto operationKey:entitiesToProcess_.keys())
-    {
-        qDebug() << "Section 4";
-        totalKeys << entitiesToProcess_[operationKey].keys();
-    }
-
-    activeJobs_ = QSet<QString>::fromList(totalKeys);
-    qDebug() << activeJobs_.size();
-    //QList<QString> crash;
-    //QString burn = crash.first();
-
-    qDebug() << "Section 5";
-    for(auto operationKey : entitiesToProcess_.keys())
-    {
-        if(preprocessFuncs_.keys().contains(operationKey))
-        {
-            for(auto entityKey : entitiesToProcess_[operationKey].keys())
-            {
-                qDebug() << "Section 6a";
-                entitiesToProcess_[operationKey][entityKey] = preprocessFuncs_[operationKey](this, entitiesToProcess_[operationKey][entityKey]);
-                internetFuncs_[operationKey](gmConn_, entityKey,  entitiesToProcess_[operationKey][entityKey].toObject());
-                qDebug() << "Operation Key: " << operationKey << "Entity Key" << entityKey << "Entity" << entitiesToProcess_[operationKey][entityKey];
-            }
-        }
-        else
-        {
-            for(auto entityKey : entitiesToProcess_[operationKey].keys())
-            {
-                qDebug() << "Section 6b";
-                internetFuncs_[operationKey](gmConn_, entityKey,  entitiesToProcess_[operationKey][entityKey].toObject());
-                qDebug() << "Operation Key: " << operationKey << "Entity Key" << entityKey << "Entity" << entitiesToProcess_[operationKey][entityKey];
-            }
-        }
-    }
-
+    executeDatabaseFuncs(argList);
+    generateJobKeys();
+    executePreProcessFuncs();
+    executeInternetFuncs();
 
     if(activeJobs_.empty())
     {
@@ -151,8 +97,8 @@ void GMAbstractEntity::reset()
 {
     if(!activeJobs_.isEmpty())
     {
-        errorMessage("Route deletion in progress. Try again once current request is finished.");
-        qDebug() << "Route deletion in progress. Try again once current request is finished.";
+        errorMessage(currentKey_ + " in progress. Try again once current request is finished.");
+        qDebug() << currentKey_ << "in progress. Try again once current request is finished.";
         return;
     }
 
@@ -173,3 +119,98 @@ QJsonObject GMAbstractEntity::prefixEntityKeys(const QString &prefix, const QJso
     return entityCopy;
 }
 
+void GMAbstractEntity::generateJobKeys()
+{
+    QStringList totalKeys;
+    //No mod to key structure.
+    for(auto operationKey:entitiesToProcess_.keys())
+    {
+        qDebug() << "Section 3";
+        entitiesToProcess_[operationKey] = prefixEntityKeys(currentKey_, entitiesToProcess_[operationKey]);
+    }
+
+    //No mod to key structure.
+    for(auto operationKey:entitiesToProcess_.keys())
+    {
+        qDebug() << "Section 4";
+        totalKeys << entitiesToProcess_[operationKey].keys();
+    }
+
+
+    activeJobs_ = QSet<QString>::fromList(totalKeys);
+    qDebug() << activeJobs_.size();
+    qDebug() << "Section 5";
+}
+
+void GMAbstractEntity::executeDatabaseFuncs(const QList<QVariantMap> &argList)
+{
+    for(auto argMap:argList)
+    {
+        for(auto operationKey :databaseFuncs_.keys())
+        {
+            qDebug() << "Section 2" << operationKey;
+            entitiesToProcess_[operationKey] = mergeEntities(entitiesToProcess_[operationKey], databaseFuncs_[operationKey](bridgeDB_, argMap));
+            entitiesProcessed_[operationKey] = QJsonObject();
+        }
+    }
+}
+
+void GMAbstractEntity::executePreProcessFuncs()
+{
+    for(auto operationKey : entitiesToProcess_.keys())
+    {
+        if(preprocessFuncs_.keys().contains(operationKey))
+        {
+            for(auto entityKey : entitiesToProcess_[operationKey].keys())
+            {
+                qDebug() << "Section 6a";
+                entitiesToProcess_[operationKey][entityKey] = preprocessFuncs_[operationKey](entitiesToProcess_[operationKey][entityKey]);
+            }
+        }
+    }
+}
+
+void GMAbstractEntity::executeInternetFuncs()
+{
+    for(auto operationKey : entitiesToProcess_.keys())
+    {
+        if(internetFuncs_.keys().contains(operationKey))
+        {
+            for(auto entityKey : entitiesToProcess_[operationKey].keys())
+            {
+                qDebug() << "Section 6b";
+                internetFuncs_[operationKey](gmConn_, entityKey,  entitiesToProcess_[operationKey][entityKey].toObject());
+            }
+        }
+    }
+}
+
+void GMAbstractEntity::executePostProcessFuncs(const QString &key, const QString &operationKey)
+{
+    if(postProcessFuncs_.keys().contains(operationKey))
+    {
+        entitiesProcessed_[operationKey][key] = postProcessFuncs_[operationKey](entitiesProcessed_[operationKey][key]);
+    }
+}
+
+void GMAbstractEntity::executeInsertResponsesToDB()
+{
+    QMap<QString, QJsonArray> responseMap;
+
+    //populate response map
+    for(auto operationKey:bridgeDataCollectorFuncs_.keys())
+    {
+        if(entitiesProcessed_.keys().contains(operationKey))
+        {
+            for(auto entKey:entitiesProcessed_[operationKey].keys())
+            {
+                responseMap[operationKey].append(QJsonValue(entitiesProcessed_[operationKey][entKey]));
+            }
+        }
+    }
+
+    for(auto operationKey:responseMap.keys())
+    {
+        bridgeDataCollectorFuncs_[operationKey](bridgeDC_, responseMap[operationKey]);
+    }
+}

@@ -54,7 +54,8 @@ SOURCES += \
     GenericUI/listcontrolwidget.cpp \
     Bridge/BridgeServices/gmabstractentity.cpp \
     Bridge/BridgeServices/locationoverridetimewindow.cpp \
-    Bridge/BridgeServices/accounttype.cpp
+    Bridge/BridgeServices/accounttype.cpp \
+    Bridge/BridgeServices/servicetimetype.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -86,7 +87,8 @@ HEADERS += \
     GenericUI/listcontrolwidget.h \
     Bridge/BridgeServices/gmabstractentity.h \
     Bridge/BridgeServices/locationoverridetimewindow.h \
-    Bridge/BridgeServices/accounttype.h
+    Bridge/BridgeServices/accounttype.h \
+    Bridge/BridgeServices/servicetimetype.h
 
 FORMS += \
         mainwindow.ui \
