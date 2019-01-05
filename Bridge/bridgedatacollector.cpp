@@ -443,9 +443,7 @@ void BridgeDataCollector::handleAS400RouteQuery(const QMap<QString, QVariantList
 
     QString tableName    = "as400RouteQuery";
     QString creationQuery = "CREATE TABLE `as400RouteQuery` "
-                            "(`driver:key` TEXT, "
-                            "`equipment:key` TEXT, "
-                            "`location:addressLine1` TEXT, "
+                            "(`location:addressLine1` TEXT, "
                             "`location:addressLine2` TEXT, "
                             "`location:city` TEXT, "
                             "`location:deliveryDays` TEXT, "

@@ -54,11 +54,11 @@ public:
     QJsonObject getAccountTypesToUpdate(QVariantMap args);
     QJsonObject getAccountTypesToDelete(QVariantMap args);
 
-    QJsonObject getServiceTimeTypesToUpload(const QString &organizationKey);
+    QJsonObject getServiceTimeTypesToUpload(QVariantMap args);
 
     QJsonObject getStopTypesToUpload(const QString &organizationKey);
 
-    QJsonObject getLocationTypesToUpload(const QString &organizationKey);
+    QJsonObject getLocationTypesToUpload(QVariantMap args);
 
     QJsonObject getGMLocationsWithBadGeocode(const QString &organizationKey);
 

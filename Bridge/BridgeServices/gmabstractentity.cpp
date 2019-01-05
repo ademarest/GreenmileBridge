@@ -26,6 +26,9 @@ void GMAbstractEntity::handleGMResponse(const QString &key, QJsonValue response)
 
     QStringList keyList = key.split(":");
     QString operationKey = keyList.first();
+    qDebug() << "Section 7 keys";
+    qDebug() << key;
+    qDebug() << keyList;
 
     if(keyList.isEmpty())
     {
@@ -47,6 +50,9 @@ void GMAbstractEntity::handleGMResponse(const QString &key, QJsonValue response)
         emit finished(currentKey_, entitiesProcessed_);
         reset();
     }
+    qDebug() << "Section 7";
+    qDebug() << "Entities to process keys 7" << entitiesToProcess_.keys();
+    qDebug() << "Entities processed keys 7" << entitiesProcessed_.keys();
 }
 
 
@@ -126,7 +132,7 @@ void GMAbstractEntity::generateJobKeys()
     for(auto operationKey:entitiesToProcess_.keys())
     {
         qDebug() << "Section 3";
-        entitiesToProcess_[operationKey] = prefixEntityKeys(currentKey_, entitiesToProcess_[operationKey]);
+        entitiesToProcess_[operationKey] = prefixEntityKeys(operationKey, entitiesToProcess_[operationKey]);
     }
 
     //No mod to key structure.
@@ -139,6 +145,8 @@ void GMAbstractEntity::generateJobKeys()
 
     activeJobs_ = QSet<QString>::fromList(totalKeys);
     qDebug() << activeJobs_.size();
+    qDebug() << "Entities to process keys 5" << entitiesToProcess_.keys();
+    qDebug() << "Entities processed keys 5" << entitiesProcessed_.keys();
     qDebug() << "Section 5";
 }
 
@@ -179,6 +187,8 @@ void GMAbstractEntity::executeInternetFuncs()
             for(auto entityKey : entitiesToProcess_[operationKey].keys())
             {
                 qDebug() << "Section 6b";
+                qDebug() << "Entity key" << entityKey;
+
                 internetFuncs_[operationKey](gmConn_, entityKey,  entitiesToProcess_[operationKey][entityKey].toObject());
             }
         }
@@ -200,6 +210,8 @@ void GMAbstractEntity::executeInsertResponsesToDB()
     //populate response map
     for(auto operationKey:bridgeDataCollectorFuncs_.keys())
     {
+        qDebug() << "abstract op key" << operationKey;
+        qDebug() << "entities processed keys" << entitiesProcessed_.keys();
         if(entitiesProcessed_.keys().contains(operationKey))
         {
             for(auto entKey:entitiesProcessed_[operationKey].keys())
@@ -211,6 +223,7 @@ void GMAbstractEntity::executeInsertResponsesToDB()
 
     for(auto operationKey:responseMap.keys())
     {
+        qDebug() << currentKey_ << responseMap[operationKey];
         bridgeDataCollectorFuncs_[operationKey](bridgeDC_, responseMap[operationKey]);
     }
 }

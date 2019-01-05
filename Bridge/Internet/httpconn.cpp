@@ -172,6 +172,8 @@ void HTTPConn::processConnectionQueue()
     QByteArray data             = requestMap["data"].toByteArray();
     QString customOperation   = requestMap["customOperation"].toByteArray();
 
+    qDebug() << "START:HTTPConn::processConnectionQueue request data " << requestKey << data;
+
     emit statusMessage("START:HTTPConn::" + requestKey);
 
     if(networkRequestsInProgress_.contains(requestKey))

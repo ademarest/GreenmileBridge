@@ -430,10 +430,98 @@ QJsonObject BridgeDatabase::getLocationOverrideTimeWindowIDsToDelete(QVariantMap
     return jObj;
 }
 
-QJsonObject BridgeDatabase::getServiceTimeTypesToUpload(const QString &organizationKey)
+QJsonObject BridgeDatabase::getServiceTimeTypesToUpload(QVariantMap args)
 {
-    qDebug() << "BridgeDatabase::getServiceTimeTypesToUpload not implemented yet. Org key " << organizationKey;
-    return QJsonObject();
+    int nonHelperFixedTimeSecs  = 300;
+    int nonHelperVarTimeSecs    = 24;
+    int helperFixedTimeSecs     = 300;
+    int helperVarTimeSecs       = 24;
+
+    QString keyBase = "serviceTimeTypeToUpload";
+    QJsonObject jObj;
+    QString assignmentTableName = args["tableName"].toString();
+    QString organizationKey = args["organization:key"].toString();
+    QDate date = args["date"].toDate();
+
+    QString query = "SELECT DISTINCT \n"
+                    "gmOrganizations.`id` as `organization:id`, \n"
+                    "`serviceTimeType:key` as `key`, \n"
+                    "`serviceTimeType:key` as `description` \n"
+                    "FROM \n"
+                    "( \n"
+                    "    SELECT \n"
+                    "    as400RouteQuery.`serviceTimeType:key` \n"
+                    "    FROM as400RouteQuery \n"
+                    "    WHERE `organization:key` = '"+organizationKey+"' \n"
+                    "    AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' \n"
+                    "    AND `location:key` \n"
+                    "    AND `route:key` \n"
+                    "    IN \n"
+                    "    ( \n"
+                    "        SELECT \n"
+                    "        `route:key` \n"
+                    "        FROM \n"
+                    "        "+assignmentTableName+" \n"
+                    "        WHERE `organization:key` = '"+organizationKey+"' \n"
+                    "        AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' \n"
+                    "    ) \n"
+                    "    UNION ALL \n"
+                    "    SELECT \n"
+                    "    as400LocationQuery.`serviceTimeType:key` \n"
+                    "    FROM as400LocationQuery \n"
+                    "    WHERE as400LocationQuery.`location:key` \n"
+                    "    IN \n"
+                    "    ( \n"
+                    "        SELECT \n"
+                    "        `key` \n"
+                    "        FROM \n"
+                    "        gmLocations \n"
+                    "    ) \n"
+                    ") \n"
+                    "JOIN \n"
+                    "gmOrganizations \n"
+                    "ON \n"
+                    "gmOrganizations.key = '"+organizationKey+"' \n"
+                    "WHERE \n"
+                    "`serviceTimeType:key` \n"
+                    "NOT IN \n"
+                    "( \n"
+                    "    SELECT \n"
+                    "    `key` \n"
+                    "    FROM \n"
+                    "    gmServiceTimeTypes \n"
+                    "    WHERE \n"
+                    "    gmServicetimetypes.`key` IS NOT NULL \n"
+                    ") \n";
+
+    qDebug() << "ServiceTimeType to upload query" << query;
+
+    QMap<QString, QVariantList> sql = executeQuery(query, " find Service Time Types to upload. BrdigeDatabase::getServiceTimeTypesToUpload");
+
+    if(!isSQLResultValid(sql))
+    {
+        emit statusMessage("Service Time Types SQL was empty. Returning empty json object.");
+        return jObj;
+    }
+
+    for(int i = 0; i < sql.first().size(); ++i)
+    {
+        QString key = "serviceTimeType:" + sql["organization:id"][i].toString() + ":" + sql["key"][i].toString();
+        QJsonObject orgObj = {{"id", sql["organization:id"][i].toJsonValue()}};
+        QJsonObject serviceTimeObj =   {{"organization", orgObj},
+                                        {"description", sql["description"][i].toJsonValue()},
+                                        {"key", sql["key"][i].toJsonValue()},
+                                        {"nonHelperFixedTimeSecs", QJsonValue(nonHelperFixedTimeSecs)},
+                                        {"nonHelperVarTimeSecs", QJsonValue(nonHelperVarTimeSecs)},
+                                        {"helperFixedTimeSecs", QJsonValue(helperFixedTimeSecs)},
+                                        {"helperVarTimeSecs", QJsonValue(helperVarTimeSecs)}};
+
+        qDebug() << "Service time to upload" << QJsonDocument(serviceTimeObj).toJson(QJsonDocument::Compact);
+
+        jObj[key] = QJsonValue(serviceTimeObj);
+    }
+
+    return jObj;
 }
 
 QJsonObject BridgeDatabase::getStopTypesToUpload(const QString &organizationKey)
@@ -442,10 +530,87 @@ QJsonObject BridgeDatabase::getStopTypesToUpload(const QString &organizationKey)
     return QJsonObject();
 }
 
-QJsonObject BridgeDatabase::getLocationTypesToUpload(const QString &organizationKey)
+QJsonObject BridgeDatabase::getLocationTypesToUpload(QVariantMap args)
 {
-    qDebug() << "BridgeDatabase::getLocationTypesToUpload not implemented yet. Org key " << organizationKey;
-    return QJsonObject();
+    qDebug() << args;
+    QString keyBase = "locationsTypesToUpload:";
+    QJsonObject jObj;
+    QString assignmentTableName = args["tableName"].toString();
+    QString organizationKey = args["organization:key"].toString();
+    QDate   date = args["date"].toDate();
+
+    QString query = "SELECT DISTINCT \n"
+                    "gmOrganizations.`id` as `organization:id`, \n"
+                    "`locationType:key` as `key`, \n"
+                    "`locationType:key` as `description` \n"
+                    "FROM \n"
+                    "( \n"
+                    "    SELECT \n"
+                    "    as400RouteQuery.`locationType:key` \n"
+                    "    FROM as400RouteQuery \n"
+                    "    WHERE `organization:key` = '"+organizationKey+"' \n"
+                    "    AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' \n"
+                    "    AND `location:key` \n"
+                    "    AND `route:key` \n"
+                    "    IN \n"
+                    "    ( \n"
+                    "        SELECT \n"
+                    "        `route:key` \n"
+                    "        FROM \n"
+                    "        "+assignmentTableName+" \n"
+                    "        WHERE `organization:key` = '"+organizationKey+"' \n"
+                    "        AND `route:date` = '"+date.toString("yyyy-MM-dd")+"' \n"
+                    "    ) \n"
+                    "    UNION ALL \n"
+                    "    SELECT \n"
+                    "    as400LocationQuery.`locationType:key` \n"
+                    "    FROM as400LocationQuery \n"
+                    "    WHERE as400LocationQuery.`location:key` \n"
+                    "    IN \n"
+                    "    ( \n"
+                    "        SELECT \n"
+                    "        `key` \n"
+                    "        FROM \n"
+                    "        gmLocations \n"
+                    "    ) \n"
+                    ") \n"
+                    "JOIN \n"
+                    "gmOrganizations \n"
+                    "ON \n"
+                    "gmOrganizations.key = '"+organizationKey+"' \n"
+                    "WHERE \n"
+                    "`locationType:key` \n"
+                    "NOT IN \n"
+                    "( \n"
+                    "    SELECT \n"
+                    "    `key` \n"
+                    "    FROM \n"
+                    "    gmLocationTypes \n"
+                    ") \n";
+
+    qDebug() << "Location type to upload query" << query;
+
+    QMap<QString, QVariantList> sql = executeQuery(query, " find Location Types to upload. BrdigeDatabase::getLocationTypesToUpload");
+
+    if(!isSQLResultValid(sql))
+    {
+        emit statusMessage("Location type SQL was empty. Returning empty json object.");
+        return jObj;
+    }
+
+    for(int i = 0; i < sql.first().size(); ++i)
+    {
+        QString key = "accountType:" + sql["organization:id"][i].toString() + ":" + sql["key"][i].toString();
+        QJsonObject orgObj      = {{"id", sql["organization:id"][i].toJsonValue()}};
+        QJsonObject locTypeObj  =   {{"organization", orgObj},
+                                    {"description", sql["description"][i].toJsonValue()},
+                                    {"key", sql["key"][i].toJsonValue()},
+                                    {"showOnMobileCreate", QJsonValue(true)},
+                                    {"enabled", QJsonValue(true)}};
+        qDebug() << "Location type to upload json" << locTypeObj;
+        jObj[key] = QJsonValue(locTypeObj);
+    }
+    return jObj;
 }
 
 QJsonObject BridgeDatabase::getAccountTypesToUpload(QVariantMap args)
@@ -505,6 +670,8 @@ QJsonObject BridgeDatabase::getAccountTypesToUpload(QVariantMap args)
                     "    FROM \n"
                     "    gmAccountTypes \n"
                     ") \n";
+
+    qDebug() << "AccountType to upload query" << query;
 
     QMap<QString, QVariantList> sql = executeQuery(query, " find Account Types to upload. BrdigeDatabase::getAccountTypesToUpload");
 
@@ -788,10 +955,13 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
                     "as400LocationQuery.`location:zipCode`, \n"
                     "as400LocationQuery.`location:deliveryDays`, \n"
                     "gmLocations.`id` AS `location:id`, \n"
-                    "gmLocations.`locationType:id`, \n"
                     "gmOrganizations.`id` AS `organization:id`, \n"
-                    "gmAccountTypes.`id`, \n"
-                    "as400LocationQuery.`accountType:key` \n"
+                    "gmAccountTypes.`id` AS `accountType:id`, \n"
+                    "as400LocationQuery.`accountType:key`, \n"
+                    "gmServiceTimeTypes.`id` AS `serviceTimeType:id`, \n"
+                    "as400LocationQuery.`serviceTimeType:key`, \n"
+                    "gmLocationTypes.`id` AS `locationType:id`, \n"
+                    "as400LocationQuery.`locationType:key` \n"
                     "FROM as400LocationQuery \n"
                     "JOIN gmLocations \n"
                     "ON gmLocations.`key` = `location:key` \n"
@@ -799,6 +969,10 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
                     "ON gmAccountTypes.`key` =  as400LocationQuery.`accountType:key` \n"
                     "JOIN gmOrganizations \n"
                     "ON gmOrganizations.`key` = as400LocationQuery.`organization:key` \n"
+                    "LEFT JOIN gmServiceTimeTypes \n"
+                    "ON gmServiceTimeTypes.`key` = as400LocationQuery.`serviceTimeType:key` \n"
+                    "LEFT JOIN gmLocationTypes \n"
+                    "ON gmLocationTypes.`key` = as400LocationQuery.`locationType:key` \n"
                     "WHERE gmLocations.`key` \n"
                     "IN \n"
                     "( \n"
@@ -816,7 +990,9 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
                     "        `location:state`, \n"
                     "        `location:zipCode`, \n"
                     "        `location:deliveryDays`, \n"
-                    "        `accountType:key` \n"
+                    "        `accountType:key`, \n"
+                    "        `serviceTimeType:key`, \n"
+                    "        `locationType:key` \n"
                     "        FROM as400LocationQuery \n"
                     "        WHERE as400LocationQuery.`organization:key` = '"+organizationKey+"' \n"
                     "        EXCEPT \n"
@@ -830,13 +1006,17 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
                     "        `state`, \n"
                     "        `zipCode`, \n"
                     "        `deliveryDays`, \n"
-                    "        `accountType:key` \n"
+                    "        `accountType:key`, \n"
+                    "        `serviceTimeType:key`, \n"
+                    "        `locationType:key` \n"
                     "        FROM gmLocations \n"
                     "        WHERE gmLocations.`organization:key` = '"+organizationKey+"' \n"
                     "    ) \n"
                     ") \n";
 
-    qDebug() << "BridgeDatabase::getLocationsToUpdate" <<  query;
+    qDebug() << "BridgeDatabase::getLocationsToUpdate u wot m8 " <<  query;
+
+
     QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile. BridgeDatabase::getLocationsToUpdate()");
 
 
@@ -851,6 +1031,7 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
             QJsonObject locationTypeObj;
             QJsonObject organizationObj;
             QJsonObject accountTypeObj;
+            QJsonObject serviceTimeTypeObj;
 
             for(auto key:sql.keys())
             {
@@ -863,6 +1044,8 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
                     organizationObj[splitKey.last()] = sql[key][i].toJsonValue();
                 if(splitKey.first() == "accountType")
                     accountTypeObj[splitKey.last()] = sql[key][i].toJsonValue();
+                if(splitKey.first() == "serviceTimeType")
+                    serviceTimeTypeObj[splitKey.last()] = sql[key][i].toJsonValue();
             }
 
             locationKeyList << "locationToUpdate"
@@ -870,10 +1053,11 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
                                 << QString::number(organizationObj["id"].toInt());
 
             locationKey = locationKeyList.join(":");
-            locationObj["organization"] =   QJsonValue(organizationObj);
-            locationObj["locationType"] =   QJsonValue(locationTypeObj);
-            locationObj["accountType"]  =   QJsonValue(accountTypeObj);
-            returnObj[locationKey]      =   QJsonValue(locationObj);
+            locationObj["organization"]     =   QJsonValue(organizationObj);
+            locationObj["locationType"]     =   QJsonValue(locationTypeObj);
+            locationObj["accountType"]      =   QJsonValue(accountTypeObj);
+            locationObj["serviceTimeType"]  =   QJsonValue(serviceTimeTypeObj);
+            returnObj[locationKey]          =   QJsonValue(locationObj);
         }
     }
     return returnObj;
@@ -886,7 +1070,7 @@ QJsonObject BridgeDatabase::getLocationsToUpdateGeocodes(const QString &organiza
 
     QJsonObject returnObj;
     QString query = "SELECT `location:enabled`, `location:key`, `location:description`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode`, `location:deliveryDays`, `id` AS `location:id`, `locationType:id`, `organization:id` FROM as400LocationQuery LEFT JOIN gmLocations ON `key` = `location:key` WHERE gmLocations.`key` IN ( SELECT `location:key` FROM ( SELECT DISTINCT `location:key`, `location:addressLine1`, `location:addressLine2`, `location:city`, `location:state`, `location:zipCode` FROM as400LocationQuery WHERE as400LocationQuery.`organization:key` = '"+organizationKey+"' EXCEPT SELECT DISTINCT `key`, `addressLine1`,`addressLine2`,`city`, `state`,`zipCode`FROM gmLocations WHERE gmLocations.`organization:key` = '"+organizationKey+"'))";
-    QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations to update in Greenmile. BridgeDatabase::getLocationsToUpdate()");
+    QMap<QString, QVariantList> sql = executeQuery(query, "Getting locations geocodes to update in Greenmile. BridgeDatabase::getLocationsToUpdate()");
     qDebug() << "BridgeDatabase::getLocationsToUpdate" <<  query;
 
     if(!sql.empty())

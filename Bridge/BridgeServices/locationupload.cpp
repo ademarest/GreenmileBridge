@@ -103,7 +103,7 @@ void LocationUpload::UpdateLocations(const QString &key, const QList<QVariantMap
     }
 
     if(failState_)
-        emit failed("Location database error.", "Failed in initial location update.");
+        emit failed("Location database error", "Failed in initial LocationUpload::UpdateLocations location update.");
 
     applyGeocodesToLocations(geocodes);
 

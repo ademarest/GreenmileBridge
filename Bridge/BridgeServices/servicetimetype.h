@@ -10,8 +10,7 @@ public:
     explicit ServiceTimeType(QObject *parent = nullptr);
 
 public slots:
-    void processAccountTypes(const QString &key, const QList<QVariantMap> &argList);
-
+    void processServiceTimeTypes(const QString &key, const QList<QVariantMap> &argList);
 };
 
 #endif // SERVICETIMETYPE_H

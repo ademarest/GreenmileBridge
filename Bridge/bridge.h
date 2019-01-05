@@ -15,6 +15,8 @@
 #include "LogWriter/logwriter.h"
 #include "BridgeServices/locationoverridetimewindow.h"
 #include "BridgeServices/accounttype.h"
+#include "BridgeServices/servicetimetype.h"
+#include "BridgeServices/locationtype.h"
 
 class Bridge : public QObject
 {
@@ -52,6 +54,10 @@ private slots:
     void finishedDataCollection(const QString &key);
 
     void finishedAccountTypes(const QString &key, const QMap<QString, QJsonObject> &result);
+
+    void finishedServiceTimeTypes(const QString &key, const QMap<QString, QJsonObject> &result);
+
+    void finishedLocationTypes(const QString &key, const QMap<QString, QJsonObject> &result);
 
     void finishedLocationUpdateGeocode(const QString& key, const QJsonObject &result);
     void finishedLocationUpdate(const QString &key, const QJsonObject &result);
@@ -109,7 +115,8 @@ private:
     LogWriter *logger_ = new LogWriter(this);
     LocationOverrideTimeWindow *lotw_ = new LocationOverrideTimeWindow(this);
     AccountType *accountType_ = new AccountType(this);
-
+    ServiceTimeType *serviceTimeType_ = new ServiceTimeType(this);
+    LocationType *locationType_ = new LocationType(this);
     //END BRIDGE MEMBER SUBSECTION
 
     void init();

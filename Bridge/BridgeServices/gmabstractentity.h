@@ -45,11 +45,10 @@ protected:
     QMap<QString, std::function<QJsonValue(QJsonValue)>>                        preprocessFuncs_;
     QMap<QString, std::function<void(GMConnection*, QString, QJsonObject)>>     internetFuncs_;
     QMap<QString, std::function<QJsonValue(QJsonValue)>>                        postProcessFuncs_;
-    QMap<QString, std::function<void(BridgeDataCollector*, QJsonValue)>>        bridgeDataCollectorFuncs_;
+    QMap<QString, std::function<void(BridgeDataCollector*, QJsonArray)>>        bridgeDataCollectorFuncs_;
 
     static QJsonObject mergeEntities(QJsonObject initialData, const QJsonObject &additionalData);
     static QJsonObject prefixEntityKeys(const QString &prefix, const QJsonObject &entity);
-
 
     void generateJobKeys();
     void executeDatabaseFuncs(const QList<QVariantMap> &argList);

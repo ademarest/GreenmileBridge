@@ -5,13 +5,10 @@ ServiceTimeType::ServiceTimeType(QObject *parent) : GMAbstractEntity(parent)
 
 }
 
-void ServiceTimeType::processAccountTypes(const QString &key, const QList<QVariantMap> &argList)
+void ServiceTimeType::processServiceTimeTypes(const QString &key, const QList<QVariantMap> &argList)
 {
-    databaseFuncs_["upload"]    = &BridgeDatabase::getLocationOverrideTimeWindowsToUpload;
-    databaseFuncs_["update"]    = &BridgeDatabase::getLocationOverrideTimeWindowsToUpdate;
-    databaseFuncs_["delete"]    = &BridgeDatabase::getLocationOverrideTimeWindowIDsToDelete;
-    internetFuncs_["upload"]          = &GMConnection::uploadALocationOverrideTimeWindow;
-    internetFuncs_["update"]          = &GMConnection::updateALocationOverrideTimeWindow;
-    internetFuncs_["delete"]          = &GMConnection::deleteALocationOverrideTimeWindow;
+    databaseFuncs_["upload"]                = &BridgeDatabase::getServiceTimeTypesToUpload;
+    internetFuncs_["upload"]                = &GMConnection::uploadServiceTimeType;
+    bridgeDataCollectorFuncs_["upload"]     = &BridgeDataCollector::handleGMServiceTimeTypes;
     processEntities(key, argList);
 }
