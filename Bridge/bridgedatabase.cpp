@@ -959,9 +959,9 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
                     "gmAccountTypes.`id` AS `accountType:id`, \n"
                     "as400LocationQuery.`accountType:key`, \n"
                     "gmServiceTimeTypes.`id` AS `serviceTimeType:id`, \n"
-                    "as400LocationQuery.`serviceTimeType:key`, \n"
-                    "gmLocationTypes.`id` AS `locationType:id`, \n"
-                    "as400LocationQuery.`locationType:key` \n"
+                    "as400LocationQuery.`serviceTimeType:key` \n"
+                    //"gmLocationTypes.`id` AS `locationType:id`, \n"
+                    //"as400LocationQuery.`locationType:key` \n"
                     "FROM as400LocationQuery \n"
                     "JOIN gmLocations \n"
                     "ON gmLocations.`key` = `location:key` \n"
@@ -991,8 +991,8 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
                     "        `location:zipCode`, \n"
                     "        `location:deliveryDays`, \n"
                     "        `accountType:key`, \n"
-                    "        `serviceTimeType:key`, \n"
-                    "        `locationType:key` \n"
+                    "        `serviceTimeType:key` \n"
+                    //"        `locationType:key` \n"
                     "        FROM as400LocationQuery \n"
                     "        WHERE as400LocationQuery.`organization:key` = '"+organizationKey+"' \n"
                     "        EXCEPT \n"
@@ -1007,8 +1007,8 @@ QJsonObject BridgeDatabase::getLocationsToUpdate(const QString &organizationKey)
                     "        `zipCode`, \n"
                     "        `deliveryDays`, \n"
                     "        `accountType:key`, \n"
-                    "        `serviceTimeType:key`, \n"
-                    "        `locationType:key` \n"
+                    "        `serviceTimeType:key` \n"
+                    //"        `locationType:key` \n"
                     "        FROM gmLocations \n"
                     "        WHERE gmLocations.`organization:key` = '"+organizationKey+"' \n"
                     "    ) \n"
@@ -1299,6 +1299,8 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
         returnObj[routeCompoundKey] = route[routeKey];
         returnObj[driverCompoundKey] = driver[routeKey];
         returnObj[equipmentCompoundKey] = equipment[routeKey];
+
+        qDebug() << "FInal route upload json" << returnObj;
     }
     //qDebug() << returnObj;
     return returnObj;

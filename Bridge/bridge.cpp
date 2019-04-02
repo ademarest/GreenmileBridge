@@ -24,8 +24,8 @@ void Bridge::init()
     connect(serviceTimeType_,       &ServiceTimeType::finished, this,   &Bridge::finishedServiceTimeTypes);
     connect(serviceTimeType_,       &ServiceTimeType::failed,   this,   &Bridge::handleComponentFailure);
 
-    connect(locationType_,       &LocationType::finished,       this,   &Bridge::finishedLocationTypes);
-    connect(locationType_,       &LocationType::failed,         this,   &Bridge::handleComponentFailure);
+    //connect(locationType_,       &LocationType::finished,       this,   &Bridge::finishedLocationTypes);
+    //connect(locationType_,       &LocationType::failed,         this,   &Bridge::handleComponentFailure);
 
     connect(locationUpdateGeocode_, &LocationGeocode::finished, this,   &Bridge::finishedLocationUpdateGeocode);
     connect(locationUpdateGeocode_, &LocationGeocode::failed,   this,   &Bridge::handleComponentFailure);
@@ -240,11 +240,18 @@ void Bridge::finishedServiceTimeTypes(const QString &key, const QMap<QString, QJ
 {
     emit statusMessage(key + " has been completed.");
     qDebug() << result;
-    QString jobKey = "locationTypes:" + currentRequest_["key"].toString();
-    qDebug() << "Do I go here 0.2?";
+    QString jobKey = "geocodeUpdatedLocations:" + currentRequest_["key"].toString();
+    qDebug() << "Do I go here 0.3?";
     addActiveJob(jobKey);
-    locationType_->processLocationTypes(jobKey, argList_);
+    locationUpdateGeocode_->GeocodeLocations(jobKey, argList_, true, false);
     handleJobCompletion(key);
+//    emit statusMessage(key + " has been completed.");
+//    qDebug() << result;
+//    QString jobKey = "locationTypes:" + currentRequest_["key"].toString();
+//    qDebug() << "Do I go here 0.2?";
+//    addActiveJob(jobKey);
+//    locationType_->processLocationTypes(jobKey, argList_);
+//    handleJobCompletion(key);
 }
 
 void Bridge::finishedLocationTypes(const QString &key, const QMap<QString, QJsonObject> &result)
