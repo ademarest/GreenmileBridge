@@ -50,6 +50,16 @@
         </item>
        </layout>
       </widget>
+      <widget class="QWidget" name="scheduleSheetsTab">
+       <attribute name="title">
+        <string>Schedule Sheets</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_10">
+        <item row="0" column="0">
+         <layout class="QGridLayout" name="scheduleSheetsGrid"/>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="mrsConfigTab">
        <attribute name="title">
         <string>Master Route Config</string>
@@ -100,7 +110,7 @@
      <x>0</x>
      <y>0</y>
      <width>1239</width>
-     <height>20</height>
+     <height>18</height>
     </rect>
    </property>
   </widget>

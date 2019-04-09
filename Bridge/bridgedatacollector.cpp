@@ -24,6 +24,7 @@ BridgeDataCollector::BridgeDataCollector(QObject *parent) : QObject(parent)
     connect(as400, &AS400::errorMessage, this, &BridgeDataCollector::errorMessage);
 
     connect(queueTimer, &QTimer::timeout, this, &BridgeDataCollector::processQueue);
+    qDebug() << "Bridge Data Collector CTOR";
     buildTables();
     queueTimer->start(1000);
 }
@@ -65,6 +66,8 @@ void BridgeDataCollector::removeRequest(const QString &key)
 
 void BridgeDataCollector::buildTables()
 {
+    qDebug() << "Building tables";
+    qDebug() << knownSources_;
     for(auto source: knownSources_)
     {
         handleJsonResponse(source, QJsonValue());
@@ -283,6 +286,7 @@ void BridgeDataCollector::beginGathering(const QVariantMap &request)
 
 void BridgeDataCollector::prepDatabases(const QStringList &sourceOverrides)
 {
+    qDebug() << "Prepping databases";
     if(sourceOverrides.isEmpty())
     {
         for(auto source:knownSources_)
@@ -298,7 +302,7 @@ void BridgeDataCollector::prepDatabases(const QStringList &sourceOverrides)
 
 void BridgeDataCollector::handleSQLResponse(const QString &key, const QMap<QString, QVariantList> &sql)
 {
-    emit debugMessage(key + " moved has moved through the response handler.");
+    emit debugMessage(key + " moved has moved through the sql response handler.");
 
     if(key == "mrsDailyAssignments")
         handleRSAssignments(key, sql);
@@ -314,7 +318,7 @@ void BridgeDataCollector::handleSQLResponse(const QString &key, const QMap<QStri
 
 void BridgeDataCollector::handleJsonResponse(const QString &key, const QJsonValue &jVal)
 {
-    emit debugMessage(key + " moved has moved through the response handler.");
+    emit debugMessage(key + " moved has moved through the json response handler.");
 
     if(key == "routeStartTimes")
         handleRSRouteStartTimes(jVal.toObject());
@@ -367,6 +371,7 @@ void BridgeDataCollector::handleJobCompletion(const QString &key)
         }
     }
     emit progress(activeJobs_.size(), totalJobs_);
+    qDebug() << key << "key";
     qDebug() << activeJobs_.size() << "out of " << totalJobs_ << " data collection jobs remaining.";
     qDebug() << activeJobs_;
 

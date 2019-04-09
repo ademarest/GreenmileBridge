@@ -56,7 +56,8 @@ SOURCES += \
     Bridge/BridgeServices/locationoverridetimewindow.cpp \
     Bridge/BridgeServices/accounttype.cpp \
     Bridge/BridgeServices/servicetimetype.cpp \
-    Bridge/BridgeServices/locationtype.cpp
+    Bridge/BridgeServices/locationtype.cpp \
+    schedulesheetconfig.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -90,7 +91,8 @@ HEADERS += \
     Bridge/BridgeServices/locationoverridetimewindow.h \
     Bridge/BridgeServices/accounttype.h \
     Bridge/BridgeServices/servicetimetype.h \
-    Bridge/BridgeServices/locationtype.h
+    Bridge/BridgeServices/locationtype.h \
+    schedulesheetconfig.h
 
 FORMS += \
         mainwindow.ui \
@@ -100,4 +102,5 @@ FORMS += \
     Bridge/AS400/as400configwidget.ui \
     Bridge/MasterRouteData/masterroutesheetdataconfigwidget.ui \
     Bridge/bridgeconfigwidget.ui \
-    GenericUI/listcontrolwidget.ui
+    GenericUI/listcontrolwidget.ui \
+    schedulesheetconfig.ui

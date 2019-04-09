@@ -57,7 +57,6 @@ protected:
     void executePostProcessFuncs(const QString &key, const QString &operationKey);
     void executeInsertResponsesToDB();
 
-
     virtual void reset();
 };
 

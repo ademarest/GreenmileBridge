@@ -69,7 +69,6 @@ void Bridge::init()
     connect(lotw_, &LocationOverrideTimeWindow::debugMessage,     this, &Bridge::debugMessage);
     connect(lotw_, &LocationOverrideTimeWindow::errorMessage,     this, &Bridge::errorMessage);
 
-
     connect(accountType_, &AccountType::statusMessage,    this, &Bridge::statusMessage);
     connect(accountType_, &AccountType::debugMessage,     this, &Bridge::debugMessage);
     connect(accountType_, &AccountType::errorMessage,     this, &Bridge::errorMessage);
