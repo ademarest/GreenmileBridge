@@ -48,7 +48,7 @@ void LocationGeocode::reset()
 
 void LocationGeocode::GeocodeLocations(const QString &key, const QList<QVariantMap> &argList, const bool update, const bool fixBadGeocodes)
 {
-    QString geocodingService = "arcgis";
+    QString geocodingService = "greenmile";
     QString jobKey = "GeocodeUpdateLocations";
 
     if(!activeJobs_.isEmpty())

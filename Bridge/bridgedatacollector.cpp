@@ -109,6 +109,7 @@ void BridgeDataCollector::deleteScheduleSheets()
     qDebug() << "Deleting schedule sheets!";
     for(auto key:scheduleSheets.keys()){
         scheduleSheets[key]->deleteLater();
+        knownSources_.removeAt(knownSources_.indexOf(key));
     }
     scheduleSheets.clear();
 }
