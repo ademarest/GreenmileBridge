@@ -2,6 +2,7 @@
 
 Bridge::Bridge(QObject *parent) : QObject(parent)
 {
+    qDebug() << "bridge ctor";
     connect(queueTimer, &QTimer::timeout, this, &Bridge::processQueue);
     connect(bridgeTimer, &QTimer::timeout, this, &Bridge::startOnTimer);
     connect(bridgeMalfunctionTimer, &QTimer::timeout, this, &Bridge::abort);
@@ -88,8 +89,42 @@ void Bridge::init()
     connect(this, &Bridge::debugMessage, logger_, &LogWriter::writeLogEntry);
     connect(this, &Bridge::errorMessage, logger_, &LogWriter::writeLogEntry);
 
-    bridgeTimer->start(400000);
+    loadSettings();
+    int intervalTimer = settings_["bridgeIntervalSec"].toInt() * 1000;
+    qDebug() << intervalTimer << "interval timer!";
+    bridgeTimer->start(intervalTimer);
     queueTimer->start(1000);
+}
+
+void Bridge::loadSettings()
+{
+    qDebug() << "starting settings load";
+
+    bridgeSettings_     = jsonSettings_->loadSettings(QFile(bridgeSettingsDbPath_),bridgeSettings_);
+    qDebug() << bridgeSettings_ << bridgeSettingsDbPath_;
+    scheduleSettings_   = jsonSettings_->loadSettings(QFile(scheduleSettingsDbPath_),scheduleSettings_);
+    qDebug() << scheduleSettings_ << scheduleSettingsDbPath_;
+
+    settings_["daysToUpload"]               = QJsonValue(generateUploadDays(bridgeSettings_["daysToUploadInt"].toInt()));
+    settings_["scheduleTables"]             = QJsonValue(scheduleSettings_["scheduleList"].toArray());
+    settings_["organization:key"]           = QJsonValue(bridgeSettings_["organization:key"].toString());
+    settings_["monthsUntilCustDisabled"]    = QJsonValue(bridgeSettings_["monthsUntilCustDisabled"].toInt());
+    settings_["schedulePrimaryKeys"]        = QJsonValue(QJsonArray{"route:key", "route:date", "organization:key"});
+    settings_["bridgeIntervalSec"]          = QJsonValue(bridgeSettings_["bridgeIntervalSec"].toInt());
+
+    qDebug() << "settings loaded" <<  settings_;
+}
+
+QJsonArray Bridge::generateUploadDays(int daysToUpload)
+{
+    QJsonArray dateArr;
+    dateArr.append(QJsonValue(QDate::currentDate().toString(Qt::ISODate)));
+
+    for(int i = 0; i < daysToUpload; i++){
+        QDate today = QDate::currentDate();
+        dateArr.append(QJsonValue(today.addDays(i+1).toString(Qt::ISODate)));
+    }
+    return dateArr;
 }
 
 void Bridge::startOnTimer()
@@ -107,14 +142,8 @@ bool Bridge::hasActiveJobs()
 
 void Bridge::addRequest(const QString &key)
 {
+    qDebug() << "request addedddd!";
     QVariantMap request;
-
-    settings_ = QJsonObject{{"daysToUpload", QJsonValue(QJsonArray{QDate::currentDate().toString(Qt::ISODate), QDate::currentDate().addDays(1).toString(Qt::ISODate)})},
-                            {"scheduleTables", QJsonValue(QJsonArray{QJsonValue(QJsonObject{{"tableName", QJsonValue("dlmrsDailyAssignments")}}),
-                                                                     QJsonValue(QJsonObject{{"tableName", QJsonValue("mrsDailyAssignments")}, {"minRouteKey", "D"}, {"maxRouteKey", "U"}})})},
-                            {"organization:key", QJsonValue("SEATTLE")},
-                            {"monthsUntilCustDisabled", QJsonValue(3)},
-                            {"schedulePrimaryKeys", QJsonValue(QJsonArray{"route:key", "route:date", "organization:key"})}};
 
     for(auto jVal : settings_["daysToUpload"].toArray())
     {
@@ -144,11 +173,11 @@ void Bridge::handleComponentFailure(const QString &key, const QString &reason)
 
 void Bridge::processQueue()
 {
-
     if(hasActiveJobs() || requestQueue_.isEmpty())
         return;
     else
     {
+        loadSettings();
         currentRequest_ = requestQueue_.dequeue();
 
         emit started(currentRequest_["key"].toString());

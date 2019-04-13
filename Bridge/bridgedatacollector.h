@@ -8,6 +8,7 @@
 #include "GoogleSheets/googlesheetsconnection.h"
 #include "Greenmile/gmconnection.h"
 #include "AS400/as400connection.h"
+#include "JsonSettings/jsonsettings.h"
 
 class BridgeDataCollector : public QObject
 {
@@ -55,9 +56,11 @@ private slots:
     void handleJsonResponse(const QString &key, const QJsonValue &jVal);
     void handleComponentFailure(const QString &key, const QString &reason);
 
-public slots:
-
 private:
+    JsonSettings *jsonSettings_         = new JsonSettings(this);
+    QString scheduleSheetDbPath_       = qApp->applicationDirPath() + "/scheduleconfig.db";
+    QJsonObject scheduleSheetSettings_  {{"scheduleList",QJsonArray()}};
+
     QQueue<QVariantMap> requestQueue_;
     QSet<QString> activeJobs_;
 
@@ -66,8 +69,7 @@ private:
     void beginGathering(const QVariantMap &request);
 
     BridgeDatabase *bridgeDB                = new BridgeDatabase(this);
-    MRSConnection *mrsConn                  = new MRSConnection("mrsconnection.db", this);
-    MRSConnection *dlmrsConn                = new MRSConnection("dlmrsconnection.db", this);
+    QMap<QString,MRSConnection*>            scheduleSheets;
     GoogleSheetsConnection *routeSheetData  = new GoogleSheetsConnection("mrsdataconnection.db", this);
     GMConnection *gmConn                    = new GMConnection(this);
     AS400 *as400                            = new AS400(this);
@@ -76,9 +78,7 @@ private:
     QJsonObject knownSourcesJson_;
 
     QStringList knownSources_ =
-    {"mrsDailyAssignments",
-     "dlmrsDailyAssignments",
-     "routeStartTimes",
+    {"routeStartTimes",
      "drivers",
      "powerUnits",
      "routeOverrides",
@@ -99,6 +99,9 @@ private:
     QString currentKey_;
 
     void processQueue();
+
+    void generateScheduleSheets();
+    void deleteScheduleSheets();
 };
 
 #endif // BRIDGEDATACOLLECTOR_H

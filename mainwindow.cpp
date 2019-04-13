@@ -9,11 +9,9 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow::showMaximized();
     ui->greenmileConfigGrid->addWidget(gmConfig_);
     ui->bridgeProgressGridLayout->addWidget(bridgeProgress_);
-    ui->mrsConfigGrid->addWidget(mrsConfig_);
     ui->as400ConfigGrid->addWidget(as400Config_);
     ui->mrsDataConfigGrid->addWidget(mrsDataConfig_);
     ui->bridgeConfigGrid->addWidget(bridgeConfig_);
-    ui->dlmrsConfigGrid->addWidget(dlmrsConfig_);
     ui->scheduleSheetsGrid->addWidget(schedConfig_);
     this->setWindowTitle("Greenmile API Bridge");
 }

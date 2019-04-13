@@ -57,7 +57,9 @@ SOURCES += \
     Bridge/BridgeServices/accounttype.cpp \
     Bridge/BridgeServices/servicetimetype.cpp \
     Bridge/BridgeServices/locationtype.cpp \
-    schedulesheetconfig.cpp
+    ScheduleSheetControl/schedulesheetconfig.cpp \
+    ScheduleSheetControl/addscheduledialog.cpp \
+    ScheduleSheetControl/schedconfirmdeletedialog.cpp
 
 HEADERS += \
         mainwindow.h \
@@ -92,7 +94,9 @@ HEADERS += \
     Bridge/BridgeServices/accounttype.h \
     Bridge/BridgeServices/servicetimetype.h \
     Bridge/BridgeServices/locationtype.h \
-    schedulesheetconfig.h
+    ScheduleSheetControl/schedulesheetconfig.h \
+    ScheduleSheetControl/addscheduledialog.h \
+    ScheduleSheetControl/schedconfirmdeletedialog.h
 
 FORMS += \
         mainwindow.ui \
@@ -103,4 +107,6 @@ FORMS += \
     Bridge/MasterRouteData/masterroutesheetdataconfigwidget.ui \
     Bridge/bridgeconfigwidget.ui \
     GenericUI/listcontrolwidget.ui \
-    schedulesheetconfig.ui
+    ScheduleSheetControl/schedulesheetconfig.ui \
+    ScheduleSheetControl/addscheduledialog.ui \
+    ScheduleSheetControl/schedconfirmdeletedialog.ui

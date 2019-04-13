@@ -54,6 +54,7 @@ void MasterRouteSheetConfigWidget::saveUItoSettings()
     jsonSettings_["auth_provider_x509_cert_url"] = QJsonValue(ui->x509LineEdit->text());
     jsonSettings_["request_timeout"] = QJsonValue(ui->requestTimeoutSpinBox->value());
     jsonSettings_["oauth2_user_timeout"] = QJsonValue(ui->oauth2UserTimeoutSpinBox->value());
+    jsonSettings_["route_regex"] = QJsonValue(ui->routeRegexLineEdit->text());
 
     for(int i = 0; i < ui->redirectURIListWidget->count(); ++i)
         redirectURIs.append(ui->redirectURIListWidget->item(i)->text());
@@ -131,6 +132,7 @@ void MasterRouteSheetConfigWidget::applySettingsToUI()
     ui->x509LineEdit->setText(jsonSettings_["auth_provider_x509_cert_url"].toString());
     ui->requestTimeoutSpinBox->setValue(jsonSettings_["request_timeout"].toInt());
     ui->oauth2UserTimeoutSpinBox->setValue(jsonSettings_["oauth2_user_timeout"].toInt());
+    ui->routeRegexLineEdit->setText(jsonSettings_["route_regex"].toString());
 
     ui->redirectURIListWidget->clear();
     for(auto json:jsonSettings_["redirect_uris"].toArray())

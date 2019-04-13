@@ -46,7 +46,8 @@ private:
                                 {"expiration_at", QJsonValue()},
                                 {"refresh_token", QJsonValue()},
                                 {"request_timeout", QJsonValue(40)},
-                                {"oauth2_user_timeout", QJsonValue(180)}};
+                                {"oauth2_user_timeout", QJsonValue(180)},
+                                {"route_regex", QJsonValue("^[A-Z]-[A-Z,0-9]{3}")}};
 };
 
 #endif // MRSCONNECTION_H

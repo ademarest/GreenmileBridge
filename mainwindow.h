@@ -8,7 +8,7 @@
 #include "Bridge/AS400/as400configwidget.h"
 #include "Bridge/MasterRouteData/masterroutesheetdataconfigwidget.h"
 #include "Bridge/bridgeconfigwidget.h"
-#include "schedulesheetconfig.h"
+#include "ScheduleSheetControl/schedulesheetconfig.h"
 
 namespace Ui {
 class MainWindow;
@@ -26,8 +26,6 @@ private:
     Ui::MainWindow *ui;
     GreenmileConfigWidget               *gmConfig_          = new GreenmileConfigWidget(this);
     BridgeProgressWidget                *bridgeProgress_    = new BridgeProgressWidget(this);
-    MasterRouteSheetConfigWidget        *mrsConfig_         = new MasterRouteSheetConfigWidget("mrsconnection.db", this);
-    MasterRouteSheetConfigWidget        *dlmrsConfig_       = new MasterRouteSheetConfigWidget("dlmrsconnection.db", this);
     AS400ConfigWidget                   *as400Config_       = new AS400ConfigWidget(this);
     MasterRouteSheetDataConfigWidget    *mrsDataConfig_     = new MasterRouteSheetDataConfigWidget(this);
     BridgeConfigWidget                  *bridgeConfig_      = new BridgeConfigWidget(this);

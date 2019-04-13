@@ -54,7 +54,8 @@ QMap<QString, QVariantList> MRSConnection::mrsDailyScheduleJsonToSQL(const QJson
     int driverOffset    = jsonSettings_["driver_offset"].toInt();
     int truckOffset     = jsonSettings_["truck_offset"].toInt();
     int trailerOffset   = jsonSettings_["trailer_offset"].toInt();
-    int routeKeyLength  = 5;
+    //int routeKeyLength  = 5;
+    QString routeRegex  = jsonSettings_["route_regex"].toString();
 
     QJsonArray rows = data["values"].toArray();
 
@@ -83,10 +84,12 @@ QMap<QString, QVariantList> MRSConnection::mrsDailyScheduleJsonToSQL(const QJson
         for(int i = 0; i<row.size(); ++i)
         {
             QString value = row[i].toString();
-            QRegularExpression routeRegExp("^[A-Z]-[A-Z,0-9]{3}");
+            QRegularExpression routeRegExp(routeRegex);
+            qDebug() << routeRegex;
             QRegularExpressionMatch match = routeRegExp.match(value);
-            if(match.hasMatch() && (value.size() == routeKeyLength))
+            if(match.hasMatch()/* && (value.size() == routeKeyLength)*/)
             {
+                qDebug() << "Schedule route key captured" << routeKey << match << match.capturedTexts();
                 routeKey = match.captured(0);
                 sqlData["route:key"].append(QVariant(routeKey));
                 sqlData["route:date"].append(QVariant(date));

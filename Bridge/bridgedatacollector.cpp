@@ -2,14 +2,11 @@
 
 BridgeDataCollector::BridgeDataCollector(QObject *parent) : QObject(parent)
 {
-    connect(mrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &BridgeDataCollector::handleSQLResponse);
-    connect(dlmrsConn, &MRSConnection::mrsDailyScheduleSQL, this, &BridgeDataCollector::handleSQLResponse);
     connect(routeSheetData, &GoogleSheetsConnection::data, this, &BridgeDataCollector::handleJsonResponse);
     connect(gmConn, &GMConnection::networkResponse, this, &BridgeDataCollector::handleJsonResponse);
     connect(as400, &AS400::sqlResults, this, &BridgeDataCollector::handleSQLResponse);
 
-    connect(mrsConn,        &MRSConnection::failed,             this, &BridgeDataCollector::handleComponentFailure);
-    connect(dlmrsConn,      &MRSConnection::failed,             this, &BridgeDataCollector::handleComponentFailure);
+
     connect(routeSheetData, &GoogleSheetsConnection::failed,    this, &BridgeDataCollector::handleComponentFailure);
     connect(gmConn,         &GMConnection::failed,              this, &BridgeDataCollector::handleComponentFailure);
     connect(as400,          &AS400::failed,                     this, &BridgeDataCollector::handleComponentFailure);
@@ -25,7 +22,6 @@ BridgeDataCollector::BridgeDataCollector(QObject *parent) : QObject(parent)
 
     connect(queueTimer, &QTimer::timeout, this, &BridgeDataCollector::processQueue);
     qDebug() << "Bridge Data Collector CTOR";
-    buildTables();
     queueTimer->start(1000);
 }
 
@@ -67,11 +63,12 @@ void BridgeDataCollector::removeRequest(const QString &key)
 void BridgeDataCollector::buildTables()
 {
     qDebug() << "Building tables";
+    knownSources_.append(scheduleSheets.keys());
     qDebug() << knownSources_;
     for(auto source: knownSources_)
     {
-        handleJsonResponse(source, QJsonValue());
-        handleSQLResponse(source, QMap<QString,QVariantList>());
+        handleJsonResponse(source,  QJsonValue());
+        handleSQLResponse(source,   QMap<QString,QVariantList>());
     }
 }
 
@@ -81,6 +78,8 @@ void BridgeDataCollector::processQueue()
         return;
     else
     {
+        generateScheduleSheets();
+        buildTables();
         qDebug() << activeJobs_.size() << totalJobs_;
         QVariantMap request = requestQueue_.dequeue();
         currentKey_ = request["key"].toString();
@@ -89,8 +88,36 @@ void BridgeDataCollector::processQueue()
     }
 }
 
+void BridgeDataCollector::generateScheduleSheets()
+{
+    scheduleSheetSettings_ = jsonSettings_->loadSettings(QFile(scheduleSheetDbPath_), scheduleSheetSettings_);
+    for(auto schedule:scheduleSheetSettings_["scheduleList"].toArray()){
+        QString scheduleName = schedule.toObject()["tableName"].toString();
+
+        QString scheduleDBName = scheduleName + ".db";
+        MRSConnection *schedPtr = new MRSConnection(scheduleDBName, this);
+
+        connect(schedPtr,   &MRSConnection::failed,                 this, &BridgeDataCollector::handleComponentFailure);
+        connect(schedPtr,   &MRSConnection::mrsDailyScheduleSQL,    this, &BridgeDataCollector::handleSQLResponse);
+
+        scheduleSheets[scheduleName] = schedPtr;
+    }
+}
+
+void BridgeDataCollector::deleteScheduleSheets()
+{
+    qDebug() << "Deleting schedule sheets!";
+    for(auto key:scheduleSheets.keys()){
+        scheduleSheets[key]->deleteLater();
+    }
+    scheduleSheets.clear();
+}
+
 void BridgeDataCollector::beginGathering(const QVariantMap &request)
 {
+    scheduleSheetSettings_ = jsonSettings_->loadSettings(QFile(scheduleSheetDbPath_),scheduleSheetSettings_);
+    generateScheduleSheets();
+
     QStringList sources;
     QStringList sourceOverrides = request["sourceOverrides"].toStringList();
     QDate date = request["date"].toDate();
@@ -119,22 +146,16 @@ void BridgeDataCollector::beginGathering(const QVariantMap &request)
     prepDatabases(sources);
     for(auto source : sources)
     {
-        if(source == "mrsDailyAssignments")
+        for(auto schedKey:scheduleSheets.keys())
         {
-            activeJobs_.insert(source);
-            totalJobs_ = activeJobs_.size();
-            emit progress(activeJobs_.size(), totalJobs_);
-            mrsConn->requestAssignments("mrsDailyAssignments", date);
-            continue;
-        }
-
-        if(source == "dlmrsDailyAssignments")
-        {
-            activeJobs_.insert(source);
-            totalJobs_ = activeJobs_.size();
-            emit progress(activeJobs_.size(), totalJobs_);
-            dlmrsConn->requestAssignments("dlmrsDailyAssignments", date);
-            continue;
+            if(source == schedKey)
+            {
+                MRSConnection *schedPtr = scheduleSheets[schedKey];
+                activeJobs_.insert(schedKey);
+                totalJobs_ = activeJobs_.size();
+                emit progress(activeJobs_.size(), totalJobs_);
+                schedPtr->requestAssignments(schedKey, date);
+            }
         }
 
         if(source == "routeStartTimes")
@@ -286,7 +307,6 @@ void BridgeDataCollector::beginGathering(const QVariantMap &request)
 
 void BridgeDataCollector::prepDatabases(const QStringList &sourceOverrides)
 {
-    qDebug() << "Prepping databases";
     if(sourceOverrides.isEmpty())
     {
         for(auto source:knownSources_)
@@ -304,10 +324,12 @@ void BridgeDataCollector::handleSQLResponse(const QString &key, const QMap<QStri
 {
     emit debugMessage(key + " moved has moved through the sql response handler.");
 
-    if(key == "mrsDailyAssignments")
-        handleRSAssignments(key, sql);
-    if(key == "dlmrsDailyAssignments")
-        handleRSAssignments(key, sql);
+    for(auto schedule:scheduleSheets.keys()){
+        if(schedule == key){
+            handleRSAssignments(schedule, sql);
+        }
+    }
+
     if(key == "as400RouteQuery")
         handleAS400RouteQuery(sql);
     if(key == "as400LocationQuery")
@@ -364,6 +386,7 @@ void BridgeDataCollector::handleJobCompletion(const QString &key)
     {
         if(!hasActiveJobs())
         {
+            deleteScheduleSheets();
             qDebug() << "Emitting finished";
             emit statusMessage("Completed data collection for " + key + ".");
             emit finished(currentKey_);

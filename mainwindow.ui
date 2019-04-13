@@ -60,26 +60,6 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="mrsConfigTab">
-       <attribute name="title">
-        <string>Master Route Config</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_3">
-        <item row="0" column="0">
-         <layout class="QGridLayout" name="mrsConfigGrid"/>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="dlmrsConfigTab">
-       <attribute name="title">
-        <string>Late Master Route Config</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_9">
-        <item row="0" column="0">
-         <layout class="QGridLayout" name="dlmrsConfigGrid"/>
-        </item>
-       </layout>
-      </widget>
       <widget class="QWidget" name="mrsDataConfigTab">
        <attribute name="title">
         <string>Master Route Data Config</string>

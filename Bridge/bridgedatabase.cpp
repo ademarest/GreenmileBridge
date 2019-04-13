@@ -59,7 +59,7 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &assignmentTableN
             }
             obj["enabled"]      = QJsonValue(true);
             obj["locationType"] = QJsonObject{{"id",QJsonValue(10001)}};
-            obj["organization"] = QJsonObject{{"id",QJsonValue(10020)}};
+            obj["organization"] = QJsonObject{{"key",QJsonValue(organizationKey)}};
             locationObj[obj["key"].toString()] = obj;
         }
     }

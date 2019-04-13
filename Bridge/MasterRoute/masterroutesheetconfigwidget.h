@@ -51,7 +51,8 @@ private:
                                 {"base_url", QJsonValue("e.g. https://sheets.googleapis.com/v4/spreadsheets/<someString>/values/")},
                                 {"redirect_uris", QJsonArray()},
                                 {"request_timeout", QJsonValue(40)},
-                                {"oauth2_user_timeout", QJsonValue(180)}};
+                                {"oauth2_user_timeout", QJsonValue(180)},
+                                {"route_regex", QJsonValue("^[A-Z]-[A-Z,0-9]{3}")}};
 
     bool noSettingsNullOrUndefined(const QJsonObject &settings);
     void applySettingsToUI();

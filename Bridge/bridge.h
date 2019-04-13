@@ -1,6 +1,7 @@
 #ifndef BRIDGE_H
 #define BRIDGE_H
 
+#include <QtCore>
 #include <algorithm>
 #include <QObject>
 #include <QtConcurrent/QtConcurrent>
@@ -17,6 +18,7 @@
 #include "BridgeServices/accounttype.h"
 #include "BridgeServices/servicetimetype.h"
 #include "BridgeServices/locationtype.h"
+#include "JsonSettings/jsonsettings.h"
 
 class Bridge : public QObject
 {
@@ -78,12 +80,24 @@ private:
 
     bool failState_ = false;
 
+    JsonSettings *jsonSettings_ = new JsonSettings(this);
+
+    QString scheduleSettingsDbPath_ = (qApp->applicationDirPath() + "/scheduleconfig.db");
+    QString bridgeSettingsDbPath_   = (qApp->applicationDirPath() + "/bridgeconfig.db");
+
     QJsonObject settings_ {{"daysToUpload", QJsonValue(QJsonArray{QDate::currentDate().toString(Qt::ISODate), QDate::currentDate().addDays(1).toString(Qt::ISODate)})},
                            {"scheduleTables", QJsonValue(QJsonArray{QJsonValue(QJsonObject{{"tableName", QJsonValue("dlmrsDailyAssignments")}}),
-                                                                    QJsonValue(QJsonObject{{"tableName", QJsonValue("mrsDailyAssignments")}, {"minRouteKey", "D"}, {"maxRouteKey", "U"}})})},
+                                                                    QJsonValue(QJsonObject{{"tableName", QJsonValue("mrsDailyAssignments")}})})},
                            {"organization:key", QJsonValue("SEATTLE")},
                            {"monthsUntilCustDisabled", QJsonValue(3)},
                            {"schedulePrimaryKeys", QJsonValue(QJsonArray{"route:key", "route:date", "organization:key"})}};
+
+    QJsonObject scheduleSettings_ {{"scheduleList",QJsonArray()}};
+
+    QJsonObject bridgeSettings_ {{"daysToUploadInt",          QJsonValue(1)},
+                                {"organization:key",         QJsonValue("SEATTLE")},
+                                {"monthsUntilCustDisabled",  QJsonValue(3)},
+                                {"bridgeIntervalSec",        QJsonValue(600)}};
 
     //END SETTINGS SUBSECTION
 
@@ -120,6 +134,8 @@ private:
     //END BRIDGE MEMBER SUBSECTION
 
     void init();
+    QJsonArray generateUploadDays(int daysToUpload);
+    void loadSettings();
     void startOnTimer();
     void processQueue();
     void addActiveJob(const QString &key);

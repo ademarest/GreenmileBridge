@@ -3,9 +3,9 @@
 
 #include <QWidget>
 #include "Greenmile/gmconnection.h"
-#include "AS400/as400connection.h"
 #include "Geocoding/censusgeocode.h"
 #include "GenericUI/listcontrolwidget.h"
+#include "JsonSettings/jsonsettings.h"
 
 namespace Ui {
 class BridgeConfigWidget;
@@ -26,17 +26,24 @@ signals:
 
 private slots:
     void handleGMResponse(const QString &key, const QJsonValue &jVal);
-    void handleSQLResponse(const QString &key, const QMap<QString, QVariantList> &sql);
+    void saveUItoSettings();
+    void applySettingsToUI();
 
 private:
     Ui::BridgeConfigWidget *ui;
+
+    JsonSettings *jsonSettings_ = new JsonSettings(this);
+
+    QString dbPath_ = qApp->applicationDirPath() + "/bridgeconfig.db";
+
+    QJsonObject settings_ {{"daysToUploadInt",          QJsonValue(1)},
+                           {"organization:key",         QJsonValue("SEATTLE")},
+                           {"monthsUntilCustDisabled",  QJsonValue(3)},
+                           {"bridgeIntervalSec",        QJsonValue(600)}};
+
     void init();
     void populateOrganizations(const QJsonValue &jVal);
 
-    //ListControlWidget *gmOrgLCW     = new ListControlWidget(this);
-    //ListControlWidget *as400OrgLCW  = new ListControlWidget(this);
-
-    AS400 *as400Conn = new AS400(this);
     GMConnection *gmConn = new GMConnection(this);
 };
 

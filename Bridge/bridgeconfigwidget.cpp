@@ -6,8 +6,8 @@ BridgeConfigWidget::BridgeConfigWidget(QWidget *parent) :
     ui(new Ui::BridgeConfigWidget)
 {
     ui->setupUi(this);
+    connect(ui->saveSettingsPushButton, &QPushButton::pressed, this, &BridgeConfigWidget::saveUItoSettings);
     connect(gmConn, &GMConnection::networkResponse, this, &BridgeConfigWidget::handleGMResponse);
-    connect(as400Conn, &AS400::sqlResults, this, &BridgeConfigWidget::handleSQLResponse);
     init();
 }
 
@@ -19,8 +19,8 @@ BridgeConfigWidget::~BridgeConfigWidget()
 
 void BridgeConfigWidget::init()
 {
+    applySettingsToUI();
     gmConn->requestAllOrganizationInfo("allOrganizationInfo");
-    as400Conn->getOrganizations("as400Organizations", 1000);
 }
 
 void BridgeConfigWidget::handleGMResponse(const QString &key, const QJsonValue &jVal)
@@ -30,34 +30,48 @@ void BridgeConfigWidget::handleGMResponse(const QString &key, const QJsonValue &
     {
         populateOrganizations(jVal);
     }
-
 }
 
-void BridgeConfigWidget::handleSQLResponse(const QString &key, const QMap<QString, QVariantList> &sql)
+void BridgeConfigWidget::saveUItoSettings()
 {
-    qDebug() << key;
-    QStringList strList;
-    for(int i = 0; i < sql["organization:key"].size(); ++i)
-    {
-        ui->orgAS400LCW->appendItem(sql["organization:key"][i].toString());
-        //as400OrgLCW->appendItem("BridgeConfig add item", (QString(QString::number(i+1) + " " + sql["organization:key"][i].toString())));
-    }
-    qDebug() << strList;
-
+    settings_["daysToUploadInt"] = QJsonValue(ui->daysToUploadSpinBox->value());
+    settings_["organization:key"] = QJsonValue(ui->organizationComboBox->currentText());
+    settings_["monthsUntilCustDisabled"] = QJsonValue(ui->monthsUntilCustDisabledSpinBox->value());
+    settings_["bridgeIntervalSec"] = QJsonValue(ui->bridgeIntervalSpinBox->value());
+    jsonSettings_->saveSettings(QFile(dbPath_), settings_);
 }
 
+void BridgeConfigWidget::applySettingsToUI()
+{
+    settings_ = jsonSettings_->loadSettings(QFile(dbPath_), settings_);
+    ui->daysToUploadSpinBox->setValue(settings_["daysToUploadInt"].toInt());
+    ui->organizationComboBox->addItem(settings_["organization:key"].toString());
+    ui->monthsUntilCustDisabledSpinBox->setValue(settings_["monthsUntilCustDisabled"].toInt());
+    ui->bridgeIntervalSpinBox->setValue(settings_["bridgeIntervalSec"].toInt());
+}
 
 void BridgeConfigWidget::populateOrganizations(const QJsonValue &jVal)
 {
     QJsonArray jArr = jVal.toArray();
     QStringList strLst;
+
+    QStringList comboBoxContents;
+
+    for(int i = 0; i < ui->organizationComboBox->count(); i++){
+        comboBoxContents.append(ui->organizationComboBox->itemText(i));
+    }
+
     for(auto jValTemp:jArr)
     {
         QJsonObject jObj = jValTemp.toObject();
-        ui->organizationComboBox->addItem(jObj["key"].toString());
-        //ui->orgGMLCW->appendItem("populate gm org", jObj["key"].toString());
-        //gmOrgLCW->appendItem("BridgeConfig add item", jObj["key"].toString());
+
+        QString newContent = jObj["key"].toString();
+
+        if(!comboBoxContents.contains(newContent)){
+            ui->organizationComboBox->addItem(newContent);
+        }
     }
+
     qDebug() << strLst;
 
 }
