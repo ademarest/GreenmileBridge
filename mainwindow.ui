@@ -62,7 +62,7 @@
       </widget>
       <widget class="QWidget" name="mrsDataConfigTab">
        <attribute name="title">
-        <string>Master Route Data Config</string>
+        <string>Route Data Sheet</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_7">
         <item row="0" column="0">

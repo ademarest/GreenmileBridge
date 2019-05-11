@@ -6,6 +6,7 @@ Bridge::Bridge(QObject *parent) : QObject(parent)
     connect(queueTimer, &QTimer::timeout, this, &Bridge::processQueue);
     connect(bridgeTimer, &QTimer::timeout, this, &Bridge::startOnTimer);
     connect(bridgeMalfunctionTimer, &QTimer::timeout, this, &Bridge::abort);
+    connect(componentDeletionTimer, &QTimer::timeout, this, &Bridge::componentsDeleted);
     init();
 }
 
@@ -41,9 +42,9 @@ void Bridge::init()
     connect(lotw_,                  &LocationOverrideTimeWindow::finished, this,    &Bridge::finishedLocationOverrideTimeWindows);
     connect(lotw_,                  &LocationOverrideTimeWindow::failed, this,      &Bridge::handleComponentFailure);
 
-    connect(routeCheck_, &RouteCheck::finished, this, &Bridge::finishedRouteCheck);
-    connect(routeUpload_, &RouteUpload::finished, this, &Bridge::finishedRouteUpload);
-    connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::finished, this, &Bridge::finishedRouteAssignmentCorrections);
+    connect(routeCheck_,                &RouteCheck::finished,                  this, &Bridge::finishedRouteCheck);
+    connect(routeUpload_,               &RouteUpload::finished,                 this, &Bridge::finishedRouteUpload);
+    connect(routeAssignmentCorrection_, &RouteAssignmentCorrection::finished,   this, &Bridge::finishedRouteAssignmentCorrections);
 
     connect(dataCollector, &BridgeDataCollector::progress, this, &Bridge::currentJobProgress);
     connect(dataCollector, &BridgeDataCollector::statusMessage, this, &Bridge::statusMessage);
@@ -168,7 +169,6 @@ void Bridge::handleComponentFailure(const QString &key, const QString &reason)
 {
     emit errorMessage(key + ". Aborting bridge as soon as possible. " + reason);
     failState_ = true;
-    //abort();
 }
 
 void Bridge::processQueue()
@@ -273,13 +273,6 @@ void Bridge::finishedServiceTimeTypes(const QString &key, const QMap<QString, QJ
     addActiveJob(jobKey);
     locationUpdateGeocode_->GeocodeLocations(jobKey, argList_, true, false);
     handleJobCompletion(key);
-//    emit statusMessage(key + " has been completed.");
-//    qDebug() << result;
-//    QString jobKey = "locationTypes:" + currentRequest_["key"].toString();
-//    qDebug() << "Do I go here 0.2?";
-//    addActiveJob(jobKey);
-//    locationType_->processLocationTypes(jobKey, argList_);
-//    handleJobCompletion(key);
 }
 
 void Bridge::finishedLocationTypes(const QString &key, const QMap<QString, QJsonObject> &result)
@@ -448,6 +441,21 @@ void Bridge::handleJobCompletion(const QString &key)
 
 void Bridge::abort()
 {
+    qDebug() << "abortInProcess_" << abortInProcess_;
+    qDebug() << "failState_" << failState_;
+    qDebug() << "abortInProcess_ && !failState_" << (abortInProcess_ && !failState_);
+    if(abortInProcess_){
+        qDebug() << "Abort signal recieved, but ignoring as abort is in progress";
+        emit errorMessage("Abort signal recieved, but ignoring as abort is in progress");
+        return;
+    }
+
+    abortInProcess_ = true;
+
+    qDebug() << "2abortInProcess_" << abortInProcess_;
+    qDebug() << "2failState_" << failState_;
+    qDebug() << "2abortInProcess_ && !failState_" << (abortInProcess_ && !failState_);
+
     qDebug() << "Abort";
     QString key = currentRequest_["key"].toString();
     emit errorMessage("ERROR: " + key + " ABORTED.");
@@ -483,10 +491,33 @@ void Bridge::abort()
     emit bridgeProgress(0, 0);
     emit currentJobProgress(0, 0);
     emit aborted(key);
-    rebuild(key);
+
+    componentDeletionTimer->start(1000);
 }
 
-void Bridge::rebuild(const QString &key)
+void Bridge::componentsDeleted()
+{
+    if(dataCollector                        == Q_NULLPTR
+            && bridgeDB_                    == Q_NULLPTR
+            && locationUploadGeocode_       == Q_NULLPTR
+            && locationUpload_              == Q_NULLPTR
+            && locationUpdateGeocode_       == Q_NULLPTR
+            && locationUpdate_              == Q_NULLPTR
+            && routeCheck_                  == Q_NULLPTR
+            && routeUpload_                 == Q_NULLPTR
+            && routeAssignmentCorrection_   == Q_NULLPTR
+            && logger_                      == Q_NULLPTR
+            && lotw_                        == Q_NULLPTR
+            && accountType_                 == Q_NULLPTR
+            && serviceTimeType_             == Q_NULLPTR
+            && locationType_                == Q_NULLPTR)
+    {
+        componentDeletionTimer->stop();
+        rebuild();
+    }
+}
+
+void Bridge::rebuild()
 {
     dataCollector               = new BridgeDataCollector(this);
     bridgeDB_                   = new BridgeDatabase(this);
@@ -503,12 +534,16 @@ void Bridge::rebuild(const QString &key)
     serviceTimeType_            = new ServiceTimeType(this);
     locationType_               = new LocationType(this);
     failState_ = false;
-
+    abortInProcess_ = false;
     init();
 
+
+    emit statusMessage("-------------------------------------------------");
     emit statusMessage("Bridge has been reset. Restarting queue.");
+    emit statusMessage("-------------------------------------------------");
+
     qDebug() << 12;
-    emit rebuilt(key);
+    //emit rebuilt(key);
     qDebug() << 13;
     bridgeTimer->start(600000);
     qDebug() << 14;

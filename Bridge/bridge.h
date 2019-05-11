@@ -51,7 +51,7 @@ public slots:
 
 private slots:
     void handleJobCompletion(const QString &key);
-    void rebuild(const QString &key);
+    void rebuild();
 
     void finishedDataCollection(const QString &key);
 
@@ -73,11 +73,14 @@ private slots:
     void finishedRouteUpload(const QString &key, const QJsonObject &result);
     void finishedRouteAssignmentCorrections(const QString &key, const QJsonObject &result);
 
+    void componentsDeleted();
+
 private:
     //SETTINGS SUBSECTION
     //void loadSettings();
     //        QStringList pkList {"route:key", "route:date", "organization:key"};
 
+    bool abortInProcess_ = false;
     bool failState_ = false;
 
     JsonSettings *jsonSettings_ = new JsonSettings(this);
@@ -113,24 +116,25 @@ private:
     QTimer *queueTimer = new QTimer(this);
     QTimer *bridgeTimer = new QTimer(this);
     QTimer *bridgeMalfunctionTimer = new QTimer(this);
+    QTimer *componentDeletionTimer = new QTimer(this);
     //END TIMER SUBSECTION
 
     //BRIDGE MEMBER SUBSECTION
     //IF ADDING A MEMBER, REMEMBER TO UPDATE RESET AND REBUILD!!!
-    BridgeDataCollector *dataCollector = new BridgeDataCollector(this);
-    BridgeDatabase *bridgeDB_ = new BridgeDatabase(this);
-    LocationGeocode *locationUploadGeocode_ = new LocationGeocode(this);
-    LocationUpload *locationUpload_ = new LocationUpload(this);
-    LocationGeocode *locationUpdateGeocode_ = new LocationGeocode(this);
-    LocationUpload *locationUpdate_ = new LocationUpload(this);
-    RouteUpload *routeUpload_ = new RouteUpload(this);
-    RouteAssignmentCorrection *routeAssignmentCorrection_ = new RouteAssignmentCorrection(this);
-    RouteCheck *routeCheck_ = new RouteCheck(this);
-    LogWriter *logger_ = new LogWriter(this);
-    LocationOverrideTimeWindow *lotw_ = new LocationOverrideTimeWindow(this);
-    AccountType *accountType_ = new AccountType(this);
-    ServiceTimeType *serviceTimeType_ = new ServiceTimeType(this);
-    LocationType *locationType_ = new LocationType(this);
+    QPointer<BridgeDataCollector> dataCollector = new BridgeDataCollector(this);
+    QPointer<BridgeDatabase> bridgeDB_ = new BridgeDatabase(this);
+    QPointer<LocationGeocode> locationUploadGeocode_ = new LocationGeocode(this);
+    QPointer<LocationUpload> locationUpload_ = new LocationUpload(this);
+    QPointer<LocationGeocode> locationUpdateGeocode_ = new LocationGeocode(this);
+    QPointer<LocationUpload> locationUpdate_ = new LocationUpload(this);
+    QPointer<RouteUpload> routeUpload_ = new RouteUpload(this);
+    QPointer<RouteAssignmentCorrection> routeAssignmentCorrection_ = new RouteAssignmentCorrection(this);
+    QPointer<RouteCheck> routeCheck_ = new RouteCheck(this);
+    QPointer<LogWriter> logger_ = new LogWriter(this);
+    QPointer<LocationOverrideTimeWindow> lotw_ = new LocationOverrideTimeWindow(this);
+    QPointer<AccountType> accountType_ = new AccountType(this);
+    QPointer<ServiceTimeType> serviceTimeType_ = new ServiceTimeType(this);
+    QPointer<LocationType> locationType_ = new LocationType(this);
     //END BRIDGE MEMBER SUBSECTION
 
     void init();
