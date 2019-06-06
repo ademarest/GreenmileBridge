@@ -66,8 +66,27 @@ QJsonObject BridgeDatabase::getLocationsToUpload(const QString &assignmentTableN
                     "	and \n"
                     "		`route:date` = \""+date.toString("yyyy-MM-dd")+"\" \n"
                     ") \n"
-                    "group by as400LocationQuery.`location:key` \n";
+                    "group by as400LocationQuery.`location:key` \n"
+                    "union \n"
+                    "SELECT DISTINCT "
+                    "as400RouteQuery.`location:key` as `key`, "
+                    "as400RouteQuery.`location:addressLine1` as `addressLine1`, "
+                    "as400RouteQuery.`location:addressLine2` as `addressLine2`, "
+                    "as400RouteQuery.`location:city` as `city`, "
+                    "as400RouteQuery.`location:deliveryDays` as `deliveryDays`, "
+                    "as400RouteQuery.`location:description` as `description`, "
+                    "as400RouteQuery.`location:state` as `state`, "
+                    "as400RouteQuery.`location:zipCode` as `zipCode`, "
+                    "gmOrganizations.`id` as `organization:id` "
+                    "FROM as400RouteQuery "
+                    "LEFT JOIN "
+                    "gmOrganizations "
+                    "ON "
+                    "gmOrganizations.key = as400RouteQuery.`organization:key` "
+                    "WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString(Qt::ISODate)+"\" AND `location:key` NOT IN (SELECT `key` FROM gmLocations) AND `route:key` IN (SELECT `route:key` FROM "+assignmentTableName+" WHERE `organization:key` = \""+organizationKey+"\" AND `route:date` = \""+date.toString(Qt::ISODate)+"\" "+routeKeyBoundaries+") GROUP BY as400RouteQuery.`location:key`";
 
+    qDebug() << "today test";
+    qDebug() << query;
     emit debugMessage(query);
     QMap<QString,QVariantList> sql = executeQuery(query, "Finding locations to upload in in getLocationsToUpload()");
     if(!sql.empty())
