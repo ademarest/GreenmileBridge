@@ -1240,7 +1240,7 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
                     }
                     if(splitKey[0] == "order")
                     {
-                        order[splitKey[1]] = sql[key][i].toJsonValue();
+                        order[splitKey[1]] = QVariant(sql[key][i].toString().simplified()).toJsonValue();
                     }
                     if(splitKey[0] == "stop")
                     {
@@ -1261,6 +1261,7 @@ QJsonObject BridgeDatabase::assembleUploadRouteFromQuery(const QMap<QString,QVar
             {
                 stops[routeKey][stopKey]["location"] = location;
                 stops[routeKey][stopKey]["key"] = QJsonValue(QUuid::createUuid().toString());
+                //TODO implement stopTypes. Currently hardcoded, bad.
                 stops[routeKey][stopKey]["stopType"] = QJsonObject{{"id",QJsonValue(10000)}};
                 QJsonArray orderArr = stops[routeKey][stopKey]["orders"].toArray();
                 orderArr.append(order);
