@@ -130,8 +130,8 @@ void GMConnection::requestAllOrganizationInfo(const QString &key)
 void GMConnection::requestAllStopTypeInfo(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString serverAddrTail =    "/Organization/restrictions?criteria"
-                                "={\"filters\":[\"*\"]}";
+    QString serverAddrTail =    "/StopType/restrictions?criteria"
+                                "={\"filters\":[\"*\",\"organization.*\"]}";
 
     QByteArray postData = QString("{}").toLocal8Bit();
 
@@ -141,8 +141,8 @@ void GMConnection::requestAllStopTypeInfo(const QString &key)
 void GMConnection::requestAllLocationTypeInfo(const QString &key)
 {
     jsonSettings_ = settings_->loadSettings(QFile(dbPath_), jsonSettings_);
-    QString serverAddrTail =    "/Organization/restrictions?criteria"
-                                "={\"filters\":[\"*\"]}";
+    QString serverAddrTail =    "/LocationType/restrictions?criteria"
+                                "={\"filters\":[\"*\",\"organization.*\"]}";
 
     QByteArray postData = QString("{}").toLocal8Bit();
 

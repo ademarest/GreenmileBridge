@@ -112,6 +112,10 @@ void Bridge::loadSettings()
     settings_["monthsUntilCustDisabled"]    = QJsonValue(bridgeSettings_["monthsUntilCustDisabled"].toInt());
     settings_["schedulePrimaryKeys"]        = QJsonValue(QJsonArray{"route:key", "route:date", "organization:key"});
     settings_["bridgeIntervalSec"]          = QJsonValue(bridgeSettings_["bridgeIntervalSec"].toInt());
+    settings_["locationTypeId"]             = QJsonValue(bridgeSettings_["actvLocationTypeID"].toString());
+    settings_["stopTypeId"]                 = QJsonValue(bridgeSettings_["actvStopTypeID"].toString());
+
+    qDebug() << settings_["locationTypeId"] << settings_["stopTypeId"];
 
     qDebug() << "settings loaded" <<  settings_;
 }
@@ -149,11 +153,13 @@ void Bridge::addRequest(const QString &key)
     for(auto jVal : settings_["daysToUpload"].toArray())
     {
         request["key"] = key;
-        request["organization:key"] = settings_["organization:key"].toString();
-        request["date"] = QDate::fromString(jVal.toString(), Qt::ISODate);
-        request["scheduleTables"] = settings_["scheduleTables"].toArray();
-        request["schedulePrimaryKeys"] = settings_["schedulePrimaryKeys"].toArray();
-        request["monthsUntilCustDisabled"] = settings_["monthsUntilCustDisabled"].toInt();
+        request["organization:key"]         = settings_["organization:key"].toString();
+        request["date"]                     = QDate::fromString(jVal.toString(), Qt::ISODate);
+        request["scheduleTables"]           = settings_["scheduleTables"].toArray();
+        request["schedulePrimaryKeys"]      = settings_["schedulePrimaryKeys"].toArray();
+        request["monthsUntilCustDisabled"]  = settings_["monthsUntilCustDisabled"].toInt();
+        request["locationTypeId"]           = settings_["locationTypeId"].toString();
+        request["stopTypeId"]               = settings_["stopTypeId"].toString();
         requestQueue_.enqueue(request);
     }
 }
@@ -581,12 +587,17 @@ void Bridge::generateArgs()
         QJsonObject tableObj = jVal.toObject();
 
         QVariantMap args;
-        args["key"]         = currentRequest_["key"].toString();
-        args["minRouteKey"] = tableObj["minRouteKey"].toString();
-        args["maxRouteKey"] = tableObj["maxRouteKey"].toString();
-        args["tableName"]   = tableObj["tableName"].toString();
-        args["organization:key"] = currentRequest_["organization:key"].toString();
-        args["date"] = currentRequest_["date"].toDate();
+        args["key"]                 = currentRequest_["key"].toString();
+        args["minRouteKey"]         = tableObj["minRouteKey"].toString();
+        args["maxRouteKey"]         = tableObj["maxRouteKey"].toString();
+        args["tableName"]           = tableObj["tableName"].toString();
+        args["organization:key"]    = currentRequest_["organization:key"].toString();
+        args["date"]                = currentRequest_["date"].toDate();
+        args["locationTypeId"]      = currentRequest_["locationTypeId"].toString();
+        args["stopTypeId"]          = currentRequest_["stopTypeId"].toString();
+
+        qDebug() << "args test" << args["locationTypeId"];
+        qDebug() << "args test" << args["stopTypeId"];
         argList_.append(args);
     }
 }

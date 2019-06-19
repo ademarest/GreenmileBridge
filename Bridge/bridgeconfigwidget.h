@@ -28,6 +28,8 @@ private slots:
     void handleGMResponse(const QString &key, const QJsonValue &jVal);
     void saveUItoSettings();
     void applySettingsToUI();
+    void handleStopTypeIdxChange(int idx);
+    void handleLocationTypeIdxChange(int idx);
 
 private:
     Ui::BridgeConfigWidget *ui;
@@ -36,13 +38,32 @@ private:
 
     QString dbPath_ = qApp->applicationDirPath() + "/bridgeconfig.db";
 
-    QJsonObject settings_ {{"daysToUploadInt",          QJsonValue(1)},
-                           {"organization:key",         QJsonValue("SEATTLE")},
-                           {"monthsUntilCustDisabled",  QJsonValue(3)},
-                           {"bridgeIntervalSec",        QJsonValue(600)}};
+    QJsonObject entityType_ = {
+        {"id", "00000"},
+        {"uiDisplayName","Default, please change this."}
+    };
+
+    QJsonArray entityArray_ = {entityType_};
+
+    QJsonObject settings_ {{"daysToUploadInt",           QJsonValue(1)},
+                           {"organization:key",          QJsonValue("Default organization, please change this.")},
+                           {"monthsUntilCustDisabled",   QJsonValue(3)},
+                           {"bridgeIntervalSec",         QJsonValue(600)},
+                           {"actvLocationTypeID",        QJsonValue("00000")},
+                           {"actvLocationTypeUIName",    QJsonValue("Default location type, please change this.")},
+                           {"actvStopTypeID",            QJsonValue("00000")},
+                           {"actvStopTypeUIName",        QJsonValue("Default stop type, please change this.")}};
+
+    int activeLocationTypeIndex_;
+    QJsonObject activeLocationType_;
+    QJsonArray locationTypes_;
+
+    int activeStopTypeIndex_;
+    QJsonObject activeStopType_;
+    QJsonArray stopTypes_;
 
     void init();
-    void populateOrganizations(const QJsonValue &jVal);
+    void populateComboBox(const QJsonValue &jVal, QComboBox *comboBox, QJsonArray *trackingArr = Q_NULLPTR);
 
     GMConnection *gmConn = new GMConnection(this);
 };

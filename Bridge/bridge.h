@@ -97,10 +97,12 @@ private:
 
     QJsonObject scheduleSettings_ {{"scheduleList",QJsonArray()}};
 
-    QJsonObject bridgeSettings_ {{"daysToUploadInt",          QJsonValue(1)},
-                                {"organization:key",         QJsonValue("SEATTLE")},
-                                {"monthsUntilCustDisabled",  QJsonValue(3)},
-                                {"bridgeIntervalSec",        QJsonValue(600)}};
+    QJsonObject bridgeSettings_ {{"daysToUploadInt",            QJsonValue(1)},
+                                {"organization:key",            QJsonValue("SEATTLE")},
+                                {"monthsUntilCustDisabled",     QJsonValue(3)},
+                                {"bridgeIntervalSec",           QJsonValue(600)},
+                                {"actvStopTypeID",              QJsonValue("00000")},
+                                {"actvLocationTypeID",          QJsonValue("00000")}};
 
     //END SETTINGS SUBSECTION
 

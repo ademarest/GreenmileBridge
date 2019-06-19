@@ -53,8 +53,9 @@ void RouteUpload::UploadRoutes(const QString &key, const QList<QVariantMap> &arg
         QDate date = vMap["date"].toDate();
         QString minRouteKey = vMap["minRouteKey"].toString();
         QString maxRouteKey = vMap["maxRouteKey"].toString();
+        QString stopTypeId = vMap["stopTypeId"].toString();
 
-        mergeRoutesToUpload(bridgeDB_->getRoutesToUpload(tableName, organizationKey, date, minRouteKey, maxRouteKey));
+        mergeRoutesToUpload(bridgeDB_->getRoutesToUpload(tableName, organizationKey, date, stopTypeId, minRouteKey, maxRouteKey));
     }
 
     for(auto key:routesToUpload_.keys())

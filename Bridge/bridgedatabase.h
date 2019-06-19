@@ -16,6 +16,7 @@ public:
     QJsonObject getRoutesToUpload(const QString &assignmentTableName,
                                   const QString &organizationKey,
                                   const QDate   &date,
+                                  const QString &stopTypeId,
                                   const QString &minRouteString = QString(),
                                   const QString &maxRouteString = QString());
 
@@ -36,6 +37,7 @@ public:
     QJsonObject getLocationsToUpload(const QString &assignmentTableName,
                                      const QString &organizationKey,
                                      const QDate &date,
+                                     const QString &locationTypeId,
                                      const QString &minRouteString = QString(),
                                      const QString &maxRouteString = QString());
 
